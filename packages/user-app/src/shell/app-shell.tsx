@@ -47,7 +47,7 @@ function SidebarToggle({ open, onToggle }: { open: boolean; onToggle: () => void
         <PanelLeftClose className="size-[18px]" strokeWidth={1.75} />
       ) : (
         <>
-          <LivepeerSymbol className="h-[17px] w-auto transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-75 group-hover:opacity-0 group-focus-visible:scale-75 group-focus-visible:opacity-0" />
+          <LivepeerSymbol className="h-[20px] w-auto transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-75 group-hover:opacity-0 group-focus-visible:scale-75 group-focus-visible:opacity-0" />
           <PanelLeftOpen
             className="absolute size-[18px] scale-75 opacity-0 transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100"
             strokeWidth={1.75}
@@ -98,7 +98,7 @@ export function AppShell({ instanceName, pathname, Link, availableRoutes, featur
           {open ? (
             <>
               <Link href="/" aria-label={`${instanceName} home`} className="inline-flex h-10 items-center px-2 text-foreground">
-                <LivepeerWordmark className="h-[12px] w-[80px] shrink-0" />
+                <LivepeerWordmark className="h-[14px] w-auto shrink-0" />
               </Link>
               <SidebarToggle open onToggle={toggle} />
             </>
