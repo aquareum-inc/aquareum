@@ -98,7 +98,7 @@ export function AppShell({ instanceName, pathname, Link, availableRoutes, featur
           {open ? (
             <>
               <Link href="/" aria-label={`${instanceName} home`} className="inline-flex h-10 items-center px-2 text-foreground">
-                <LivepeerWordmark className="h-[17px] w-[113px] shrink-0" />
+                <LivepeerWordmark className="h-[12px] w-[80px] shrink-0" />
               </Link>
               <SidebarToggle open onToggle={toggle} />
             </>
