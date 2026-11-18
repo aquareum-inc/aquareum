@@ -1,0 +1,16 @@
+{
+  "name": "@aquareum/operator-console",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@aquareum/api-client": "workspace:*",
+    "@aquareum/ui": "workspace:*",
+    "lucide-react": "^1.48.0",
+    "motion": "^13.4.3"
+  },
+  "peerDependencies": { "react": "^19.2.1", "react-dom": "^19.2.1" },
+  "devDependencies": { "@types/node": "^22.20.5", "@types/react": "^19.2.0", "@types/react-dom": "^19.2.0", "typescript": "5.9.2" }
+}
