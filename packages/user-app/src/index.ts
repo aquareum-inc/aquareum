@@ -1,4 +1,5 @@
 export { AppShell, type AppShellProps } from "./shell/app-shell";
+export { SIDEBAR_COOKIE, sidebarOpenFrom } from "./shell/sidebar";
 export { LinkProvider, useLink, type LinkProps } from "./shell/link";
 export { CreditsProvider, useCredits } from "./shell/credits";
 export { DataSourceBadge, type DataSourceBadgeProps } from "./shell/data-source-badge";

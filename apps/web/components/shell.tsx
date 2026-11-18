@@ -19,6 +19,7 @@ export function Shell({
   account,
   consoleAvailable,
   developersAvailable,
+  sidebarOpen,
   children,
 }: {
   instanceName: string;
@@ -28,6 +29,8 @@ export function Shell({
   consoleAvailable: boolean;
   /** Whether the instance serves the API or the MCP server, which the Developers section documents. */
   developersAvailable: boolean;
+  /** From the sidebar cookie, so the first paint matches how the person left it. */
+  sidebarOpen: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -40,6 +43,7 @@ export function Shell({
       features={{ characters, developers: developersAvailable }}
       account={account}
       consoleAvailable={consoleAvailable}
+      initialOpen={sidebarOpen}
       signOutAction="/auth/sign-out"
       signInHref="/sign-in"
       recents={recents.map(({ id, title }) => ({ href: `/chat/${id}`, title }))}

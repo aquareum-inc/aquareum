@@ -1,5 +1,5 @@
-import { CreditsProvider } from "@aquareum/user-app";
-import { headers } from "next/headers";
+import { CreditsProvider, SIDEBAR_COOKIE, sidebarOpenFrom } from "@aquareum/user-app";
+import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -32,6 +32,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         account={session ? { name: session.name, email: session.email, role: session.role } : null}
         consoleAvailable={config.surfaces.console}
         developersAvailable={developerTabs(config.surfaces).length > 0}
+        sidebarOpen={sidebarOpenFrom((await cookies()).get(SIDEBAR_COOKIE)?.value)}
       >
         {children}
       </Shell>
