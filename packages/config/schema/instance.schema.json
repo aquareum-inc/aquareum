@@ -1,0 +1,314 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.aquareum.dev/instance.schema.json",
+  "title": "InstanceConfig",
+  "description": "One file that defines an instance: branding, engine, surfaces, capability rules, auth, payments and content policy. Secrets never go here; they are environment variables.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "surfaces"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "Instance name shown in the interface."
+    },
+    "logo": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Paths or URLs to SVG marks. Omitted, the Livepeer mark is used.",
+      "properties": {
+        "symbol": {
+          "type": "string"
+        },
+        "wordmark": {
+          "type": "string"
+        }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Overrides for semantic colour tokens, per theme. Keys are token names without the leading dashes, e.g. \"primary\".",
+      "properties": {
+        "dark": {
+          "$ref": "#/definitions/tokens"
+        },
+        "light": {
+          "$ref": "#/definitions/tokens"
+        }
+      }
+    },
+    "domain": {
+      "type": "string",
+      "description": "Public hostname of the instance."
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Engine REST API base URL. ENGINE_URL overrides it."
+        }
+      }
+    },
+    "surfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "app",
+        "console",
+        "api",
+        "mcp"
+      ],
+      "description": "Which parts of the product this instance serves.",
+      "properties": {
+        "app": {
+          "type": "boolean",
+          "description": "The user app."
+        },
+        "console": {
+          "type": "boolean",
+          "description": "The operator console."
+        },
+        "api": {
+          "type": "boolean",
+          "description": "The instance REST API."
+        },
+        "mcp": {
+          "type": "boolean",
+          "description": "The MCP server."
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Which discovered capabilities the instance offers. Patterns match app names; * matches any run of characters. Block wins over allow. An empty allow list allows everything.",
+      "properties": {
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "block": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "overrides": {
+          "type": "object",
+          "description": "Per-app overrides, keyed by app name.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "surfaces": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "chat",
+                    "studio",
+                    "characters",
+                    "library",
+                    "live"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "enum": [
+            "mock",
+            "oidc"
+          ],
+          "default": "mock"
+        },
+        "oidc": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "issuer",
+            "clientId"
+          ],
+          "properties": {
+            "issuer": {
+              "type": "string",
+              "format": "uri"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "methodParam": {
+              "type": "string",
+              "default": "connection",
+              "description": "Authorization request parameter that tells the provider which method the user picked (for example \"connection\" or \"kc_idp_hint\")."
+            }
+          }
+        },
+        "signUp": {
+          "enum": [
+            "open",
+            "invite",
+            "closed"
+          ],
+          "default": "open"
+        },
+        "methods": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "email",
+              "passkey",
+              "google",
+              "apple",
+              "discord",
+              "coinbase",
+              "wallet"
+            ]
+          },
+          "default": [
+            "apple",
+            "coinbase",
+            "discord",
+            "google",
+            "wallet",
+            "email",
+            "passkey"
+          ],
+          "description": "Sign-in methods offered on the sign-in screen, in order. The identity provider must support each one."
+        }
+      }
+    },
+    "payments": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "enum": [
+            "mock",
+            "batteries",
+            "pymthouse"
+          ],
+          "default": "mock"
+        }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How wholesale network cost becomes credits charged.",
+      "properties": {
+        "creditsPerUsd": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 100
+        },
+        "markup": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "type": "number",
+              "minimum": 1,
+              "default": 1.3,
+              "description": "Multiplier on wholesale cost."
+            },
+            "perApp": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "characters": {
+          "type": "boolean",
+          "default": true,
+          "description": "Characters and companions."
+        },
+        "adultContent": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow adult content. Users still confirm their age and opt in."
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retainChats": {
+          "type": "boolean",
+          "default": false,
+          "description": "Keep prompts and outputs on the instance's servers."
+        }
+      }
+    },
+    "home": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The home screen.",
+      "properties": {
+        "backgroundVideo": {
+          "type": "string",
+          "description": "URL or public path of a looping, silent video shown behind the home screen's composer."
+        },
+        "backgroundPoster": {
+          "type": "string",
+          "description": "Still image shown while the video loads, and in place of it when the visitor prefers reduced motion."
+        },
+        "backgroundImage": {
+          "type": "string",
+          "description": "URL or public path of a photograph shown behind the composer when there is no video, brought gently to life with a slow drift and a shimmer in its coloured light. With neither, soft drifting light is shown."
+        },
+        "aurora": {
+          "type": "boolean",
+          "default": false,
+          "description": "Draw a live aurora over backgroundImage, in place of any coloured glow in the photograph. Meant for a night-sky photo."
+        }
+      }
+    }
+  },
+  "definitions": {
+    "tokens": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}
