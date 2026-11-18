@@ -3,11 +3,12 @@
 import { LivepeerWordmark, LivepeerSymbol, cn } from "@aquareum/ui";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { motion } from "motion/react";
-import { useCallback, useEffect, useState, type ComponentType, type ReactNode } from "react";
+import { useCallback, useState, type ComponentType, type ReactNode } from "react";
 
 import { AccountMenu, type Account } from "./account-menu";
 import { LinkProvider, type LinkProps } from "./link";
 import { NAV_ITEMS, isActive } from "./nav";
+import { SIDEBAR_COOKIE } from "./sidebar";
 
 export interface AppShellProps {
   instanceName: string;
@@ -25,10 +26,11 @@ export interface AppShellProps {
   signOutAction: string;
   signInHref: string;
   consoleAvailable: boolean;
+  /** Whether the sidebar starts open, read by the host from the SIDEBAR_COOKIE cookie so the first paint is already right. */
+  initialOpen: boolean;
   children: ReactNode;
 }
 
-const SIDEBAR_KEY = "sidebar";
 
 /** Collapsed, the mark is the toggle: it turns into the open icon on hover or focus. */
 function SidebarToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
@@ -47,7 +49,7 @@ function SidebarToggle({ open, onToggle }: { open: boolean; onToggle: () => void
         <PanelLeftClose className="size-[18px]" strokeWidth={1.75} />
       ) : (
         <>
-          <LivepeerSymbol className="h-[18px] w-auto transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-75 group-hover:opacity-0 group-focus-visible:scale-75 group-focus-visible:opacity-0" />
+          <LivepeerSymbol className="h-[20px] w-auto transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-75 group-hover:opacity-0 group-focus-visible:scale-75 group-focus-visible:opacity-0" />
           <PanelLeftOpen
             className="absolute size-[18px] scale-75 opacity-0 transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100"
             strokeWidth={1.75}
@@ -58,27 +60,15 @@ function SidebarToggle({ open, onToggle }: { open: boolean; onToggle: () => void
   );
 }
 
-export function AppShell({ instanceName, pathname, Link, availableRoutes, features, recents, account, signOutAction, signInHref, consoleAvailable, children }: AppShellProps) {
+export function AppShell({ instanceName, pathname, Link, availableRoutes, features, recents, account, signOutAction, signInHref, consoleAvailable, initialOpen, children }: AppShellProps) {
   const menu = { account, signOutAction, signInHref, consoleAvailable };
   const items = NAV_ITEMS.filter((item) => (item.href !== "/characters" || features.characters) && (item.href !== "/developers" || features.developers));
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    try {
-      setOpen(localStorage.getItem(SIDEBAR_KEY) === "open");
-    } catch {
-      // Storage unavailable: stay collapsed.
-    }
-  }, []);
+  const [open, setOpen] = useState(initialOpen);
 
   const toggle = useCallback(() => {
     setOpen((current) => {
       const next = !current;
-      try {
-        localStorage.setItem(SIDEBAR_KEY, next ? "open" : "closed");
-      } catch {
-        // Non-persistent is fine.
-      }
+      document.cookie = `${SIDEBAR_COOKIE}=${next ? "open" : "closed"}; path=/; max-age=31536000; samesite=lax`;
       return next;
     });
   }, []);
@@ -87,7 +77,8 @@ export function AppShell({ instanceName, pathname, Link, availableRoutes, featur
 
   return (
     <LinkProvider Link={Link}>
-    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
+    {/* Fades in once when the page loads; the layout persists across navigation, so it doesn't repeat. */}
+    <div className="flex h-dvh animate-[fade-in_360ms_var(--ease-out-expo)] overflow-hidden bg-background text-foreground">
       {/* Sidebar (tablet and up): a rail of icons, or open with the wordmark and labels */}
       <nav
         aria-label="Primary"
@@ -98,7 +89,7 @@ export function AppShell({ instanceName, pathname, Link, availableRoutes, featur
           {open ? (
             <>
               <Link href="/" aria-label={`${instanceName} home`} className="inline-flex h-10 items-center px-2 text-foreground">
-                <LivepeerWordmark className="h-[17px] w-[113px] shrink-0" />
+                <LivepeerWordmark className="h-[14px] w-auto shrink-0" />
               </Link>
               <SidebarToggle open onToggle={toggle} />
             </>

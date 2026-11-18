@@ -10,4 +10,5 @@ export { THEME_INIT_SCRIPT, ThemeProvider, useTheme, type ThemePreference } from
 export { Switch } from "./components/switch";
 export { Sheet, type SheetProps } from "./components/sheet";
 export { Tooltip, type TooltipProps } from "./components/tooltip";
+export { BrandBadge } from "./components/brand-badge";
 export { Badge, Card, EmptyState, Field, Input, Page, Row, Section, TabNav, Textarea, type TabLink } from "./components/layout";

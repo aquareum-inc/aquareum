@@ -309,3 +309,131 @@ textarea {
     transform: translateY(24px);
   }
 }
+
+/* ── Brand badge (the product name beside the wordmark) ─────────────────────
+   A glowing pill whose edge light runs round and whose star field twinkles while the link it sits in is
+   hovered or focused. Adapted from Livepeer Explorer's badge (MIT, Livepeer Inc), on our brand token. */
+@property --brand-badge-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 135deg;
+}
+
+.brand-badge {
+  --bb-a: var(--brand);
+  --bb-b: color-mix(in oklab, var(--brand) 40%, white);
+  --bb-fill: color-mix(in oklab, var(--brand) 9%, var(--background));
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 7px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--bb-fill), var(--bb-fill)) padding-box,
+    conic-gradient(
+        from var(--brand-badge-angle),
+        var(--bb-a),
+        var(--bb-b) 25%,
+        var(--bb-a) 50%,
+        color-mix(in oklab, var(--bb-a) 55%, transparent) 75%,
+        var(--bb-a)
+      )
+      border-box;
+  box-shadow:
+    0 0 10px -2px color-mix(in srgb, var(--brand) 45%, transparent),
+    inset 0 0 6px -1px color-mix(in srgb, var(--brand) 30%, transparent);
+  transition: box-shadow 400ms var(--ease-out-expo);
+}
+
+.brand-badge-text {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, var(--bb-b), var(--bb-a));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-badge-stars {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.brand-badge-star {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  color: var(--bb-b);
+  background: var(--bb-b);
+  box-shadow: 0 0 4px 1px color-mix(in srgb, var(--brand) 70%, transparent);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.3);
+  transition: opacity 300ms var(--ease-out-expo);
+}
+
+.brand-badge-spark {
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 0 3px var(--brand));
+}
+
+.brand-badge-spark svg {
+  display: block;
+}
+
+:where(a, button):is(:hover, :focus-visible) .brand-badge {
+  animation: brand-badge-spin 3.2s linear infinite;
+  box-shadow:
+    0 0 14px 0 color-mix(in srgb, var(--brand) 55%, transparent),
+    0 0 36px 2px color-mix(in srgb, var(--brand) 22%, transparent),
+    inset 0 0 8px 0 color-mix(in srgb, var(--brand) 40%, transparent);
+}
+
+:where(a, button):is(:hover, :focus-visible) .brand-badge-star {
+  animation: brand-badge-twinkle 1.8s ease-in-out var(--d) infinite;
+}
+
+@keyframes brand-badge-spin {
+  to {
+    --brand-badge-angle: 495deg;
+  }
+}
+
+@keyframes brand-badge-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1);
+  }
+  70% {
+    opacity: 0.35;
+  }
+}
+
+html[data-theme="light"] .brand-badge {
+  --bb-b: color-mix(in oklab, var(--brand) 55%, #0b3d26);
+  box-shadow: 0 0 8px -3px color-mix(in srgb, var(--brand) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(a, button):is(:hover, :focus-visible) .brand-badge {
+    animation: none;
+  }
+  :where(a, button):is(:hover, :focus-visible) .brand-badge-star {
+    animation: none;
+    opacity: 0.8;
+    transform: translate(-50%, -50%);
+  }
+}
