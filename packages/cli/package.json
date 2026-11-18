@@ -1,0 +1,9 @@
+{
+  "name": "@aquareum/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "aquareum": "./bin/aquareum.mjs" },
+  "scripts": { "test": "node --test" },
+  "dependencies": { "ajv": "^8.17.1" }
+}

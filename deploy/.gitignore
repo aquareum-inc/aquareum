@@ -1,0 +1,3 @@
+secrets/
+.env
+network.env

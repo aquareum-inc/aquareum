@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      MOCK_ONLY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  install:
+    name: One-command install (${{ matrix.preset }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        preset: [full, headless]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Set up from a clean machine, in mock-only mode
+        run: ./aquareum setup --preset ${{ matrix.preset }} --mock-only --json
+      - name: Running it twice is safe
+        run: ./aquareum setup --preset ${{ matrix.preset }} --mock-only --json
+      - name: Health check passes
+        run: curl -fsS http://localhost:3000/api/health
+      - name: Doctor passes
+        run: ./aquareum doctor --json
