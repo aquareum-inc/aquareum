@@ -1,0 +1,38 @@
+{
+  "$schema": "../schema/instance.schema.json",
+  "name": "Livepeer",
+  "surfaces": {
+    "app": true,
+    "console": true,
+    "api": true,
+    "mcp": true
+  },
+  "capabilities": {
+    "allow": [],
+    "block": []
+  },
+  "auth": {
+    "provider": "mock",
+    "signUp": "open"
+  },
+  "payments": {
+    "provider": "mock"
+  },
+  "pricing": {
+    "creditsPerUsd": 100,
+    "markup": {
+      "default": 1.3
+    }
+  },
+  "content": {
+    "characters": true,
+    "adultContent": false
+  },
+  "privacy": {
+    "retainChats": false
+  },
+  "home": {
+    "backgroundImage": "/home/aurora.webp",
+    "aurora": true
+  }
+}
