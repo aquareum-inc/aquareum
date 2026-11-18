@@ -4,6 +4,7 @@ import { checkAccess } from "@/lib/auth/guard";
 import { SESSION_COOKIE, readSessionValue } from "@/lib/auth/session";
 import { developerPathServed } from "@/lib/developers";
 import { instance } from "@/lib/instance";
+import { homePath, surfacePathServed } from "@/lib/surfaces";
 
 /**
  * Runs before every page: turns off surfaces the instance doesn't serve, and applies the role
@@ -12,16 +13,10 @@ import { instance } from "@/lib/instance";
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const { surfaces } = instance();
-  const isConsole = pathname === "/operator" || pathname.startsWith("/operator/");
   const isApi = pathname.startsWith("/api/");
-  const notServed =
-    (isConsole && !surfaces.console) ||
-    (pathname.startsWith("/api/v1/operator") && !surfaces.console && !surfaces.api) ||
-    (pathname.startsWith("/api/v1") && !surfaces.api) ||
-    (pathname.startsWith("/api/mcp") && !surfaces.mcp) ||
-    (!isConsole && !isApi && !surfaces.app) ||
-    !developerPathServed(pathname, surfaces);
-  if (notServed) return new NextResponse("Not found", { status: 404 });
+  // With no app, the front door is the console.
+  if (pathname === "/" && homePath(surfaces) !== "/") return NextResponse.redirect(new URL(homePath(surfaces), request.url));
+  if (!surfacePathServed(pathname, surfaces) || !developerPathServed(pathname, surfaces)) return new NextResponse("Not found", { status: 404 });
   if (isApi) return NextResponse.next();
 
   const access = checkAccess(pathname, readSessionValue(request.cookies.get(SESSION_COOKIE)?.value));

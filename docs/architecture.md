@@ -36,7 +36,7 @@ content { characters: boolean, adultContent: boolean }
 privacy { retainChats: boolean }
 ```
 
-Presets: `full` (all surfaces) and `headless` (api + mcp only; console optional). Capability rules are
+Presets: `full` (all surfaces) and `headless` (console + api + mcp, no user app; the console can be switched off). Capability rules are
 independent of presets.
 
 ## Capability → surface mapping (`packages/config`)
