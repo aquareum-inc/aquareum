@@ -1,0 +1,46 @@
+import "server-only";
+
+import type { Offering } from "@aquareum/api-client";
+import { capabilitiesFor, filterCapabilities, placeCapability, type Surface } from "@aquareum/config";
+import type { CatalogueEntry } from "@aquareum/user-app";
+
+import { instance } from "./instance";
+
+const SURFACE_LABEL: Record<Surface, string> = { chat: "Chat", studio: "Studio", characters: "Characters", library: "Library", live: "Live mode" };
+const KIND_LABEL = {
+  "stream-support": "stream support",
+  "realtime-character": "real-time character",
+  "realtime-session": "real-time session",
+  understanding: "understanding",
+  generation: "generation",
+  language: "language",
+  "media-action": "media action",
+  unmapped: "no dedicated surface",
+} as const;
+
+/** The capabilities this instance offers, each with where it is presented. */
+export function catalogue(offerings: Offering[]): CatalogueEntry[] {
+  const { capabilities } = instance();
+  return filterCapabilities(offerings, capabilities).map((offering) => {
+    const placement = placeCapability(offering, capabilities?.overrides);
+    return {
+      offering,
+      kind: KIND_LABEL[placement.kind],
+      placement: placement.surfaces.length > 0 ? placement.surfaces.map((surface) => SURFACE_LABEL[surface]).join(", ") : "Catalogue, API and MCP only",
+    };
+  });
+}
+
+/** Capabilities the composer can hand a request to: those placed in chat (generation, language, understanding). */
+export function composerOfferings(offerings: Offering[]): Offering[] {
+  const { capabilities } = instance();
+  return capabilitiesFor("chat", filterCapabilities(offerings, capabilities), capabilities?.overrides);
+}
+
+/** Capabilities offered as actions on existing media. */
+export function mediaActions(offerings: Offering[]): Offering[] {
+  const { capabilities } = instance();
+  return filterCapabilities(offerings, capabilities).filter(
+    (offering) => placeCapability(offering, capabilities?.overrides).mediaAction && offering.modes.includes("single-shot"),
+  );
+}

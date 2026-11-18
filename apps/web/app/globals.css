@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "@aquareum/ui/styles.css";
+
+@source "../../../packages/ui/src";
+@source "../../../packages/user-app/src";
+@source "../../../packages/operator-console/src";
