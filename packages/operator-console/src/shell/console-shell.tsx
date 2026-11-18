@@ -1,6 +1,6 @@
 "use client";
 
-import { LivepeerWordmark, cn, useTheme } from "@aquareum/ui";
+import { BrandBadge, LivepeerWordmark, cn, useTheme } from "@aquareum/ui";
 import {
   Activity,
   ArrowLeft,
@@ -72,10 +72,11 @@ export function ConsoleShell({ pathname, Link, appAvailable, children }: { pathn
   return (
     <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       <nav aria-label="Operator console" className="hidden w-[216px] shrink-0 flex-col overflow-y-auto px-3 py-4 md:flex">
-        <div className="mb-4 flex h-8 items-center gap-2 px-2">
+        {/* The wordmark and the console's name, one link home; the badge sparkles while it's hovered or focused. */}
+        <Link href="/operator" aria-label="Operator console overview" className="mb-4 flex h-8 items-center gap-2.5 self-start rounded-full px-2 outline-none focus-visible:ring-1 focus-visible:ring-ring">
           <LivepeerWordmark className="h-[12px] w-[80px] shrink-0" />
-          <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground">Operator</span>
-        </div>
+          <BrandBadge label="Operator" />
+        </Link>
         {GROUPS.map((group) => (
           <div key={group.label} className="mb-3">
             <p className="px-2 pb-1 text-[11px] font-medium text-subtle-foreground">{group.label}</p>
