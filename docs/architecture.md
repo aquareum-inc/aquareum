@@ -1,0 +1,109 @@
+# Architecture plan
+
+## Packages
+
+```
+apps/web                    Next.js host: routes, session, role guard, /api/v1, /api/mcp, /api/health
+packages/api-client         Types, one function per operation (live + mock), data-source map, provider interface
+packages/config             Instance config: JSON Schema, generated types, presets, loader, surface mapping
+packages/ui                 Tokens, primitives, motion
+packages/user-app           User-app screens (chat, studio, characters, library, models, developers, settings)
+packages/operator-console   Operator screens
+packages/cli                `aquareum setup | doctor | upgrade`
+deploy/                     Compose bundle, platform templates
+release.config.json         { org, repo, engine: { repo, ref } } — the one place the org and engine pin live
+```
+
+One host app, two screen packages. The user app and the operator console are separate packages that the host
+mounts by config (`surfaces.app`, `surfaces.console`); a disabled surface's routes answer 404 and its
+package is not loaded. One origin and one session keep self-hosting to a single container.
+
+## Instance config
+
+`instance.config.json`, validated against `packages/config/schema/instance.schema.json` (TypeScript types
+generated from the schema). Environment variables hold secrets and the engine URL only.
+
+```
+name, logo { symbol, wordmark }, theme { tokens... }            branding
+engine { url }                                                  (overridable by ENGINE_URL)
+surfaces { app, console, api, mcp }                             booleans
+capabilities { allow: string[], block: string[] }               glob rules on discovered app names
+capabilityOverrides { [app]: { surfaces?, enabled?, label? } }
+auth { provider: "mock" | "oidc", oidc { issuer, clientId } , signUp: "open" | "invite" | "closed" }
+payments { provider: "batteries" | "pymthouse" | "mock" }
+pricing { markup: { default: number, perApp: { [app]: number } }, creditsPerUsd: number }
+content { characters: boolean, adultContent: boolean }
+privacy { retainChats: boolean }
+```
+
+Presets: `full` (all surfaces) and `headless` (api + mcp only; console optional). Capability rules are
+independent of presets.
+
+## Capability → surface mapping (`packages/config`)
+
+Discovery gives `app` and `modes` only, so the mapping is rule-based on those, with per-instance overrides:
+
+| Rule (first match) | Kind | Surfaces |
+|--------------------|------|----------|
+| `live-transcode`, `live-delivery`, `*/ffmpeg-live`, `*-publish` | stream support | Live mode output (not listed as a tool) |
+| mode `persistent` and name contains `avatar` | real-time character | characters (call) |
+| mode `persistent` | real-time session | studio Live |
+| `*-understanding`, `transcription`, `translation`, `*-metadata`, `*-extract-frame` | understanding | chat, library |
+| `text-to-*`, `image-to-*`, `video-to-video`, `image-edit`, `music`, `*-to-speech` | generation | chat, studio |
+| `chat`, `*/chat/*` | language | chat |
+| `*transcode*`, `*-scale-*`, `*-trim-*`, `*-merge-*`, `*-compose`, `*-loudnorm` | media action | library actions |
+| anything else | unmapped | models catalogue + generic run screen, API, MCP |
+
+Every capability, mapped or not, is in the catalogue, the API and MCP.
+
+## API client
+
+`createApiClient({ engine, tokens, provider, env })`. Each function has a live and a mock implementation
+behind one signature, chosen by `DATA_SOURCES` (see `docs/data-sources.md`); `MOCK_ONLY=1` forces mock.
+Results carry their source so dev mode can label screens.
+
+Areas: `discovery`, `jobs`, `generations`, `sessions` (live), `conversations`, `library`, `characters`,
+`keys`, `costs`, `operator.*` (actors, grants, allocations, keys, capabilities, compute, settings, system).
+
+Tokens, least powerful first: builder key (user-app calls, from the sealed session), reader token (operator
+reads), admin token (operator writes and sign-up provisioning). All server-side.
+
+### Provider interface (`packages/api-client/src/provider`)
+
+Uses the engine's terms; not coupled to one provider.
+
+```
+identity:  getSession, listUsers, getUser, setUserStatus, setUserRole
+budgets:   listGrants, createGrant, fundGrant, getAllocation, provisionAllocation, topUpAllocation, getBalance
+plans:     listPlans, createPlan, updatePlan, assignPlan, getUserPlan, listCreditPacks
+usage:     listUsage, getUsageSummary
+features:  supports { plans, allowances, invoices, oidc, ... }
+```
+
+Implementations: `batteries` (budgets and usage live through engine routes; plans and identity report
+unsupported) and `mock` in PymtHouse's shape (plans, allowances, invoices, OIDC users). A credit balance is
+the allocation balance converted by the markup rule; a credit pack is a one-off allocation top-up.
+
+## Auth
+
+OIDC-shaped interface (`getSession`, `signIn`, `signOut`, roles `user | operator`). The session is an
+AES-256-GCM sealed, httpOnly, SameSite=Lax cookie keyed by `SESSION_SECRET`, holding the user id, role and
+builder key. `BUILDER_API_KEY` is a dev shortcut. The mock provider and role switcher exist in dev only.
+`/operator/*` is guarded in `proxy.ts` and again in the layout.
+
+## Self-hosting
+
+`deploy/compose.yaml` references published images by `${REGISTRY}/${ORG}/...` tags read from
+`release.config.json`: app, engine (pinned ref), Clearinghouse Batteries, node remote signer, discovery.
+`aquareum setup --preset full|headless [--config file] [--json]` writes `.env` (generated secrets),
+`instance.config.json` and starts the bundle; it is idempotent. `aquareum doctor` checks engine, provider,
+config and keys, with exit codes. `aquareum upgrade` moves app and engine pins together. Because the engine
+and Batteries publish no images today (engine request R6), the bundle builds them from pinned Git contexts
+until they do, and mock-only mode needs neither.
+
+## Live versus mocked (summary; full table in `docs/data-sources.md`)
+
+Live: discovery, runners, jobs (sync run, list, get, cost), cost summary and projections, allowance,
+actors, keys, grants and allocations (with a real admin key), readiness.
+Mocked: async jobs and results, sessions, events, conversations, library, characters, plans, billing,
+retail revenue, compute performance, instance content.
