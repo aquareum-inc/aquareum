@@ -1,0 +1,375 @@
+/**
+ * Types shaped on the engine's real responses (livepeer-builder `GET /v1/offerings`,
+ * `GET /v1/allowance`). See docs/research/engine.md. Amounts are decimal strings.
+ */
+
+export type InteractionMode = "single-shot" | "persistent";
+
+export interface RatePoint {
+  amount: string;
+  currency: string;
+  unit: string;
+  price_usd: string | null;
+  source: string;
+  observed_at: string;
+  observed_by: string;
+}
+
+/** One row of `GET /v1/offerings`. Identity is (app, currency, unit). */
+export interface Offering {
+  app: string;
+  modes: InteractionMode[];
+  rate_low: RatePoint | null;
+  rate_high: RatePoint | null;
+  rate_status: string;
+  stale: boolean;
+  runner_count: number;
+  ready_count: number;
+  observed_at: string;
+}
+
+/** The model behind an app, read from its runners' descriptions. Media tools and other apps without a model have none. */
+export interface AppModel {
+  app: string;
+  /** The model's id as its runners report it, e.g. `qwen3.8-27b`. Several runners with different models are joined with " or ". */
+  model: string;
+  /** The largest context any of its runners allows, in tokens; `null` when none say. */
+  context_tokens: number | null;
+}
+
+/** A language model the agent can run on: one app serving it, with what the menu needs to show. */
+export interface AgentModel {
+  app: string;
+  /** The model's id, e.g. `qwen3.8-27b`. */
+  model: string;
+  context_tokens: number | null;
+  /** No runner is free right now, so a job would queue. */
+  busy: boolean;
+}
+
+export interface EngineMoney {
+  amount: string;
+  currency: string;
+}
+
+/** `GET /v1/allowance`: an allocation's amounts as the provider reports them. */
+export interface Allowance {
+  allocation_id: string;
+  /** The provider's own status string. */
+  status: string;
+  granted: EngineMoney | null;
+  spent: EngineMoney | null;
+  available: EngineMoney | null;
+}
+
+/** A user's budget in the provider's currency: what was granted, spent and is left. */
+export interface BudgetSummary {
+  granted: string;
+  spent: string;
+  available: string;
+  currency: string;
+}
+
+/** A user's balance in credits: their allocation's available amount after the instance's markup rule. */
+export interface CreditBalance {
+  credits: number;
+  allowance: BudgetSummary;
+}
+
+export type MediaKind = "video" | "image" | "audio";
+
+/** Stand-in artwork for mocked media, until real outputs exist. */
+export interface MockArtwork {
+  hues: [number, number, number];
+  seed: number;
+}
+
+/** An example in the instance's gallery. Instance content; no engine endpoint. */
+export interface ShowcaseItem {
+  id: string;
+  kind: MediaKind;
+  app: string;
+  title: string;
+  prompt: string;
+  aspect: "16:9" | "9:16" | "1:1";
+  duration_seconds: number | null;
+  /** A still of the result, when there is one. Tiles without one show `artwork`. */
+  image: string | null;
+  artwork: MockArtwork;
+}
+
+export interface PromptStarter {
+  id: string;
+  label: string;
+  app: string;
+  examples: string[];
+}
+
+export type GenerationState = "queued" | "running" | "succeeded" | "failed";
+
+export interface GenerationRequest {
+  kind: MediaKind;
+  app: string;
+  prompt: string;
+  aspect: "16:9" | "9:16" | "1:1";
+  /** Video and audio only. */
+  duration_seconds: number | null;
+  /** Video only. */
+  resolution: "720p" | "1080p" | null;
+  negative_prompt?: string;
+  /** Image-to-video only: the image the shot starts from, such as a character's portrait. */
+  first_frame?: string;
+}
+
+/** An async generation job. Mocked: the engine's async jobs return 501 today. */
+export interface Generation {
+  id: string;
+  state: GenerationState;
+  progress: number;
+  request: GenerationRequest;
+  credits_charged: number;
+  created_at: string;
+  artwork: MockArtwork;
+}
+
+export type DataSource = "live" | "mock";
+
+export type AgentStepState = "pending" | "running" | "done";
+
+/** One thing the agent did: a decision, a tool call against a capability, or a review of its own output. */
+export interface AgentStep {
+  id: string;
+  kind: "plan" | "tool" | "review";
+  title: string;
+  detail: string;
+  /** The capability called, for tool and review steps. */
+  app: string | null;
+  state: AgentStepState;
+}
+
+export interface UserMessage {
+  id: string;
+  role: "user";
+  text: string;
+  /** The character the message asked to put on screen, if any. */
+  cast: CharacterCast | null;
+  /** The language model the user picked to run the agent; `null` was Auto. */
+  agent_model: string | null;
+  created_at: string;
+}
+
+export interface AgentMessage {
+  id: string;
+  role: "agent";
+  state: "working" | "done";
+  steps: AgentStep[];
+  /** The reply, once the agent has finished. */
+  text: string | null;
+  /** Generations produced in this turn; each can be opened in the studio. */
+  generation_ids: string[];
+  /** Set when the turn analysed a video. */
+  analysis: VideoAnalysis | null;
+  elapsed_ms: number;
+  created_at: string;
+}
+
+export type Message = UserMessage | AgentMessage;
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+
+export interface Conversation extends ConversationSummary {
+  messages: Message[];
+}
+
+export interface SendMessageInput {
+  text: string;
+  /** Capability the user picked, or null to let the agent choose. */
+  app: string | null;
+  aspect: "16:9" | "9:16" | "1:1";
+  duration_seconds: number;
+  /** Library items attached to the message. */
+  attachment_ids?: string[];
+  /** A character to put on screen: its portrait is the first frame, its description how it behaves. */
+  character_slug?: string;
+  /** The language model that runs the agent for this message; absent lets the agent choose. */
+  agent_model?: string;
+}
+
+/** Something in the user's library: an upload or a generation, with what the product understood about it. */
+export interface MediaItem {
+  id: string;
+  kind: MediaKind;
+  source: "generation" | "upload" | "recording";
+  title: string;
+  /** Automatic description, from a video understanding capability. */
+  description: string;
+  tags: string[];
+  app: string | null;
+  prompt: string | null;
+  aspect: "16:9" | "9:16" | "1:1";
+  duration_seconds: number | null;
+  created_at: string;
+  /** A still of the media, when there is one. Tiles without one show `artwork`. */
+  image: string | null;
+  artwork: MockArtwork;
+}
+
+export interface Character {
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  /** How the character opens a conversation. */
+  greeting: string;
+  author: string;
+  visibility: "private" | "public";
+  mature: boolean;
+  /** Can take a live voice or video call. */
+  calls: boolean;
+  tags: string[];
+  rating: number;
+  chats: number;
+  mine: boolean;
+  /** A portrait, when there is one. Without one, `artwork` stands in with the name's initial. */
+  image: string | null;
+  artwork: MockArtwork;
+}
+
+/** Who a request puts on screen: just enough of a character to show and to start a shot from. */
+export type CharacterCast = Pick<Character, "slug" | "name" | "image">;
+
+export interface CharacterInput {
+  name: string;
+  tagline: string;
+  description: string;
+  greeting: string;
+  visibility: "private" | "public";
+  mature: boolean;
+}
+
+export interface ApiKey {
+  id: string;
+  label: string;
+  /** First characters only; the full key is shown once, when created. */
+  prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  status: "active" | "revoked";
+}
+
+export interface CreatedApiKey extends ApiKey {
+  /** The full key. Returned once. */
+  secret: string;
+}
+
+export interface Preferences {
+  /** Confirmed to be 18 or over. Required before adult content can be switched on. */
+  ageConfirmed: boolean;
+  adultContent: boolean;
+  saveChats: boolean;
+  confirmBeforeSpending: boolean;
+  enterSends: boolean;
+  completionNotifications: boolean;
+  defaultAspect: "16:9" | "9:16" | "1:1";
+  defaultDuration: number;
+}
+
+export interface CapabilityRun {
+  app: string;
+  request: unknown;
+  response: unknown;
+  status: number;
+  elapsed_ms: number;
+  credits_charged: number;
+}
+
+/** A moment an understanding capability found in a video. */
+export interface VideoMoment {
+  at_seconds: number;
+  label: string;
+}
+
+export interface VideoAnalysis {
+  summary: string;
+  moments: VideoMoment[];
+  tags: string[];
+}
+
+/** A saved restyle for Live mode: a named prompt to switch to while on air. */
+export interface LiveLook {
+  id: string;
+  name: string;
+  prompt: string;
+  artwork: MockArtwork;
+}
+
+export interface LiveDestination {
+  id: string;
+  platform: "youtube" | "twitch" | "custom";
+  label: string;
+  /** RTMP ingest URL. */
+  url: string;
+  /** Last four characters of the stream key; the key itself is never returned. */
+  key_hint: string;
+  enabled: boolean;
+}
+
+export interface LiveDestinationInput {
+  platform: LiveDestination["platform"];
+  label: string;
+  url: string;
+  stream_key: string;
+}
+
+export interface LiveSession {
+  id: string;
+  app: string;
+  state: "live" | "ended";
+  prompt: string;
+  destination_ids: string[];
+  recording: boolean;
+  started_at: string;
+  /** Set when the session ended and was recorded. */
+  recording_media_id: string | null;
+}
+
+export interface LiveSessionInput {
+  app: string;
+  source: "camera" | "screen";
+  prompt: string;
+  destination_ids: string[];
+  record: boolean;
+}
+
+export interface CharacterCall {
+  id: string;
+  character_slug: string;
+  mode: "voice" | "video";
+  state: "connected" | "ended";
+  started_at: string;
+}
+
+/** An example app built on the real-time API. */
+export interface ExampleApp {
+  id: string;
+  name: string;
+  description: string;
+  app: string;
+  language: string;
+  code: string;
+  artwork: MockArtwork;
+}
+
+/** One reading of a live session's output stream. */
+export interface LiveHealth {
+  at: string;
+  bitrate_kbps: number;
+  fps: number;
+  dropped_frames: number;
+  /** Camera to restyled output. */
+  latency_ms: number;
+}
