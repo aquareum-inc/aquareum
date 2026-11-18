@@ -1,0 +1,5 @@
+# Terminates TLS and forwards to the app container, which listens on loopback only.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}

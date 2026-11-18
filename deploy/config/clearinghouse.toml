@@ -1,0 +1,15 @@
+# From builder-core-console deploy/config/clearinghouse.toml (MIT, © 2026 Mike Zupper). Used by the network profile.
+# Clearinghouse Batteries. The webhook and Kafka stay on loopback (the signer shares this container's
+# network namespace). The management API binds all interfaces so the app can reach it.
+DBPath = "/data/clearinghouse.db"
+CredsFile = "/run/secrets/clearinghouse.toml"
+EnableAuthWebhook = ":8080"
+EnableManagementAPI = "0.0.0.0:8081"
+UnsafeHTTPBind = true
+EnableKafka = true
+EnableAccounting = true
+KafkaBind = "127.0.0.1:9092"
+KafkaTopic = "livepeer-signing"
+# The on-chain listener (on when deploy/.env sets BATTERIES_ONCHAIN_LISTENER and PAYER_ADDRESS) polls the
+# signer's RPC; deposit and reserve change rarely, so every 30 s instead of the default 5 s.
+PollInterval = "30s"

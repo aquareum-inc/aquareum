@@ -1,0 +1,20 @@
+# secrets
+.env
+.env.*.local
+
+# dependencies and build output
+node_modules/
+.next/
+dist/
+out/
+coverage/
+*.tsbuildinfo
+.turbo/
+
+# local reference clones and tooling
+.reference/
+.claude/
+.DS_Store
+playwright-report/
+test-results/
+next-env.d.ts
