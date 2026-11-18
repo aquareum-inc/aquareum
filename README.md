@@ -1,11 +1,27 @@
 # Aquareum
 
-An open, self-hostable platform for generating, editing, understanding and interacting with video. It runs
-on the Livepeer Network, an open market of compute providers, and anyone can run their own instance with
-their own name, prices and users.
+The open-source video platform you own.
 
-This repository is the front end: the user app, the operator console, the instance API and MCP server, and
-the bundle that starts them with a pinned engine. The engine
+Run a video business on the Livepeer Network, whether you're a creator with a few customers or a company
+serving thousands and their agents. Aquareum brings the product, the billing and the console; Livepeer's open
+market of GPUs brings the compute, paid per job.
+
+- **Yours to run:** your name, branding, prices, users and rules, in one config file. MIT-licensed, so no one
+  can switch it off for you.
+- **A console for the business:** offer the network's capabilities, set prices, sell plans and credits,
+  manage users, take payments, and see your margin job by job.
+- **Your choice of front door:** a complete app for making and understanding video, an API and MCP server for
+  products and agents, or both.
+- **Simple economics:** customers pay you in credits; you pay the network its wholesale cost; the markup is
+  yours.
+
+Run it yourself with one command, or have it hosted.
+
+## This repository
+
+The user app, the operator console, the instance API and MCP server, and the bundle that starts them with a
+pinned engine. Each surface can be switched on or off in the instance config, so an instance can run the
+console and API without the app, or the API alone. The engine
 ([livepeer-builder-core](https://github.com/NE-Build-Track/livepeer-builder-core)) is a separate service
 reached over its REST API.
 
