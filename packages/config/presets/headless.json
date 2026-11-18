@@ -1,7 +1,7 @@
 {
   "$schema": "../schema/instance.schema.json",
   "name": "Livepeer",
-  "surfaces": { "app": false, "console": false, "api": true, "mcp": true },
+  "surfaces": { "app": false, "console": true, "api": true, "mcp": true },
   "capabilities": { "allow": [], "block": [] },
   "auth": { "provider": "mock", "signUp": "closed" },
   "payments": { "provider": "mock" },

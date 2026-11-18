@@ -25,7 +25,7 @@ and an existing `instance.config.json` are kept (`"config":"kept"`, `"env":[]`).
 
 | Flag | Effect |
 |------|--------|
-| `--preset full\|headless` | Preset to start from. `headless` serves the API and MCP only. |
+| `--preset full\|headless` | Preset to start from. `headless` serves the operator console, API and MCP, with no customer-facing app (as with a headless CMS). |
 | `--config <file>` | Use this instance config instead of a preset. |
 | `--mock-only` | Run without engine keys. This is also the default when `ENGINE_URL` is empty. |
 | `--network` | Also start the engine, payment provider and signer (needs keys, see `deploy/README.md`). |

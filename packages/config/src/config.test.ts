@@ -14,8 +14,8 @@ describe("presets", () => {
     expect(preset("full").surfaces).toEqual({ app: true, console: true, api: true, mcp: true });
   });
 
-  it("headless serves the API and MCP only", () => {
-    expect(preset("headless").surfaces).toEqual({ app: false, console: false, api: true, mcp: true });
+  it("headless has no app but keeps the console that runs the business", () => {
+    expect(preset("headless").surfaces).toEqual({ app: false, console: true, api: true, mcp: true });
   });
 
   it("adult content is off by default in both", () => {

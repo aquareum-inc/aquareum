@@ -89,7 +89,7 @@ Two presets ship in `packages/config/presets/`:
 | Preset | Serves |
 |--------|--------|
 | `full` | User app, operator console, API and MCP |
-| `headless` | API and MCP only |
+| `headless` | Operator console, API and MCP: no customer-facing app, as with a headless CMS |
 
 Which capabilities an instance offers is separate from the preset. For example, a headless instance that
 starts with transcoding only:
