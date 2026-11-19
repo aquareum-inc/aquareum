@@ -3,7 +3,7 @@
 import type { CreditPack, DataSource, Plan, ProviderFeatures, TopUpRange } from "@aquareum/api-client";
 import { Badge, Button, Field, Input, Sheet, Switch, Textarea } from "@aquareum/ui";
 import { Check, Minus, Plus } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 
 import { CreditPacks, type SaveCreditPack } from "../components/credit-packs";
 import { count, usd } from "../components/format";
@@ -21,6 +21,7 @@ export interface PricingViewProps {
   savePack: SaveCreditPack;
   saveTopUp: (range: TopUpRange) => Promise<{ ok: true; range: TopUpRange } | { ok: false; error: string }>;
   sources: ReadonlyArray<{ name: string; source: DataSource }>;
+  Link: ComponentType<{ href: string; className?: string; children: ReactNode }>;
 }
 
 const FEATURE_LABELS: Array<[keyof ProviderFeatures, string]> = [
@@ -89,7 +90,8 @@ function OtherAmounts({ initial, save }: { initial: TopUpRange; save: PricingVie
   );
 }
 
-export function PricingView({ provider, plans: initial, packs, topUp, markup, savePlan, savePack, saveTopUp, sources }: PricingViewProps) {
+export function PricingView({ provider, plans: initial, packs, topUp, markup, savePlan, savePack, saveTopUp, sources, Link }: PricingViewProps) {
+  const overrides = Object.values(markup.perApp);
   const [plans, setPlans] = useState(initial);
   const [editing, setEditing] = useState<{ id: string | null; value: Omit<Plan, "id"> } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -126,7 +128,7 @@ export function PricingView({ provider, plans: initial, packs, topUp, markup, sa
       </Panel>
 
       <Panel title="Markup" description="A retail price is the wholesale cost times a markup, converted to credits. Set in instance.config.json under pricing.">
-        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <div className="rounded-card border border-hairline bg-card px-4 py-3">
             <dt className="text-[12px] text-subtle-foreground">Default markup</dt>
             <dd className="mt-1 font-mono text-[18px] font-semibold">{markup.default.toFixed(2)}×</dd>
@@ -135,10 +137,16 @@ export function PricingView({ provider, plans: initial, packs, topUp, markup, sa
             <dt className="text-[12px] text-subtle-foreground">Credits per dollar</dt>
             <dd className="mt-1 font-mono text-[18px] font-semibold">{count(markup.creditsPerUsd)}</dd>
           </div>
-          <div className="col-span-2 rounded-card border border-hairline bg-card px-4 py-3">
-            <dt className="text-[12px] text-subtle-foreground">Per-capability overrides</dt>
-            <dd className="mt-1 font-mono text-[12px] text-muted-foreground">
-              {Object.keys(markup.perApp).length === 0 ? "None. Set them on the Capabilities page." : Object.entries(markup.perApp).map(([app, rate]) => `${app} ${rate}×`).join(" · ")}
+          <div className="col-span-2 rounded-card border border-hairline bg-card px-4 py-3 lg:col-span-1">
+            <dt className="text-[12px] text-subtle-foreground">Capability markups</dt>
+            <dd className="mt-1 flex items-baseline justify-between gap-3">
+              <span className="font-mono text-[18px] font-semibold">{overrides.length === 0 ? "None" : count(overrides.length)}</span>
+              <Link href="/operator/capabilities" className="text-[12px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                {overrides.length === 0 ? "Set on Capabilities" : "See on Capabilities"}
+              </Link>
+            </dd>
+            <dd className="mt-0.5 font-mono text-[12px] text-muted-foreground">
+              {overrides.length === 0 ? "Every capability uses the default." : overrides.length === 1 ? `${overrides[0]?.toFixed(2)}×` : `${Math.min(...overrides).toFixed(2)}× to ${Math.max(...overrides).toFixed(2)}×`}
             </dd>
           </div>
         </dl>
