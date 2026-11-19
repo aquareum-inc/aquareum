@@ -3,6 +3,7 @@
 import { Button, Chip, Field, Input, Sheet, Switch } from "@aquareum/ui";
 import { useState, type FormEvent } from "react";
 
+import { LogoField } from "../components/logo-field";
 import { ConsolePage, Panel } from "../components/parts";
 
 /** The editable part of the instance config. Mirrors packages/config's schema. */
@@ -17,6 +18,11 @@ export interface InstanceSettings {
   retainChats: boolean;
   primaryDark: string;
   primaryLight: string;
+  /** The instance's marks: an uploaded image as a data URL, a path on the site or an https URL. Blank for none. */
+  logoSymbol: string;
+  logoWordmark: string;
+  /** Draw the marks in the text colour, for a one-colour logo. */
+  logoTint: boolean;
 }
 
 export interface SettingsViewProps {
@@ -71,6 +77,7 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
   const [reviewing, setReviewing] = useState(false);
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
   const stopping = turnedOff(saved, value);
+  const brand = { name: value.name || saved.name, symbol: value.logoSymbol || undefined, wordmark: value.logoWordmark || undefined, tint: value.logoTint };
 
   const commit = async () => {
     setReviewing(false);
@@ -95,6 +102,15 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
             <div className="flex flex-col gap-3 rounded-card border border-hairline bg-card p-4">
               <Field label="Name"><Input value={value.name} onChange={(event) => set({ name: event.target.value })} maxLength={40} required /></Field>
               <Field label="Domain" hint="The public hostname, used in code samples and links."><Input value={value.domain} onChange={(event) => set({ domain: event.target.value })} placeholder="video.example.com" className="font-mono" /></Field>
+              <LogoField kind="wordmark" label="Logo" hint="The sidebar and headers. Without one, the name is shown." value={value.logoWordmark} brand={brand} onChange={(logoWordmark) => set({ logoWordmark })} />
+              <LogoField kind="symbol" label="Symbol" hint="Square, for small places. Without one, the first letter." value={value.logoSymbol} brand={brand} onChange={(logoSymbol) => set({ logoSymbol })} />
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-caption font-medium text-foreground">Match text colour</p>
+                  <p className="text-caption text-subtle-foreground">White in the dark theme, black in the light. Off for a logo in colour.</p>
+                </div>
+                <Switch checked={value.logoTint} onCheckedChange={(logoTint) => set({ logoTint })} aria-label="Match text colour" />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Primary, dark theme" hint="Any CSS colour. Blank keeps the default."><Input value={value.primaryDark} onChange={(event) => set({ primaryDark: event.target.value })} placeholder="oklch(0.922 0 0)" className="font-mono" /></Field>
                 <Field label="Primary, light theme"><Input value={value.primaryLight} onChange={(event) => set({ primaryLight: event.target.value })} placeholder="oklch(0.205 0.006 286)" className="font-mono" /></Field>

@@ -7,6 +7,7 @@ import { ConfigError, DEFAULT_CONFIG_FILE, loadConfig, validateConfig, type Inst
 import type { InstanceSettings } from "@aquareum/operator-console";
 
 import { env } from "../env";
+import { cleanLogo } from "./logo";
 import { instance } from "../instance";
 
 const root = () => path.join(/* turbopackIgnore: true */ process.cwd(), "../..");
@@ -31,6 +32,9 @@ export function currentSettings(): { settings: InstanceSettings; file: string | 
       retainChats: config.privacy?.retainChats ?? false,
       primaryDark: config.theme?.dark?.primary ?? "",
       primaryLight: config.theme?.light?.primary ?? "",
+      logoSymbol: config.logo?.symbol ?? "",
+      logoWordmark: config.logo?.wordmark ?? "",
+      logoTint: config.logo?.tint ?? true,
     },
   };
 }
@@ -55,6 +59,13 @@ export function saveSettings(settings: InstanceSettings): { ok: true } | { ok: f
   else delete next.domain;
   if (Object.keys(theme).length > 0) next.theme = theme;
   else delete next.theme;
+  const symbol = cleanLogo(settings.logoSymbol);
+  if (!symbol.ok) return { ok: false, error: `Symbol: ${symbol.error}` };
+  const wordmark = cleanLogo(settings.logoWordmark);
+  if (!wordmark.ok) return { ok: false, error: `Wordmark: ${wordmark.error}` };
+  if (symbol.value || wordmark.value) {
+    next.logo = { ...(symbol.value ? { symbol: symbol.value } : {}), ...(wordmark.value ? { wordmark: wordmark.value } : {}), tint: settings.logoTint };
+  } else delete next.logo;
   // The engine URL comes from the environment; keep what the file already had, if anything.
   const fileEngine = loadConfig({ cwd: root(), env: { INSTANCE_CONFIG: env("INSTANCE_CONFIG") } }).config.engine;
   if (fileEngine) next.engine = fileEngine;
