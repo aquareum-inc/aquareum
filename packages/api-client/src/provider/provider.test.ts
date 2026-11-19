@@ -27,7 +27,7 @@ describe("top-ups of the user's own amount", () => {
     { id: "retired", credits: 4000, price: usd("30.00"), popular: false, active: false },
   ];
 
-  it("pays the rate of the largest pack on sale the amount reaches, and the base rate below the smallest", () => {
+  it("pays the rate of the largest offered pack the amount reaches, and the base rate below the smallest", () => {
     expect(topUpCredits(37, packs, 100)).toBe(3700);
     expect(topUpCredits(60, packs, 100)).toBe(6600);
     expect(topUpCredits(5, packs, 100)).toBe(500);

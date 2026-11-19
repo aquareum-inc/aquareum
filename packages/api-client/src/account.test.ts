@@ -18,7 +18,7 @@ describe("credits and plans", () => {
     await expect(api.buyCreditPack("pck_nope")).rejects.toThrow();
   });
 
-  it("a pack taken off sale isn't offered or sold", async () => {
+  it("a pack no longer offered isn't shown or sold", async () => {
     const provider = createMockProvider();
     const api = createApiClient({ env: { MOCK_ONLY: "1" }, provider, user: { id: "usr_demo_adam", name: "Adam Soffer" } });
     await provider.plans.updateCreditPack("pck_usd50", { active: false });

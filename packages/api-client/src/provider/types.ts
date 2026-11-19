@@ -66,7 +66,7 @@ export interface CreditPack {
   price: Money;
   /** Shown first and marked to users. At most one pack is. */
   popular: boolean;
-  /** On sale. Packs are taken off sale rather than deleted, so past purchases still name them. */
+  /** Offered to users. Packs are withdrawn rather than deleted, so past purchases still name them. */
   active: boolean;
 }
 
@@ -147,7 +147,7 @@ export interface PaymentProvider {
     updatePlan(id: string, patch: Partial<Omit<Plan, "id">>): Promise<Plan>;
     getUserPlan(userId: string): Promise<Plan | null>;
     assignPlan(userId: string, planId: string | null): Promise<Plan | null>;
-    /** Every pack, on sale or not, cheapest first. */
+    /** Every pack, offered or not, cheapest first. */
     listCreditPacks(): Promise<CreditPack[]>;
     createCreditPack(input: Omit<CreditPack, "id">): Promise<CreditPack>;
     updateCreditPack(id: string, patch: Partial<Omit<CreditPack, "id">>): Promise<CreditPack>;

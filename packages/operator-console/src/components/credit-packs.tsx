@@ -93,7 +93,7 @@ export function CreditPacks({ initial, editable, providerName, creditsPerUsd, sa
           { key: "price", header: "Price", cell: (pack) => usd(pack.price.amount, 0), mono: true, align: "right" },
           { key: "rate", header: "Per 1,000", cell: (pack) => usd((Number(pack.price.amount) / pack.credits) * 1000), mono: true, align: "right", wide: true },
           { key: "bonus", header: "Bonus", cell: (pack) => bonusText(packBonus(pack, creditsPerUsd)), mono: true, align: "right" },
-          { key: "active", header: "On sale", cell: (pack) => (pack.active ? "Yes" : "No"), align: "right" },
+          { key: "active", header: "Offered", cell: (pack) => (pack.active ? "Yes" : "No"), align: "right" },
         ]}
       />
       {children}
@@ -122,10 +122,10 @@ export function CreditPacks({ initial, editable, providerName, creditsPerUsd, sa
             </label>
             <label className="flex items-center justify-between gap-4 py-1 text-body">
               <span>
-                On sale
+                Offer this pack to users
                 <span className="block text-caption text-muted-foreground">Off, users stop seeing it. Past purchases keep it.</span>
               </span>
-              <Switch checked={editing.value.active} onCheckedChange={(active) => set({ active })} aria-label="On sale" />
+              <Switch checked={editing.value.active} onCheckedChange={(active) => set({ active })} aria-label="Offer this pack to users" />
             </label>
             {error ? <p role="alert" className="text-caption text-destructive">{error}</p> : null}
             <Button type="submit" variant="primary" disabled={busy || !(editing.value.credits > 0) || !(Number(editing.value.price.amount) > 0)}>{busy ? "Saving…" : "Save pack"}</Button>
