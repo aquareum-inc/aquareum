@@ -7,19 +7,15 @@ import { EASE_OUT_EXPO } from "../lib/motion";
 
 export interface RollingNumberProps {
   value: number;
-  /** How the number is written; whole numbers with separators by default. */
-  format?: (value: number) => string;
   className?: string;
 }
-
-const WHOLE = new Intl.NumberFormat("en-US");
 
 /**
  * A number that changes by rolling only the digits that changed. Each character is keyed by its
  * place from the right, so "2,480" → "2,370" moves two digits and leaves the rest still.
  */
-export function RollingNumber({ value, format = (number) => WHOLE.format(number), className }: RollingNumberProps) {
-  const text = format(value);
+export function RollingNumber({ value, className }: RollingNumberProps) {
+  const text = new Intl.NumberFormat("en-US").format(value);
   const chars = [...text];
   return (
     <span className={cn("inline-flex tabular-nums", className)} aria-label={text}>
