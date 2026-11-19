@@ -2,8 +2,8 @@
 
 The open-source video platform you own.
 
-Use it as a ready-made video studio or as the video backend for your own app. Aquareum brings the product,
-the API and the console; the Livepeer Network's open market of GPUs brings the compute, paid per job.
+Use it as a ready-made video studio, or headless as the video backend for your own app. Aquareum brings the
+product, the API and the console; the Livepeer Network's open market of GPUs brings the compute, paid per job.
 
 - **Yours to run:** your name, branding, prices, users and rules, in one config file. MIT-licensed, so no one
   can switch it off for you.
