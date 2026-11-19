@@ -1,12 +1,10 @@
 import "server-only";
 
 import type { Allocation, DataSource, OperatorClient, Plan } from "@aquareum/api-client";
-import type { UserRow } from "@aquareum/operator-console";
+import { joinUserRows, type JoinedUsers } from "./user-rows";
 
-import { joinUserRows } from "./user-rows";
-
-/** Joins the provider's users with the engine's accounts, budgets and plans. */
-export async function userRows(client: OperatorClient): Promise<{ rows: UserRow[]; sources: Array<{ name: string; source: DataSource }> }> {
+/** The provider's people joined with their engine accounts, budgets and plans, and the engine accounts no one owns. */
+export async function userRows(client: OperatorClient): Promise<JoinedUsers & { sources: Array<{ name: string; source: DataSource }> }> {
   const { provider } = client;
   const [actors, users] = await Promise.all([client.listActors(), provider.features.users ? provider.identity.listUsers() : Promise.resolve([])]);
   const ids = [...new Set([...users.map((user) => user.id), ...actors.data.map((actor) => actor.actor_id)])];
@@ -24,7 +22,7 @@ export async function userRows(client: OperatorClient): Promise<{ rows: UserRow[
   );
   const providerSource: DataSource = provider.id === "mock" ? "mock" : "live";
   return {
-    rows: joinUserRows({ users, actors: actors.data, allocationFor: (id) => allocations.get(id) ?? null, planFor: (id) => plans.get(id) ?? null }),
+    ...joinUserRows({ listsUsers: provider.features.users, users, actors: actors.data, allocationFor: (id) => allocations.get(id) ?? null, planFor: (id) => plans.get(id) ?? null }),
     sources: [
       { name: "identity.listUsers", source: providerSource },
       { name: "listActors", source: actors.source },

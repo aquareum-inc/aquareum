@@ -5,7 +5,9 @@ import type { UserRow } from "@aquareum/operator-console";
 const DEFAULT_APPLICATION = "default";
 
 export interface UserSources {
-  /** The provider's people, or none when the provider can't list them. */
+  /** Whether the provider can list its people. Without it, the engine's accounts stand in for them. */
+  listsUsers: boolean;
+  /** The provider's people. */
   users: ReadonlyArray<ProviderUser>;
   /** The engine's builder accounts. */
   actors: ReadonlyArray<KnownActor>;
@@ -30,16 +32,23 @@ function row(id: string, user: ProviderUser | null, actor: KnownActor | null, so
   };
 }
 
+export interface JoinedUsers {
+  /** The people on this instance, each joined to its engine account. */
+  people: UserRow[];
+  /** Engine accounts no one who signs in owns: made on the engine directly, for a service, a test or another app. */
+  unlinked: UserRow[];
+}
+
 /**
- * The people on this instance. The provider's users come first, each joined to its engine account by
- * id. Engine accounts that no user owns follow, so nothing the engine holds is hidden; with a
- * provider that can't list users, those accounts are all there is.
+ * The people on this instance, joined to their engine accounts by id, kept apart from engine accounts
+ * no one owns. With a provider that can't list people, the engine's accounts are the people.
  */
-export function joinUserRows(sources: UserSources): UserRow[] {
+export function joinUserRows(sources: UserSources): JoinedUsers {
+  if (!sources.listsUsers) return { people: sources.actors.map((actor) => row(actor.actor_id, null, actor, sources)), unlinked: [] };
   const actors = new Map(sources.actors.map((actor) => [actor.actor_id, actor]));
   const owned = new Set(sources.users.map((user) => user.id));
-  return [
-    ...sources.users.map((user) => row(user.id, user, actors.get(user.id) ?? null, sources)),
-    ...sources.actors.filter((actor) => !owned.has(actor.actor_id)).map((actor) => row(actor.actor_id, null, actor, sources)),
-  ];
+  return {
+    people: sources.users.map((user) => row(user.id, user, actors.get(user.id) ?? null, sources)),
+    unlinked: sources.actors.filter((actor) => !owned.has(actor.actor_id)).map((actor) => row(actor.actor_id, null, actor, sources)),
+  };
 }

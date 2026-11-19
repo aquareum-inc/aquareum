@@ -9,10 +9,11 @@ export const metadata: Metadata = { title: "Users" };
 
 export default async function UsersPage() {
   const client = await operatorApi();
-  const { rows, sources } = await userRows(client);
+  const { people, unlinked, sources } = await userRows(client);
   return (
     <UsersView
-      users={rows}
+      users={people}
+      unlinkedAccounts={unlinked.filter((account) => account.status !== "revoked").length}
       Link={ConsoleLink}
       sources={sources}
     />

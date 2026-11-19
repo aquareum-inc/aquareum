@@ -13,8 +13,8 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
   const id = decodeURIComponent((await params).id);
   const client = await operatorApi();
   const { provider } = client;
-  const [{ rows, sources }, keys, plans] = await Promise.all([userRows(client), client.listAccessKeys(), provider.plans.listPlans()]);
-  const user = rows.find((row) => row.id === id);
+  const [{ people, unlinked, sources }, keys, plans] = await Promise.all([userRows(client), client.listAccessKeys(), provider.plans.listPlans()]);
+  const user = [...people, ...unlinked].find((row) => row.id === id);
   if (!user) notFound();
   const usage = await provider.usage.listUsage({ userId: id, limit: 20 }).catch(() => []);
   return (
