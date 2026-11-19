@@ -1,7 +1,7 @@
 import { PricingView } from "@aquareum/operator-console";
 import type { Metadata } from "next";
 
-import { savePlanAction, saveTopUpRangeAction } from "@/lib/operator/actions";
+import { saveCreditPackAction, savePlanAction, saveTopUpRangeAction } from "@/lib/operator/actions";
 import { operatorApi, pricing } from "@/lib/operator/client";
 
 export const metadata: Metadata = { title: "Pricing and plans" };
@@ -18,6 +18,7 @@ export default async function PricingPage() {
       topUp={topUp}
       markup={pricing()}
       savePlan={savePlanAction}
+      savePack={saveCreditPackAction}
       saveTopUp={saveTopUpRangeAction}
       sources={[{ name: "plans.listPlans", source }, { name: "plans.listCreditPacks", source }, { name: "plans.getTopUpRange", source }]}
     />

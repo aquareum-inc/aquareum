@@ -13,9 +13,17 @@ describe("credits and plans", () => {
 
   it("buying a pack tops up the allocation by exactly the pack", async () => {
     const api = client();
-    const { data } = await api.buyCreditPack("pck_2500");
+    const { data } = await api.buyCreditPack("pck_usd25");
     expect(data.credits).toBe(2480 + 2500);
     await expect(api.buyCreditPack("pck_nope")).rejects.toThrow();
+  });
+
+  it("a pack no longer offered isn't shown or sold", async () => {
+    const provider = createMockProvider();
+    const api = createApiClient({ env: { MOCK_ONLY: "1" }, provider, user: { id: "usr_demo_adam", name: "Adam Soffer" } });
+    await provider.plans.updateCreditPack("pck_usd50", { active: false });
+    expect((await api.getAccount()).data.packs.map((pack) => pack.id)).not.toContain("pck_usd50");
+    await expect(api.buyCreditPack("pck_usd50")).rejects.toThrow();
   });
 
   it("tops up an amount the user chooses, within the operator's limits", async () => {

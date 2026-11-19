@@ -22,11 +22,12 @@ describe("pricing rules", () => {
 
 describe("top-ups of the user's own amount", () => {
   const packs = [
-    { id: "small", credits: 1000, price: usd("10.00"), popular: false },
-    { id: "large", credits: 5500, price: usd("50.00"), popular: false },
+    { id: "small", credits: 1000, price: usd("10.00"), popular: false, active: true },
+    { id: "large", credits: 5500, price: usd("50.00"), popular: false, active: true },
+    { id: "retired", credits: 4000, price: usd("30.00"), popular: false, active: false },
   ];
 
-  it("pays the rate of the largest pack the amount reaches, and the base rate below the smallest", () => {
+  it("pays the rate of the largest offered pack the amount reaches, and the base rate below the smallest", () => {
     expect(topUpCredits(37, packs, 100)).toBe(3700);
     expect(topUpCredits(60, packs, 100)).toBe(6600);
     expect(topUpCredits(5, packs, 100)).toBe(500);
@@ -61,6 +62,17 @@ describe("mock provider", () => {
     await expect(provider.budgets.provisionAllocation({ userId: "usr_other", grantId: grant.id, amount: usd("60.00") })).rejects.toThrow();
   });
 
+  it("creates and edits credit packs, with one highlighted at most", async () => {
+    const { plans } = createMockProvider();
+    const pack = await plans.createCreditPack({ credits: 25000, price: usd("200.00"), popular: true, active: true });
+    expect((await plans.listCreditPacks()).filter((entry) => entry.popular).map((entry) => entry.id)).toEqual([pack.id]);
+    expect((await plans.listCreditPacks()).at(-1)?.id).toBe(pack.id);
+    expect(await plans.updateCreditPack(pack.id, { active: false })).toMatchObject({ active: false, credits: 25000 });
+    await expect(plans.createCreditPack({ credits: 0, price: usd("5.00"), popular: false, active: true })).rejects.toThrow();
+    await expect(plans.updateCreditPack(pack.id, { price: usd("0.00") })).rejects.toThrow();
+    await expect(plans.updateCreditPack("pck_nope", { active: true })).rejects.toThrow();
+  });
+
   it("assigns and removes a plan", async () => {
     const provider = createMockProvider();
     const [plan] = await provider.plans.listPlans();
@@ -92,6 +104,7 @@ describe("batteries provider", () => {
     expect(provider().features).toMatchObject({ grants: true, plans: false, users: false });
     await expect(provider().identity.listUsers()).rejects.toBeInstanceOf(UnsupportedByProvider);
     expect(await provider().plans.listPlans()).toEqual([]);
+    await expect(provider().plans.createCreditPack({ credits: 1000, price: usd("10.00"), popular: false, active: true })).rejects.toBeInstanceOf(UnsupportedByProvider);
   });
 
   it("reads an allocation with the reader token, never the admin token", async () => {
