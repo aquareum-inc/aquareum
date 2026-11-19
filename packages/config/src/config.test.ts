@@ -21,6 +21,13 @@ describe("presets", () => {
   it("adult content is off by default in both", () => {
     for (const name of PRESET_NAMES) expect(preset(name).content?.adultContent).toBe(false);
   });
+
+  it("both carry Livepeer's marks, drawn in the text colour", () => {
+    for (const name of PRESET_NAMES) {
+      const { logo } = preset(name);
+      expect(logo).toEqual({ symbol: "/brand/livepeer-symbol.svg", wordmark: "/brand/livepeer-wordmark.svg", tint: true });
+    }
+  });
 });
 
 describe("validateConfig", () => {

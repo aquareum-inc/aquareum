@@ -22,13 +22,20 @@
     "logo": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Paths or URLs to SVG marks. Omitted, the Livepeer mark is used.",
+      "description": "The instance's marks, as paths or URLs to images (SVG is best). Omitted, the name is set in type, and its first letter stands in for the symbol.",
       "properties": {
         "symbol": {
-          "type": "string"
+          "type": "string",
+          "description": "A square mark, for small places: the collapsed sidebar, sign-in and the agent's avatar."
         },
         "wordmark": {
-          "type": "string"
+          "type": "string",
+          "description": "The full logo, for the open sidebar and headers."
+        },
+        "tint": {
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the marks in the text colour, black in the light theme and white in the dark, using only their shape. Turn off for a logo in more than one colour, which then shows as drawn in both themes."
         }
       }
     },

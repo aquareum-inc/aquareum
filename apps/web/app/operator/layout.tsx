@@ -6,13 +6,14 @@ import { Console } from "@/components/console";
 import { DevRoleSwitch } from "@/components/dev-role-switch";
 import { getSession } from "@/lib/auth/session";
 import { isDev } from "@/lib/env";
-import { instance } from "@/lib/instance";
+import { brandOf, instance } from "@/lib/instance";
 
 export const metadata: Metadata = { title: { default: "Operator console", template: "%s · Operator console" } };
 export const dynamic = "force-dynamic";
 
 export default async function OperatorLayout({ children }: { children: ReactNode }) {
-  const { surfaces } = instance();
+  const config = instance();
+  const { surfaces } = config;
   if (!surfaces.console) notFound();
   const session = await getSession();
   if (!session) redirect("/sign-in?next=/operator");
@@ -20,7 +21,7 @@ export default async function OperatorLayout({ children }: { children: ReactNode
   if (session.role !== "operator") notFound();
   return (
     <>
-      <Console appAvailable={surfaces.app}>{children}</Console>
+      <Console brand={brandOf(config)} appAvailable={surfaces.app}>{children}</Console>
       {isDev ? <DevRoleSwitch role={session.role} /> : null}
     </>
   );

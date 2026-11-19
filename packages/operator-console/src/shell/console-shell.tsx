@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandBadge, LivepeerWordmark, cn, useTheme } from "@aquareum/ui";
+import { BrandBadge, BrandWordmark, cn, useTheme, type Brand } from "@aquareum/ui";
 import {
   Activity,
   ArrowLeft,
@@ -66,7 +66,7 @@ const GROUPS: Array<{ label: string; items: Array<{ href: string; label: string;
 const active = (pathname: string, href: string) => (href === "/operator" ? pathname === href : pathname.startsWith(href));
 
 /** The console's frame: the same sidebar-and-panel as the user app, tuned denser. */
-export function ConsoleShell({ pathname, Link, appAvailable, children }: { pathname: string; Link: ComponentType<ConsoleLinkProps>; appAvailable: boolean; children: ReactNode }) {
+export function ConsoleShell({ brand, pathname, Link, appAvailable, children }: { brand: Brand; pathname: string; Link: ComponentType<ConsoleLinkProps>; appAvailable: boolean; children: ReactNode }) {
   const { resolved, setPreference } = useTheme();
   const items = GROUPS.flatMap((group) => group.items);
   return (
@@ -74,7 +74,7 @@ export function ConsoleShell({ pathname, Link, appAvailable, children }: { pathn
       <nav aria-label="Operator console" className="hidden w-[216px] shrink-0 flex-col overflow-y-auto px-3 py-4 md:flex">
         {/* The wordmark and the console's name, one link home; the badge sparkles while it's hovered or focused. */}
         <Link href="/operator" aria-label="Operator console overview" className="mb-4 flex h-8 items-center gap-2.5 self-start rounded-full px-2 outline-none focus-visible:ring-1 focus-visible:ring-ring">
-          <LivepeerWordmark className="h-[12px] w-[80px] shrink-0" />
+          <BrandWordmark brand={brand} className="h-[12px] w-auto shrink-0" />
           <BrandBadge label="Operator" />
         </Link>
         {GROUPS.map((group) => (

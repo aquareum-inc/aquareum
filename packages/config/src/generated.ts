@@ -10,11 +10,21 @@ export interface InstanceConfig {
    */
   name: string;
   /**
-   * Paths or URLs to SVG marks. Omitted, the Livepeer mark is used.
+   * The instance's marks, as paths or URLs to images (SVG is best). Omitted, the name is set in type, and its first letter stands in for the symbol.
    */
   logo?: {
+    /**
+     * A square mark, for small places: the collapsed sidebar, sign-in and the agent's avatar.
+     */
     symbol?: string;
+    /**
+     * The full logo, for the open sidebar and headers.
+     */
     wordmark?: string;
+    /**
+     * Draw the marks in the text colour, black in the light theme and white in the dark, using only their shape. Turn off for a logo in more than one colour, which then shows as drawn in both themes.
+     */
+    tint?: boolean;
   };
   /**
    * Overrides for semantic colour tokens, per theme. Keys are token names without the leading dashes, e.g. "primary".

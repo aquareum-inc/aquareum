@@ -1,7 +1,7 @@
 "use client";
 
 import type { AgentMessage, AgentStep, AppModel, Generation, VideoMoment } from "@aquareum/api-client/types";
-import { EASE_OUT_EXPO, LivepeerSymbol, cn } from "@aquareum/ui";
+import { BrandSymbol, EASE_OUT_EXPO, cn } from "@aquareum/ui";
 import { Check, ChevronDown, Clapperboard, Eye, ListTree, Wrench } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -73,8 +73,7 @@ export function AgentTurn({ message, generations, models, onOpenInStudio, onOpen
   return (
     <div className="flex gap-3">
       <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-hairline text-foreground">
-        {/* Optically centred: the mark's squares sit mostly in its left column, so its weight is ~13% of its width left of the box centre. */}
-        <LivepeerSymbol className="h-3 w-auto translate-x-[1.25px]" />
+        <BrandSymbol className="h-3 w-auto" />
       </span>
       <div className="min-w-0 flex-1">
         <button

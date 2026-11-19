@@ -1,4 +1,4 @@
-import { Button, Input, LivepeerSymbol } from "@aquareum/ui";
+import { BrandSymbol, Button, Input } from "@aquareum/ui";
 import { KeyRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { AppleMark, CoinbaseMark, DiscordMark, GoogleMark, WalletConnectMark } from "@/components/provider-marks";
 import { signInMethods } from "@/lib/auth/methods";
 import { authProvider, getSession } from "@/lib/auth/session";
-import { instance } from "@/lib/instance";
+import { brandOf, instance } from "@/lib/instance";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -44,7 +44,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="w-full max-w-[420px] overflow-hidden rounded-sheet border border-hairline bg-card">
         <div className="p-8">
-          <LivepeerSymbol className="mx-auto h-7 w-auto" />
+          <BrandSymbol brand={brandOf(config)} className="mx-auto h-7 w-auto" />
           <h1 className="mt-6 text-center text-title font-semibold tracking-[-0.01em]">Sign in to {config.name}</h1>
           {error ? (
             <p role="alert" className="mt-3 text-center text-body text-destructive">

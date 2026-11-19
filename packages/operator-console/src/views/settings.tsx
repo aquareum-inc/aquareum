@@ -3,7 +3,8 @@
 import { Button, Chip, Field, Input, Sheet, Switch } from "@aquareum/ui";
 import { useState, type FormEvent } from "react";
 
-import { ConsolePage, Panel } from "../components/parts";
+import { BrandPreview, ColourInput, MarkRow } from "../components/appearance";
+import { ConsolePage } from "../components/parts";
 
 /** The editable part of the instance config. Mirrors packages/config's schema. */
 export interface InstanceSettings {
@@ -17,6 +18,11 @@ export interface InstanceSettings {
   retainChats: boolean;
   primaryDark: string;
   primaryLight: string;
+  /** The instance's marks: an uploaded image as a data URL, a path on the site or an https URL. Blank for none. */
+  logoSymbol: string;
+  logoWordmark: string;
+  /** Draw the marks in the text colour, for a one-colour logo. */
+  logoTint: boolean;
 }
 
 export interface SettingsViewProps {
@@ -54,8 +60,21 @@ function Line({ label, hint, children }: { label: string; hint?: string; childre
         <p className="text-[13px] font-medium">{label}</p>
         {hint ? <p className="text-[12px] text-muted-foreground">{hint}</p> : null}
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">{children}</div>
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">{children}</div>
     </div>
+  );
+}
+
+/** One group of settings: its name and what it covers on the left, the controls on the right; stacked on narrow screens. */
+function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="grid gap-3 py-8 first:pt-2 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-10">
+      <div>
+        <h2 className="text-[13px] font-semibold">{title}</h2>
+        <p className="mt-1 text-[12px] text-muted-foreground">{description}</p>
+      </div>
+      <div className="min-w-0">{children}</div>
+    </section>
   );
 }
 
@@ -71,6 +90,7 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
   const [reviewing, setReviewing] = useState(false);
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
   const stopping = turnedOff(saved, value);
+  const brand = { name: value.name || saved.name, symbol: value.logoSymbol || undefined, wordmark: value.logoWordmark || undefined, tint: value.logoTint };
 
   const commit = async () => {
     setReviewing(false);
@@ -90,19 +110,35 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
   return (
     <ConsolePage title="Instance settings" description="What this instance is called, who can join, what it serves and what it allows.">
       <form onSubmit={submit}>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Panel title="Brand">
-            <div className="flex flex-col gap-3 rounded-card border border-hairline bg-card p-4">
+        <div className="max-w-[920px] divide-y divide-hairline">
+          <Section title="Identity" description="What the instance is called, and where it lives.">
+            <div className="flex flex-col gap-4 rounded-card border border-hairline bg-card p-4">
               <Field label="Name"><Input value={value.name} onChange={(event) => set({ name: event.target.value })} maxLength={40} required /></Field>
               <Field label="Domain" hint="The public hostname, used in code samples and links."><Input value={value.domain} onChange={(event) => set({ domain: event.target.value })} placeholder="video.example.com" className="font-mono" /></Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Primary, dark theme" hint="Any CSS colour. Blank keeps the default."><Input value={value.primaryDark} onChange={(event) => set({ primaryDark: event.target.value })} placeholder="oklch(0.922 0 0)" className="font-mono" /></Field>
-                <Field label="Primary, light theme"><Input value={value.primaryLight} onChange={(event) => set({ primaryLight: event.target.value })} placeholder="oklch(0.205 0.006 286)" className="font-mono" /></Field>
+            </div>
+          </Section>
+
+          <Section title="Appearance" description="How the app and the console look, in both themes.">
+            <div className="divide-y divide-hairline rounded-card border border-hairline bg-card">
+              <div className="p-3">
+                <BrandPreview brand={brand} primary={{ dark: value.primaryDark, light: value.primaryLight }} />
+              </div>
+              <MarkRow kind="wordmark" label="Logo" fallback="shows the name" value={value.logoWordmark} brand={brand} onChange={(logoWordmark) => set({ logoWordmark })} />
+              <MarkRow kind="symbol" label="Symbol" fallback="shows the first letter" value={value.logoSymbol} brand={brand} onChange={(logoSymbol) => set({ logoSymbol })} />
+              <Line label="Match text colour" hint="White in the dark theme, black in the light. Off for a logo in colour.">
+                <Switch checked={value.logoTint} onCheckedChange={(logoTint) => set({ logoTint })} aria-label="Match text colour" />
+              </Line>
+              <div className="flex flex-col gap-3 p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Primary, dark theme"><ColourInput label="Primary, dark theme" value={value.primaryDark} placeholder="oklch(0.922 0 0)" onChange={(primaryDark) => set({ primaryDark })} /></Field>
+                  <Field label="Primary, light theme"><ColourInput label="Primary, light theme" value={value.primaryLight} placeholder="oklch(0.205 0.006 286)" onChange={(primaryLight) => set({ primaryLight })} /></Field>
+                </div>
+                <p className="text-caption text-subtle-foreground">Any CSS colour. Blank keeps the default.</p>
               </div>
             </div>
-          </Panel>
+          </Section>
 
-          <Panel title="Sign-up and privacy">
+          <Section title="Sign-up and privacy" description="Who can join, and what the instance keeps.">
             <div className="divide-y divide-hairline rounded-card border border-hairline bg-card">
               <Line label="Who can sign up">
                 {SIGN_UP.map((option) => (
@@ -113,9 +149,9 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
                 <Switch checked={value.retainChats} onCheckedChange={(retainChats) => set({ retainChats })} aria-label="Keep prompts and outputs" />
               </Line>
             </div>
-          </Panel>
+          </Section>
 
-          <Panel title="Surfaces" description="Which parts of the product this instance serves.">
+          <Section title="Surfaces" description="Which parts of the product this instance serves.">
             <div className="divide-y divide-hairline rounded-card border border-hairline bg-card">
               {SURFACES.map((surface) => (
                 <Line key={surface.key} label={surface.label} hint={surface.hint}>
@@ -126,9 +162,9 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
                 <Switch checked disabled aria-label="Operator console, always on here" />
               </Line>
             </div>
-          </Panel>
+          </Section>
 
-          <Panel title="Content policy">
+          <Section title="Content policy" description="What people can make and see here.">
             <div className="divide-y divide-hairline rounded-card border border-hairline bg-card">
               <Line label="Characters and companions" hint="Shows Characters in the app, including live calls.">
                 <Switch checked={value.characters} onCheckedChange={(characters) => set({ characters })} aria-label="Characters and companions" />
@@ -137,11 +173,11 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
                 <Switch checked={value.adultContent} onCheckedChange={(adultContent) => set({ adultContent })} aria-label="Adult content" />
               </Line>
             </div>
-          </Panel>
+          </Section>
         </div>
 
         <div className="sticky bottom-0 -mx-4 flex items-center gap-3 border-t border-hairline bg-panel px-4 py-3 md:-mx-6 md:px-6">
-          <Button type="submit" variant="primary" disabled={!dirty || state.kind === "saving"}>{state.kind === "saving" ? "Savingâ¦" : "Save changes"}</Button>
+          <Button type="submit" variant="primary" disabled={!dirty || state.kind === "saving"}>{state.kind === "saving" ? "Saving…" : "Save changes"}</Button>
           <p role="status" className={`text-[13px] ${state.kind === "error" ? "text-destructive" : "text-muted-foreground"}`}>
             {state.kind === "saved" ? "Saved. Changes apply on the next request." : state.kind === "error" ? state.message : dirty ? "Unsaved changes." : <>Saves to <span className="font-mono">{file ? file.split("/").pop() : "instance.config.json"}</span>, checked against the config schema.</>}
           </p>
