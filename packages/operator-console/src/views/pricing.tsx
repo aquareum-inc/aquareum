@@ -2,7 +2,7 @@
 
 import type { CreditPack, DataSource, Plan, ProviderFeatures, TopUpRange } from "@aquareum/api-client";
 import { Badge, Button, Field, Input, Sheet, Switch, Textarea } from "@aquareum/ui";
-import { Check, Minus, Plus } from "lucide-react";
+import { Check, ChevronRight, Minus, Plus } from "lucide-react";
 import { useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 
 import { CreditPacks, type SaveCreditPack } from "../components/credit-packs";
@@ -45,6 +45,20 @@ const BLANK: Omit<Plan, "id"> = {
   markup: null,
   active: true,
 };
+
+/** One figure in the Markup strip: what it is, the number, and a line on what it means. */
+function Stat({ label, value, caption, icon }: { label: string; value: string; caption: string; icon?: ReactNode }) {
+  return (
+    <div className="flex h-full flex-col gap-1 px-4 py-3">
+      <p className="flex items-center justify-between gap-2 text-[12px] text-subtle-foreground">
+        {label}
+        {icon}
+      </p>
+      <p className="font-mono text-[18px] font-semibold leading-6">{value}</p>
+      <p className="text-[12px] text-muted-foreground">{caption}</p>
+    </div>
+  );
+}
 
 /** Whether users can top up an amount of their own, and between what limits. Saved separately from plans. */
 function OtherAmounts({ initial, save }: { initial: TopUpRange; save: PricingViewProps["saveTopUp"] }) {
@@ -128,28 +142,18 @@ export function PricingView({ provider, plans: initial, packs, topUp, markup, sa
       </Panel>
 
       <Panel title="Markup" description="A retail price is the wholesale cost times a markup, converted to credits. Set in instance.config.json under pricing.">
-        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <div className="rounded-card border border-hairline bg-card px-4 py-3">
-            <dt className="text-[12px] text-subtle-foreground">Default markup</dt>
-            <dd className="mt-1 font-mono text-[18px] font-semibold">{markup.default.toFixed(2)}×</dd>
-          </div>
-          <div className="rounded-card border border-hairline bg-card px-4 py-3">
-            <dt className="text-[12px] text-subtle-foreground">Credits per dollar</dt>
-            <dd className="mt-1 font-mono text-[18px] font-semibold">{count(markup.creditsPerUsd)}</dd>
-          </div>
-          <div className="col-span-2 rounded-card border border-hairline bg-card px-4 py-3 lg:col-span-1">
-            <dt className="text-[12px] text-subtle-foreground">Capability markups</dt>
-            <dd className="mt-1 flex items-baseline justify-between gap-3">
-              <span className="font-mono text-[18px] font-semibold">{overrides.length === 0 ? "None" : count(overrides.length)}</span>
-              <Link href="/operator/capabilities" className="text-[12px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
-                {overrides.length === 0 ? "Set on Capabilities" : "See on Capabilities"}
-              </Link>
-            </dd>
-            <dd className="mt-0.5 font-mono text-[12px] text-muted-foreground">
-              {overrides.length === 0 ? "Every capability uses the default." : overrides.length === 1 ? `${overrides[0]?.toFixed(2)}×` : `${Math.min(...overrides).toFixed(2)}× to ${Math.max(...overrides).toFixed(2)}×`}
-            </dd>
-          </div>
-        </dl>
+        <div className="grid overflow-hidden rounded-card border border-hairline bg-card max-sm:divide-y max-sm:divide-hairline sm:grid-cols-3 sm:divide-x sm:divide-hairline">
+          <Stat label="Default markup" value={`${markup.default.toFixed(2)}×`} caption="For capabilities without their own." />
+          <Stat label="Credits per dollar" value={count(markup.creditsPerUsd)} caption={`One credit is ${usd(1 / markup.creditsPerUsd)}.`} />
+          <Link href="/operator/capabilities" className="group block transition-colors duration-150 hover:bg-hover">
+            <Stat
+              label="Capability markups"
+              icon={<ChevronRight className="size-3.5 text-subtle-foreground transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-foreground" />}
+              value={overrides.length === 0 ? "None" : count(overrides.length)}
+              caption={overrides.length === 0 ? "Every capability uses the default." : overrides.length === 1 ? `${overrides[0]?.toFixed(2)}×, set on Capabilities.` : `From ${Math.min(...overrides).toFixed(2)}× to ${Math.max(...overrides).toFixed(2)}×, set on Capabilities.`}
+            />
+          </Link>
+        </div>
       </Panel>
 
       <Panel
