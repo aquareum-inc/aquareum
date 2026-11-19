@@ -11,6 +11,8 @@ import { ShaderStill } from "./shader-still";
 export interface AuroraSkyProps {
   /** The night-sky photograph. */
   src: string;
+  /** The opening frame, sky and stars without the aurora, shown in the dark theme while the shader starts. */
+  poster?: string | null;
   className?: string;
 }
 
@@ -22,11 +24,11 @@ uniform vec2 imageSize;
 uniform float time;
 uniform float paper;
 
-const float EXPOSURE = 0.74;
+const float EXPOSURE = 0.44;
 // The night sky sits darker than the rest; stars keep their brightness against it.
-const float SKY_EXPOSURE = 0.55;
+const float SKY_EXPOSURE = 0.36;
 const float AURORA_SPEED = 5.0;
-const float AURORA_LIGHT = 0.8;
+const float AURORA_LIGHT = 0.48;
 const int STEPS = 24;
 const float BASE = 1.0;
 const float SPAN = 2.4;
@@ -104,7 +106,7 @@ void main() {
   float seed = hash(star);
   float rate = 1.2 + 3.0 * hash(star + 5.3);
   float flicker = sin(time * rate + seed * 6.283) * (0.55 + 0.45 * sin(time * rate * 2.7 + seed * 17.0));
-  plate += sparkle * point * flicker * 0.9;
+  plate += sparkle * point * flicker * 0.45;
 
   // The aurora, drawn: curtains seen from the ground, tilted to sweep up across the sky.
   vec2 p = (gl_FragCoord.xy - 0.5 * resolution) / resolution.y;
@@ -133,14 +135,16 @@ void main() {
   light = 1.0 - exp(-light * 1.6);
 
   vec3 stars = sparkle * point;
-  vec3 night = plate * SKY_EXPOSURE + stars * (EXPOSURE - SKY_EXPOSURE) + light * AURORA_LIGHT;
+  // Deepen the darks more than the highlights, so space reads near black and the stars still carry.
+  vec3 deep = pow(plate, vec3(1.4));
+  vec3 night = deep * SKY_EXPOSURE + stars * (EXPOSURE - SKY_EXPOSURE) + light * AURORA_LIGHT;
 
   // On a pale page there is no night sky: the same aurora tints a light sky, like watercolour on
   // paper, taking away the colours it isn't.
   vec3 daySky = mix(vec3(0.985, 0.985, 0.99), vec3(0.93, 0.95, 0.985), 1.0 - tex.y);
   float amount = max(light.r, max(light.g, light.b));
   vec3 hue = light / max(amount, 0.001);
-  vec3 day = daySky - (vec3(1.0) - hue) * amount * 0.6;
+  vec3 day = daySky - (vec3(1.0) - hue) * amount * 0.38;
 
   vec3 color = mix(night, day, paper);
   color += (hash(gl_FragCoord.xy + fract(time)) - 0.5) / 255.0;
@@ -148,6 +152,6 @@ void main() {
 }
 `;
 
-export function AuroraSky({ src, className }: AuroraSkyProps) {
-  return <ShaderStill src={src} fragment={FRAGMENT} stillBrightness={0.74} stillWhileLoading={false} stillInLightTheme={false} {...(className ? { className } : {})} />;
+export function AuroraSky({ src, poster, className }: AuroraSkyProps) {
+  return <ShaderStill src={src} fragment={FRAGMENT} stillBrightness={0.44} stillWhileLoading={false} stillInLightTheme={false} {...(poster ? { loadingStill: poster } : {})} {...(className ? { className } : {})} />;
 }

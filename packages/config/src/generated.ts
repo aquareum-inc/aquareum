@@ -129,7 +129,7 @@ export interface InstanceConfig {
      */
     backgroundVideo?: string;
     /**
-     * Still image shown while the video loads, and in place of it when the visitor prefers reduced motion.
+     * Still image shown while the video loads, and in place of it when the visitor prefers reduced motion. With aurora, the opening frame shown while the live sky starts: the sky and stars without the aurora.
      */
     backgroundPoster?: string;
     /**
