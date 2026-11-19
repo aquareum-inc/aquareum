@@ -2,18 +2,17 @@
 
 The open-source video platform you own.
 
-Run a video business on the Livepeer Network, whether you're a creator with a few customers or a company
-serving thousands and their agents. Aquareum brings the product, the billing and the console; Livepeer's open
-market of GPUs brings the compute, paid per job.
+Use it as a ready-made video studio, or headless as the video backend for your own app. Aquareum brings the
+product, the API and the console; the Livepeer Network's open market of GPUs brings the compute, paid per job.
 
 - **Yours to run:** your name, branding, prices, users and rules, in one config file. MIT-licensed, so no one
   can switch it off for you.
-- **A console for the business:** offer the network's capabilities, set prices, sell plans and credits,
-  manage users, take payments, and see your margin job by job.
-- **Your choice of front door:** a complete app for making and understanding video, an API and MCP server for
+- **Two ways in:** a complete app for making and understanding video, an API and MCP server for your own
   products and agents, or both.
-- **Simple economics:** customers pay you in credits; you pay the network its wholesale cost; the markup is
-  yours.
+- **One console:** choose the network's capabilities, manage users and keys, and see usage and cost job by
+  job. Plans, credits and payments are there when you sell to others.
+- **Simple economics:** you pay the network its wholesale cost per job. If you sell to others, they pay you in
+  credits and the markup is yours.
 
 Run it yourself with one command, or have it hosted.
 
@@ -21,7 +20,7 @@ Run it yourself with one command, or have it hosted.
 
 The user app, the operator console, the instance API and MCP server, and the bundle that starts them with a
 pinned engine. Each surface can be switched on or off in the instance config, so an instance can run the
-console and API without the app, or the API alone. The engine
+console and API without the app (the `headless` preset), or the API alone. The engine
 ([livepeer-builder-core](https://github.com/NE-Build-Track/livepeer-builder-core)) is a separate service
 reached over its REST API.
 
