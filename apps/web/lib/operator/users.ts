@@ -1,34 +1,33 @@
 import "server-only";
 
-import type { OperatorClient } from "@aquareum/api-client";
-import type { UserRow } from "@aquareum/operator-console";
+import type { Allocation, DataSource, OperatorClient, Plan } from "@aquareum/api-client";
+import { joinUserRows, type JoinedUsers } from "./user-rows";
 
-/** Joins the engine's actors with the provider's users, budgets and plans. */
-export async function userRows(client: OperatorClient): Promise<{ rows: UserRow[]; live: boolean }> {
+/** The provider's people joined with their engine accounts, budgets and plans, and the engine accounts no one owns. */
+export async function userRows(client: OperatorClient): Promise<JoinedUsers & { sources: Array<{ name: string; source: DataSource }> }> {
   const { provider } = client;
-  const actors = await client.listActors();
-  const users = provider.features.users ? await provider.identity.listUsers() : [];
-  const rows = await Promise.all(
-    actors.data.map(async (actor): Promise<UserRow> => {
-      const user = users.find((entry) => entry.id === actor.actor_id);
+  const [actors, users] = await Promise.all([client.listActors(), provider.features.users ? provider.identity.listUsers() : Promise.resolve([])]);
+  const ids = [...new Set([...users.map((user) => user.id), ...actors.data.map((actor) => actor.actor_id)])];
+  const allocations = new Map<string, Allocation | null>();
+  const plans = new Map<string, Plan | null>();
+  await Promise.all(
+    ids.map(async (id) => {
       const [allocation, plan] = await Promise.all([
-        provider.budgets.getAllocation(actor.actor_id).catch(() => null),
-        provider.plans.getUserPlan(actor.actor_id).catch(() => null),
+        provider.budgets.getAllocation(id).catch(() => null),
+        provider.plans.getUserPlan(id).catch(() => null),
       ]);
-      return {
-        id: actor.actor_id,
-        applicationId: actor.application_id,
-        name: user?.name ?? (actor.label || actor.name || actor.actor_id),
-        email: user?.email ?? null,
-        role: user?.role ?? "user",
-        status: allocation?.status ?? actor.allocation?.status ?? (actor.provisioned ? "active" : "not provisioned"),
-        plan: plan?.name ?? null,
-        budget: allocation ? Number(allocation.granted.amount) : null,
-        spent: allocation ? Number(allocation.spent.amount) : null,
-        remaining: allocation ? Number(allocation.available.amount) : null,
-        lastSeen: actor.last_seen_at,
-      };
+      allocations.set(id, allocation);
+      plans.set(id, plan);
     }),
   );
-  return { rows, live: actors.source === "live" };
+  const providerSource: DataSource = provider.id === "mock" ? "mock" : "live";
+  return {
+    ...joinUserRows({ listsUsers: provider.features.users, users, actors: actors.data, allocationFor: (id) => allocations.get(id) ?? null, planFor: (id) => plans.get(id) ?? null }),
+    sources: [
+      { name: "identity.listUsers", source: providerSource },
+      { name: "listActors", source: actors.source },
+      { name: "budgets.getAllocation", source: providerSource },
+      { name: "plans.getUserPlan", source: "mock" },
+    ],
+  };
 }

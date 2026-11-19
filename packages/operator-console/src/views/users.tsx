@@ -26,16 +26,25 @@ export interface UserRow {
   lastSeen: string | null;
 }
 
-export function UsersView({ users, Link, sources }: { users: UserRow[]; Link: LinkType; sources: ReadonlyArray<{ name: string; source: DataSource }> }) {
+export interface UsersViewProps {
+  users: UserRow[];
+  /** Engine accounts, not revoked, that no one who signs in owns. They're listed by their keys, not here. */
+  unlinkedAccounts: number;
+  Link: LinkType;
+  sources: ReadonlyArray<{ name: string; source: DataSource }>;
+}
+
+export function UsersView({ users, unlinkedAccounts, Link, sources }: UsersViewProps) {
   return (
-    <ConsolePage title="Users" description="Everyone with an allocation on this instance: their budget, what they've spent and their plan." sources={sources}>
+    <ConsolePage title="Users" description="Everyone who signs in to this instance: their budget, what they've spent and their plan." sources={sources}>
       <Table
         caption="Users"
         rows={users}
         rowKey={(user) => user.id}
         empty="No users yet. People appear here when they sign up and are given an allocation."
         columns={[
-          { key: "name", header: "User", cell: (user) => <Link href={`/operator/users/${encodeURIComponent(user.id)}`} className="font-medium text-foreground underline-offset-2 hover:underline">{user.name}</Link> },
+          { key: "name", header: "User", cell: (user) => <Link href={`/operator/users/${encodeURIComponent(user.id)}`} className="whitespace-nowrap font-medium text-foreground underline-offset-2 hover:underline">{user.name}</Link> },
+          { key: "email", header: "Email", cell: (user) => <span className="whitespace-nowrap text-muted-foreground">{user.email ?? "—"}</span>, wide: true },
           { key: "status", header: "Status", cell: (user) => <Status value={user.status} /> },
           { key: "plan", header: "Plan", cell: (user) => user.plan ?? "—", wide: true },
           { key: "budget", header: "Budget", cell: (user) => (user.budget === null ? "—" : usd(user.budget)), mono: true, align: "right", wide: true },
@@ -44,6 +53,13 @@ export function UsersView({ users, Link, sources }: { users: UserRow[]; Link: Li
           { key: "seen", header: "Last seen", cell: (user) => ago(user.lastSeen), mono: true, align: "right", wide: true },
         ]}
       />
+      {unlinkedAccounts > 0 ? (
+        <GapNote className="mt-4">
+          {unlinkedAccounts === 1 ? "1 engine account isn't" : `${unlinkedAccounts} engine accounts aren't`} linked to anyone who signs in: made on the engine directly, for a
+          service, a test or another app. They're on{" "}
+          <Link href="/operator/keys" className="text-foreground underline underline-offset-2">Keys</Link>, by account.
+        </GapNote>
+      ) : null}
     </ConsolePage>
   );
 }

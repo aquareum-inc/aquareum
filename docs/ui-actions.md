@@ -58,7 +58,7 @@ a popover, switching theme) change local state and are not listed.
 | Developers | Open and close a session in the playground | `startLiveSession`, `stopLiveSession` |
 | Developers | Browse example apps | `listExampleApps` |
 | Operator · Overview | See users, jobs, revenue, cost, margin, engine status | `getOverview`, `getEngineHealth`, `listJobs` |
-| Operator · Users | List users with budget, spent, remaining, plan | `listActors`, `provider.budgets.getAllocation`, `provider.plans.getUserPlan` |
+| Operator · Users | List users with email, budget, spent, remaining, plan | `provider.identity.listUsers`, `listActors`, `provider.budgets.getAllocation`, `provider.plans.getUserPlan` |
 | Operator · User | Suspend or resume | `setActorStatus` |
 | Operator · User | Change role | `provider.identity.setUserRole` |
 | Operator · User | Assign or remove a plan | `provider.plans.assignPlan` |
