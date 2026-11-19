@@ -1,6 +1,7 @@
 "use client";
 
 import type { ConversationSummary } from "@aquareum/api-client";
+import type { Brand } from "@aquareum/ui";
 import { AppShell, type Account, type LinkProps } from "@aquareum/user-app";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,7 +14,7 @@ function Link({ href, ...props }: LinkProps) {
 }
 
 export function Shell({
-  instanceName,
+  brand,
   characters,
   recents,
   account,
@@ -22,7 +23,7 @@ export function Shell({
   sidebarOpen,
   children,
 }: {
-  instanceName: string;
+  brand: Brand;
   characters: boolean;
   recents: ConversationSummary[];
   account: Account | null;
@@ -36,7 +37,7 @@ export function Shell({
   const pathname = usePathname();
   return (
     <AppShell
-      instanceName={instanceName}
+      brand={brand}
       pathname={pathname}
       Link={Link}
       availableRoutes={AVAILABLE_ROUTES}

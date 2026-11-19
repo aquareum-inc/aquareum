@@ -24,7 +24,7 @@ package is not loaded. One origin and one session keep self-hosting to a single 
 generated from the schema). Environment variables hold secrets and the engine URL only.
 
 ```
-name, logo { symbol, wordmark }, theme { tokens... }            branding
+name, logo { symbol, wordmark, tint }, theme { tokens... }            branding
 engine { url }                                                  (overridable by ENGINE_URL)
 surfaces { app, console, api, mcp }                             booleans
 capabilities { allow: string[], block: string[] }               glob rules on discovered app names

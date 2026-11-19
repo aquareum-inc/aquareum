@@ -10,7 +10,7 @@ import { checkAccess } from "@/lib/auth/guard";
 import { getSession } from "@/lib/auth/session";
 import { developerTabs } from "@/lib/developers";
 import { isDev } from "@/lib/env";
-import { instance } from "@/lib/instance";
+import { brandOf, instance } from "@/lib/instance";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const config = instance();
@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <CreditsProvider initial={credits}>
       <Shell
-        instanceName={config.name}
+        brand={brandOf(config)}
         characters={config.content?.characters ?? true}
         recents={recents}
         account={session ? { name: session.name, email: session.email, role: session.role } : null}

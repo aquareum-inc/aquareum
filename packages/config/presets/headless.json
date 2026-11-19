@@ -1,6 +1,10 @@
 {
   "$schema": "../schema/instance.schema.json",
   "name": "Livepeer",
+  "logo": {
+    "symbol": "/brand/livepeer-symbol.svg",
+    "wordmark": "/brand/livepeer-wordmark.svg"
+  },
   "surfaces": { "app": false, "console": true, "api": true, "mcp": true },
   "capabilities": { "allow": [], "block": [] },
   "auth": { "provider": "mock", "signUp": "closed" },

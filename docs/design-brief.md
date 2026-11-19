@@ -17,7 +17,7 @@ design follow Benji Taylor's work. Sources: `docs/research/design-references.md`
   only: live dot, "finished" pulse, positive deltas, selection, caret. Never on a button or link.
 - **Type**: Inter Variable (`cv11`, `ss01`) for interface text; Geist Mono for code, ids, prices and
   technical labels. Sizes 12/16 caption, 14/20 body, 26/32 page title.
-- **Logo**: `LivepeerSymbol` / `LivepeerLockup` in `currentColor` (black or white).
+- **Logo**: the instance's own marks from `logo` in the instance config, drawn by `BrandSymbol` / `BrandWordmark`; with `tint` on (the default) in `currentColor` (black or white). The flagship's are Livepeer's, in `apps/web/public/brand/`. With no logo, the name is set in type.
 - **Icons**: lucide (Explorer's set), 1.75 stroke; a few custom morphing glyphs (see 3).
 - **Spacing**: 4px rhythm. Chart series colours 1–7 for the console.
 

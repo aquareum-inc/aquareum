@@ -1,6 +1,6 @@
 "use client";
 
-import { LivepeerWordmark, LivepeerSymbol, cn } from "@aquareum/ui";
+import { BrandProvider, BrandSymbol, BrandWordmark, cn, type Brand } from "@aquareum/ui";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useState, type ComponentType, type ReactNode } from "react";
@@ -11,7 +11,8 @@ import { NAV_ITEMS, isActive } from "./nav";
 import { SIDEBAR_COOKIE } from "./sidebar";
 
 export interface AppShellProps {
-  instanceName: string;
+  /** The instance's name and marks, from its config. */
+  brand: Brand;
   pathname: string;
   /** The host's link component, so the shell stays framework-agnostic. */
   Link: ComponentType<LinkProps>;
@@ -49,7 +50,7 @@ function SidebarToggle({ open, onToggle }: { open: boolean; onToggle: () => void
         <PanelLeftClose className="size-[18px]" strokeWidth={1.75} />
       ) : (
         <>
-          <LivepeerSymbol className="h-[20px] w-auto transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-75 group-hover:opacity-0 group-focus-visible:scale-75 group-focus-visible:opacity-0" />
+          <BrandSymbol className="h-[20px] w-auto transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-75 group-hover:opacity-0 group-focus-visible:scale-75 group-focus-visible:opacity-0" />
           <PanelLeftOpen
             className="absolute size-[18px] scale-75 opacity-0 transition-[opacity,transform] duration-200 ease-out-expo group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100"
             strokeWidth={1.75}
@@ -60,7 +61,7 @@ function SidebarToggle({ open, onToggle }: { open: boolean; onToggle: () => void
   );
 }
 
-export function AppShell({ instanceName, pathname, Link, availableRoutes, features, recents, account, signOutAction, signInHref, consoleAvailable, initialOpen, children }: AppShellProps) {
+export function AppShell({ brand, pathname, Link, availableRoutes, features, recents, account, signOutAction, signInHref, consoleAvailable, initialOpen, children }: AppShellProps) {
   const menu = { account, signOutAction, signInHref, consoleAvailable };
   const items = NAV_ITEMS.filter((item) => (item.href !== "/characters" || features.characters) && (item.href !== "/developers" || features.developers));
   const [open, setOpen] = useState(initialOpen);
@@ -76,6 +77,7 @@ export function AppShell({ instanceName, pathname, Link, availableRoutes, featur
   const reachable = (href: string) => availableRoutes.includes(href);
 
   return (
+    <BrandProvider brand={brand}>
     <LinkProvider Link={Link}>
     {/* Fades in once when the page loads; the layout persists across navigation, so it doesn't repeat. */}
     <div className="flex h-dvh animate-[fade-in_360ms_var(--ease-out-expo)] overflow-hidden bg-background text-foreground">
@@ -88,8 +90,8 @@ export function AppShell({ instanceName, pathname, Link, availableRoutes, featur
         <div className="mb-3 flex h-10 items-center justify-between">
           {open ? (
             <>
-              <Link href="/" aria-label={`${instanceName} home`} className="inline-flex h-10 items-center px-2 text-foreground">
-                <LivepeerWordmark className="h-[14px] w-auto shrink-0" />
+              <Link href="/" aria-label={`${brand.name} home`} className="inline-flex h-10 items-center px-2 text-foreground">
+                <BrandWordmark className="h-[14px] w-auto shrink-0" />
               </Link>
               <SidebarToggle open onToggle={toggle} />
             </>
@@ -163,8 +165,8 @@ export function AppShell({ instanceName, pathname, Link, availableRoutes, featur
       <div className="flex min-h-0 min-w-0 flex-1 flex-col md:py-2 md:pr-2">
         {/* Top bar (phone) */}
         <header className="flex h-14 items-center justify-between px-4 md:hidden">
-          <Link href="/" aria-label={`${instanceName} home`} className="inline-flex h-10 items-center text-foreground">
-            <LivepeerWordmark className="h-[15px] w-[100px] shrink-0" />
+          <Link href="/" aria-label={`${brand.name} home`} className="inline-flex h-10 items-center text-foreground">
+            <BrandWordmark className="h-[15px] w-auto shrink-0" />
           </Link>
           <AccountMenu {...menu} side="bottom" />
         </header>
@@ -204,5 +206,6 @@ export function AppShell({ instanceName, pathname, Link, availableRoutes, featur
       </div>
     </div>
     </LinkProvider>
+    </BrandProvider>
   );
 }

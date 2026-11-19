@@ -5,7 +5,7 @@ export { Chip, type ChipProps } from "./components/chip";
 export { Segmented, type SegmentedOption, type SegmentedProps } from "./components/segmented";
 export { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "./components/popover";
 export { RollingNumber, type RollingNumberProps } from "./components/rolling-number";
-export { LivepeerWordmark, LivepeerSymbol } from "./components/logo";
+export { BrandProvider, BrandSymbol, BrandWordmark, type Brand } from "./components/logo";
 export { THEME_INIT_SCRIPT, ThemeProvider, useTheme, type ThemePreference } from "./components/theme";
 export { Switch } from "./components/switch";
 export { Sheet, type SheetProps } from "./components/sheet";
