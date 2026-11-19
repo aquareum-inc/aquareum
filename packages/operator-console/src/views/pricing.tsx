@@ -146,7 +146,7 @@ export function PricingView({ provider, plans: initial, packs, topUp, markup, sa
           <Stat label="Credits per dollar" value={count(markup.creditsPerUsd)} />
           <Link href="/operator/capabilities" className="group block transition-colors duration-150 hover:bg-hover">
             <Stat
-              label="Custom markups"
+              label="Markup overrides"
               icon={<ChevronRight className="size-3.5 text-subtle-foreground transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-foreground" />}
               value={overrides.length === 0 ? "None" : count(overrides.length)}
             />
