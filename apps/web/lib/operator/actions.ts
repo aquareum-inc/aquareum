@@ -1,6 +1,6 @@
 "use server";
 
-import type { AccessKey, BillingSettings, CapabilitySetting, EngineJob, Grant, Payment, Plan, TopUpRange } from "@aquareum/api-client";
+import type { AccessKey, BillingSettings, CapabilitySetting, CreditPack, EngineJob, Grant, Payment, Plan, TopUpRange } from "@aquareum/api-client";
 import { EngineError } from "@aquareum/api-client";
 import type { InstanceSettings } from "@aquareum/operator-console";
 import { revalidatePath } from "next/cache";
@@ -53,6 +53,17 @@ export async function topUpUserAction(userId: string, amountUsd: number): Promis
 export async function savePlanAction(id: string | null, input: Omit<Plan, "id">): Promise<Plan> {
   const { plans } = (await operatorApi()).provider;
   return id ? plans.updatePlan(id, input) : plans.createPlan(input);
+}
+
+export async function saveCreditPackAction(id: string | null, input: Omit<CreditPack, "id">): Promise<{ ok: true; packs: CreditPack[] } | { ok: false; error: string }> {
+  try {
+    const { plans } = (await operatorApi()).provider;
+    await (id ? plans.updateCreditPack(id, input) : plans.createCreditPack(input));
+    // Highlighting one pack takes the highlight off the others, so the whole list comes back.
+    return { ok: true, packs: await plans.listCreditPacks() };
+  } catch (error) {
+    return { ok: false, error: explain(error) };
+  }
 }
 
 export async function saveTopUpRangeAction(range: TopUpRange): Promise<{ ok: true; range: TopUpRange } | { ok: false; error: string }> {

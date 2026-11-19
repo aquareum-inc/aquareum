@@ -18,6 +18,7 @@ interface State {
   grants: Grant[];
   allocations: Allocation[];
   plans: Plan[];
+  packs: CreditPack[];
   topUp: TopUpRange;
   assignments: Map<string, string>;
   usage: UsageEntry[];
@@ -73,15 +74,21 @@ function seed(): State {
       created_at: new Date(Date.UTC(2026, 10, 17, 20) - index * 5.3 * 3600_000).toISOString(),
     };
   });
-  return { users, grants, allocations, plans, topUp: { enabled: true, min: usd(5), max: usd(500) }, assignments: new Map([["usr_demo_ines", "pln_studio"], ["usr_demo_priya", "pln_creator"]]), usage, sequence: 0 };
+  return { users, grants, allocations, plans, packs: PACKS.map((pack) => ({ ...pack })), topUp: { enabled: true, min: usd(5), max: usd(500) }, assignments: new Map([["usr_demo_ines", "pln_studio"], ["usr_demo_priya", "pln_creator"]]), usage, sequence: 0 };
 }
 
 const PACKS: CreditPack[] = [
-  { id: "pck_1000", credits: 1000, price: usd(10), popular: false },
-  { id: "pck_2500", credits: 2500, price: usd(25), popular: true },
-  { id: "pck_5000", credits: 5000, price: usd(50), popular: false },
-  { id: "pck_10000", credits: 10000, price: usd(100), popular: false },
+  { id: "pck_usd10", credits: 1000, price: usd(10), popular: false, active: true },
+  { id: "pck_usd25", credits: 2500, price: usd(25), popular: true, active: true },
+  { id: "pck_usd50", credits: 5250, price: usd(50), popular: false, active: true },
+  { id: "pck_usd100", credits: 11000, price: usd(100), popular: false, active: true },
 ];
+
+/** What any provider would refuse: a pack has to give whole credits for a price. */
+function checkPack(pack: Omit<CreditPack, "id">): void {
+  if (!Number.isInteger(pack.credits) || pack.credits <= 0) throw new Error("A pack has to give a whole number of credits, more than zero.");
+  if (!(num(pack.price) > 0)) throw new Error("A pack's price has to be more than zero.");
+}
 
 function must<T>(value: T | undefined, what: string): T {
   if (value === undefined) throw new Error(`${what} not found`);
@@ -186,7 +193,22 @@ export function createMockProvider(): PaymentProvider {
         return { ...plan };
       },
       async listCreditPacks() {
-        return PACKS.map((pack) => ({ ...pack }));
+        return state.packs.map((pack) => ({ ...pack })).sort((a, b) => num(a.price) - num(b.price));
+      },
+      async createCreditPack(input) {
+        checkPack(input);
+        const pack: CreditPack = { ...input, id: id("pck") };
+        if (pack.popular) for (const other of state.packs) other.popular = false;
+        state.packs.push(pack);
+        return { ...pack };
+      },
+      async updateCreditPack(packId, patch) {
+        const pack = must(state.packs.find((entry) => entry.id === packId), "credit pack");
+        const next = { ...pack, ...patch };
+        checkPack(next);
+        if (next.popular) for (const other of state.packs) other.popular = false;
+        Object.assign(pack, next);
+        return { ...pack };
       },
       async getTopUpRange() {
         return { ...state.topUp };

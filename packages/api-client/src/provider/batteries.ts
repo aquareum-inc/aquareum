@@ -119,6 +119,8 @@ export function createBatteriesProvider(engine: { url: string; reader?: string; 
       async listCreditPacks() {
         return [];
       },
+      createCreditPack: unsupported("credit packs"),
+      updateCreditPack: unsupported("credit packs"),
       async getTopUpRange() {
         return { enabled: false, min: zero("USD"), max: zero("USD") };
       },

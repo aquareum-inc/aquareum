@@ -5,6 +5,7 @@ import { Badge, Button, Field, Input, Sheet, Switch, Textarea } from "@aquareum/
 import { Check, Minus, Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
+import { CreditPacks, type SaveCreditPack } from "../components/credit-packs";
 import { count, usd } from "../components/format";
 import { ConsolePage, GapNote, Panel } from "../components/parts";
 import { Table } from "../components/table";
@@ -17,6 +18,7 @@ export interface PricingViewProps {
   topUp: TopUpRange;
   markup: { default: number; creditsPerUsd: number; perApp: Record<string, number> };
   savePlan: (id: string | null, input: Omit<Plan, "id">) => Promise<Plan>;
+  savePack: SaveCreditPack;
   saveTopUp: (range: TopUpRange) => Promise<{ ok: true; range: TopUpRange } | { ok: false; error: string }>;
   sources: ReadonlyArray<{ name: string; source: DataSource }>;
 }
@@ -87,7 +89,7 @@ function OtherAmounts({ initial, save }: { initial: TopUpRange; save: PricingVie
   );
 }
 
-export function PricingView({ provider, plans: initial, packs, topUp, markup, savePlan, saveTopUp, sources }: PricingViewProps) {
+export function PricingView({ provider, plans: initial, packs, topUp, markup, savePlan, savePack, saveTopUp, sources }: PricingViewProps) {
   const [plans, setPlans] = useState(initial);
   const [editing, setEditing] = useState<{ id: string | null; value: Omit<Plan, "id"> } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -167,24 +169,13 @@ export function PricingView({ provider, plans: initial, packs, topUp, markup, sa
         )}
       </Panel>
 
-      <Panel title="Credit packs" description="A pack is a one-off top-up of a user's allocation.">
-        <Table
-          caption="Credit packs"
-          rows={packs}
-          rowKey={(pack) => pack.id}
-          empty={`${provider.name} doesn't offer credit packs.`}
-          columns={[
-            { key: "credits", header: "Credits", cell: (pack) => count(pack.credits), mono: true },
-            { key: "price", header: "Price", cell: (pack) => usd(pack.price.amount, 0), mono: true, align: "right" },
-            { key: "popular", header: "Highlighted", cell: (pack) => (pack.popular ? "Yes" : "—"), align: "right" },
-          ]}
-        />
+      <CreditPacks initial={packs} editable={provider.features.credit_packs} providerName={provider.name} creditsPerUsd={markup.creditsPerUsd} save={savePack}>
         {provider.features.custom_top_up ? (
           <OtherAmounts initial={topUp} save={saveTopUp} />
         ) : (
           <p className="mt-2 text-[12px] text-muted-foreground">{provider.name} doesn't take top-ups of an amount the user chooses.</p>
         )}
-      </Panel>
+      </CreditPacks>
 
       <Sheet open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} title={editing?.id ? "Edit plan" : "New plan"}>
         {editing ? (
