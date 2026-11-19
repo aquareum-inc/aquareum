@@ -84,6 +84,34 @@ Implementations: `batteries` (budgets and usage live through engine routes; plan
 unsupported) and `mock` in PymtHouse's shape (plans, allowances, invoices, OIDC users). A credit balance is
 the allocation balance converted by the markup rule; a credit pack is a one-off allocation top-up.
 
+## Workspaces (planned, not built)
+
+People often share one budget: a studio, an agency, a company. The plan is to make the billing account a
+**workspace** rather than a person.
+
+- **A workspace is the billing account.** In the provider it is one user (one `externalUserId` in PymtHouse,
+  one actor on the engine), so it owns the allocation (the credit balance), the plan, usage and API keys.
+  None of the provider's or engine's money model changes.
+- **People are members.** Everyone gets a personal workspace at sign-up and can be invited to others, with a
+  role: owner (billing and members), admin (keys and settings) or member (makes video, spends credits). The
+  instance roles `user | operator` stay separate: they are about the instance, not a workspace.
+- **The app acts in one workspace at a time.** The session holds the current workspace and its builder key;
+  switching workspace switches the key. Jobs, the library and usage belong to the workspace, and each job
+  records who ran it.
+- **In the operator console,** Users lists people and the workspaces they belong to, and budgets, plans and
+  top-ups move to the workspace.
+
+**What is missing:** membership (who belongs to which workspace, with what role). Neither provider stores
+it today: PymtHouse users, allowances, plans and keys are each one person's, and Clearinghouse has no users
+(provider question Q10 in `docs/engine-requests.md`). If the provider takes it on, the app reads it through
+the provider interface (`identity.listWorkspaces`, `listMembers`, `invite`, `setMemberRole`) like any other
+function. If not, it needs a small store of its own. That holds membership only, never balances, so it isn't
+a second ledger.
+
+**Until then,** every workspace is a personal one with a single member, and nothing in the UI mentions
+workspaces. New code should treat the billing account as the workspace's, not the person's, so adding
+members later doesn't mean renaming it.
+
 ## Auth
 
 OIDC-shaped interface (`getSession`, `signIn`, `signOut`, roles `user | operator`). The session is an
