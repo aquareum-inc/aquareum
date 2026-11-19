@@ -1,6 +1,7 @@
 import { PricingView } from "@aquareum/operator-console";
 import type { Metadata } from "next";
 
+import { ConsoleLink } from "@/components/console";
 import { saveCreditPackAction, savePlanAction, saveTopUpRangeAction } from "@/lib/operator/actions";
 import { operatorApi, pricing } from "@/lib/operator/client";
 
@@ -20,6 +21,7 @@ export default async function PricingPage() {
       savePlan={savePlanAction}
       savePack={saveCreditPackAction}
       saveTopUp={saveTopUpRangeAction}
+      Link={ConsoleLink}
       sources={[{ name: "plans.listPlans", source }, { name: "plans.listCreditPacks", source }, { name: "plans.getTopUpRange", source }]}
     />
   );

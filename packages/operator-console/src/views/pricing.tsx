@@ -2,8 +2,8 @@
 
 import type { CreditPack, DataSource, Plan, ProviderFeatures, TopUpRange } from "@aquareum/api-client";
 import { Badge, Button, Field, Input, Sheet, Switch, Textarea } from "@aquareum/ui";
-import { Check, Minus, Plus } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { Check, ChevronRight, Minus, Plus } from "lucide-react";
+import { useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 
 import { CreditPacks, type SaveCreditPack } from "../components/credit-packs";
 import { count, usd } from "../components/format";
@@ -21,6 +21,7 @@ export interface PricingViewProps {
   savePack: SaveCreditPack;
   saveTopUp: (range: TopUpRange) => Promise<{ ok: true; range: TopUpRange } | { ok: false; error: string }>;
   sources: ReadonlyArray<{ name: string; source: DataSource }>;
+  Link: ComponentType<{ href: string; className?: string; children: ReactNode }>;
 }
 
 const FEATURE_LABELS: Array<[keyof ProviderFeatures, string]> = [
@@ -44,6 +45,19 @@ const BLANK: Omit<Plan, "id"> = {
   markup: null,
   active: true,
 };
+
+/** One figure in the Markup strip. */
+function Stat({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
+  return (
+    <div className="flex h-full flex-col gap-1 px-4 py-3">
+      <p className="flex items-center justify-between gap-2 text-[12px] text-subtle-foreground">
+        {label}
+        {icon}
+      </p>
+      <p className="font-mono text-[18px] font-semibold leading-6">{value}</p>
+    </div>
+  );
+}
 
 /** Whether users can top up an amount of their own, and between what limits. Saved separately from plans. */
 function OtherAmounts({ initial, save }: { initial: TopUpRange; save: PricingViewProps["saveTopUp"] }) {
@@ -89,7 +103,8 @@ function OtherAmounts({ initial, save }: { initial: TopUpRange; save: PricingVie
   );
 }
 
-export function PricingView({ provider, plans: initial, packs, topUp, markup, savePlan, savePack, saveTopUp, sources }: PricingViewProps) {
+export function PricingView({ provider, plans: initial, packs, topUp, markup, savePlan, savePack, saveTopUp, sources, Link }: PricingViewProps) {
+  const overrides = Object.values(markup.perApp);
   const [plans, setPlans] = useState(initial);
   const [editing, setEditing] = useState<{ id: string | null; value: Omit<Plan, "id"> } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -126,22 +141,17 @@ export function PricingView({ provider, plans: initial, packs, topUp, markup, sa
       </Panel>
 
       <Panel title="Markup" description="A retail price is the wholesale cost times a markup, converted to credits. Set in instance.config.json under pricing.">
-        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="rounded-card border border-hairline bg-card px-4 py-3">
-            <dt className="text-[12px] text-subtle-foreground">Default markup</dt>
-            <dd className="mt-1 font-mono text-[18px] font-semibold">{markup.default.toFixed(2)}×</dd>
-          </div>
-          <div className="rounded-card border border-hairline bg-card px-4 py-3">
-            <dt className="text-[12px] text-subtle-foreground">Credits per dollar</dt>
-            <dd className="mt-1 font-mono text-[18px] font-semibold">{count(markup.creditsPerUsd)}</dd>
-          </div>
-          <div className="col-span-2 rounded-card border border-hairline bg-card px-4 py-3">
-            <dt className="text-[12px] text-subtle-foreground">Per-capability overrides</dt>
-            <dd className="mt-1 font-mono text-[12px] text-muted-foreground">
-              {Object.keys(markup.perApp).length === 0 ? "None. Set them on the Capabilities page." : Object.entries(markup.perApp).map(([app, rate]) => `${app} ${rate}×`).join(" · ")}
-            </dd>
-          </div>
-        </dl>
+        <div className="grid overflow-hidden rounded-card border border-hairline bg-card max-sm:divide-y max-sm:divide-hairline sm:grid-cols-3 sm:divide-x sm:divide-hairline">
+          <Stat label="Default markup" value={`${markup.default.toFixed(2)}×`} />
+          <Stat label="Credits per dollar" value={count(markup.creditsPerUsd)} />
+          <Link href="/operator/capabilities" className="group block transition-colors duration-150 hover:bg-hover">
+            <Stat
+              label="Markup overrides"
+              icon={<ChevronRight className="size-3.5 text-subtle-foreground transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-foreground" />}
+              value={overrides.length === 0 ? "None" : count(overrides.length)}
+            />
+          </Link>
+        </div>
       </Panel>
 
       <Panel
