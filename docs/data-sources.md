@@ -62,7 +62,7 @@ Reads use `ENGINE_READER_TOKEN`; writes use `ENGINE_ADMIN_TOKEN`.
 | `setComputeOperatorBlocked` | mock | — | — | The engine has no allow or block list for routing. |
 | `retryJob` | mock | — | — | No retry route. |
 | `listPayments`, `refundPayment`, `getBillingSettings`, `updateBillingSettings` | mock | provider or card processor | — | Who collects payment is open question Q2. |
-| `getCapabilitySetting`, `updateCapabilitySetting` | mock | instance-owned store | — | Needs the instance database. |
+| `getCapabilitySetting`, `updateCapabilitySetting` | mock, except markup | markup: `pricing.markup.perApp` in `instance.config.json` (the `MarkupStore`), which users are priced from; enabled and surfaces: instance-owned store | — | Enabled and surfaces need the instance database. |
 | Provider: grants, allocations, plans, credit packs (list, create, edit), usage, users | per `payments.provider` | see the provider interface | reader / admin | `mock` by default; `batteries` reads allocations and grants through the engine. |
 | Instance settings | real | writes `instance.config.json`, validated | — | Read-only when the file is mounted read-only (the Compose bundle). |
 | Doctor | real | probes engine and tokens | reader, admin | Same checks as `aquareum doctor`. |
