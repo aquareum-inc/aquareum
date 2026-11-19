@@ -5,6 +5,7 @@ import { createBatteriesProvider, createMockProvider, createOperatorClient, type
 import { getSession } from "../auth/session";
 import { env } from "../env";
 import { instance } from "../instance";
+import { configMarkupStore } from "./settings";
 
 let mockProvider: PaymentProvider | null = null;
 
@@ -46,5 +47,6 @@ export function buildOperatorClient(): OperatorClient {
     provider: paymentProvider(),
     env: mockOnly ? { MOCK_ONLY: mockOnly } : {},
     pricing: pricing(),
+    markups: configMarkupStore(),
   });
 }

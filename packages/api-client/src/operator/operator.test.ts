@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createMockProvider, createOperatorClient } from "../index";
+import { createMockProvider, createOperatorClient, memoryMarkupStore } from "../index";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -94,5 +94,18 @@ describe("operator client, mock data", () => {
     expect((await client.getCapabilitySetting("music")).data).toEqual({ app: "music", enabled: true, markup: null, surfaces: null });
     const updated = (await client.updateCapabilitySetting("music", { enabled: false, markup: 1.5 })).data;
     expect(updated).toMatchObject({ enabled: false, markup: 1.5 });
+  });
+
+  it("keeps markups in the markup store, where pricing reads them", async () => {
+    const markups = memoryMarkupStore({ chat: 2 });
+    const client = createOperatorClient({ provider: createMockProvider(), env: { MOCK_ONLY: "1" }, pricing, markups });
+    expect((await client.getCapabilitySetting("chat")).data.markup).toBe(2);
+    await client.updateCapabilitySetting("text-to-video", { markup: 1.5 });
+    expect(markups.read()).toEqual({ chat: 2, "text-to-video": 1.5 });
+    await client.updateCapabilitySetting("chat", { markup: null });
+    expect(markups.read()).toEqual({ "text-to-video": 1.5 });
+    await client.updateCapabilitySetting("chat", { enabled: false });
+    expect(markups.read()).toEqual({ "text-to-video": 1.5 });
+    await expect(client.updateCapabilitySetting("chat", { markup: 0.5 })).rejects.toThrow();
   });
 });

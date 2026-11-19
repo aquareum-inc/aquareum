@@ -4,6 +4,7 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { ConfigError, DEFAULT_CONFIG_FILE, loadConfig, validateConfig, type InstanceConfig } from "@aquareum/config";
+import type { MarkupStore } from "@aquareum/api-client";
 import type { InstanceSettings } from "@aquareum/operator-console";
 
 import { env } from "../env";
@@ -66,9 +67,15 @@ export function saveSettings(settings: InstanceSettings): { ok: true } | { ok: f
   if (symbol.value || wordmark.value) {
     next.logo = { ...(symbol.value ? { symbol: symbol.value } : {}), ...(wordmark.value ? { wordmark: wordmark.value } : {}), tint: settings.logoTint };
   } else delete next.logo;
+  return writeConfig(next);
+}
+
+/** Validates a config against the schema and writes it to the instance's config file. */
+function writeConfig(next: InstanceConfig): { ok: true } | { ok: false; error: string } {
   // The engine URL comes from the environment; keep what the file already had, if anything.
   const fileEngine = loadConfig({ cwd: root(), env: { INSTANCE_CONFIG: env("INSTANCE_CONFIG") } }).config.engine;
   if (fileEngine) next.engine = fileEngine;
+  else delete next.engine;
 
   try {
     const valid = validateConfig(next);
@@ -79,3 +86,28 @@ export function saveSettings(settings: InstanceSettings): { ok: true } | { ok: f
     return { ok: false, error: "The config file couldn't be written. In a container it may be mounted read-only." };
   }
 }
+
+/**
+ * Per-capability markups, kept in the instance config under pricing.markup.perApp. Users are charged
+ * from the same place, so a markup saved here applies on their next request.
+ */
+export function configMarkupStore(): MarkupStore {
+  return {
+    read: () => ({ ...instance().pricing?.markup?.perApp }),
+    async write(app, markup) {
+      if (markup !== null && !(markup >= 1)) throw new Error("A markup can't be less than 1.");
+      const { engine: _engine, ...current } = instance();
+      const perApp = { ...current.pricing?.markup?.perApp };
+      if (markup === null) delete perApp[app];
+      else perApp[app] = markup;
+      const { perApp: _previous, ...markupRest } = current.pricing?.markup ?? {};
+      const next: InstanceConfig = {
+        ...current,
+        pricing: { ...current.pricing, markup: { ...markupRest, ...(Object.keys(perApp).length > 0 ? { perApp } : {}) } },
+      };
+      const result = writeConfig(next);
+      if (!result.ok) throw new Error(result.error);
+    },
+  };
+}
+

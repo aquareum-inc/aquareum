@@ -52,7 +52,7 @@ export function CapabilitiesView({ rows: initial, defaultMarkup, update, sources
   };
 
   return (
-    <ConsolePage title="Capabilities" description="Everything discovery returns from the network. Choose what this instance offers, what it charges and where each one appears." sources={sources} note="Discovery is live. Per-capability settings are held in memory for now; allow and block rules come from instance.config.json. Routing preferences need the engine to accept a routing constraint.">
+    <ConsolePage title="Capabilities" description="Everything discovery returns from the network. Choose what this instance offers, what it charges and where each one appears." sources={sources} note="Discovery is live. Markups save to instance.config.json, which users are charged from. Whether a capability is offered and where it appears are held in memory for now; allow and block rules come from instance.config.json. Routing preferences need the engine to accept a routing constraint.">
       {failed ? <p role="alert" className="mb-3 text-[13px] text-destructive">The change to {failed} didn't save.</p> : null}
       {rows.length === 0 ? (
         <div className="rounded-card border border-dashed border-input px-6 py-12 text-center text-[13px] text-muted-foreground">

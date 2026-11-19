@@ -93,11 +93,37 @@ export interface OperatorClient {
   updateCapabilitySetting(app: string, patch: Partial<Omit<CapabilitySetting, "app">>): Promise<Sourced<CapabilitySetting>>;
 }
 
+/**
+ * Where per-capability markups live. The app keeps them in the instance config's pricing, which is
+ * also what users are charged from, so a markup set in the console is the one users pay.
+ */
+export interface MarkupStore {
+  /** Markups by capability; a capability without one uses the default. */
+  read(): Record<string, number>;
+  /** Sets a capability's markup, or removes it with null. Refuses a markup below 1. */
+  write(app: string, markup: number | null): Promise<void>;
+}
+
+/** Markups held in memory, for tests and for clients with nowhere to save them. */
+export function memoryMarkupStore(initial: Record<string, number> = {}): MarkupStore {
+  const markups = { ...initial };
+  return {
+    read: () => ({ ...markups }),
+    async write(app, markup) {
+      if (markup === null) delete markups[app];
+      else if (!(markup >= 1)) throw new Error("A markup can't be less than 1.");
+      else markups[app] = markup;
+    },
+  };
+}
+
 export interface OperatorClientOptions {
   engine?: OperatorEngine;
   provider: PaymentProvider;
   env?: Record<string, string | undefined>;
   pricing: { creditsPerUsd: number; default: number };
+  /** Defaults to memory. */
+  markups?: MarkupStore;
 }
 
 function median(values: number[]): number | null {
@@ -108,6 +134,7 @@ function median(values: number[]): number | null {
 
 export function createOperatorClient(options: OperatorClientOptions): OperatorClient {
   const { provider, pricing } = options;
+  const markups = options.markups ?? memoryMarkupStore();
   const engine = options.engine;
   const live = Boolean(engine) && !isMockOnly(options.env ?? process.env);
   const mock = <T>(data: T): Sourced<T> => ({ data, source: "mock" });
@@ -250,11 +277,12 @@ export function createOperatorClient(options: OperatorClientOptions): OperatorCl
       return mock(mockUpdateBilling(patch));
     },
     async getCapabilitySetting(app) {
-      return mock(mockCapabilitySetting(app));
+      return mock({ app, ...mockCapabilitySetting(app), markup: markups.read()[app] ?? null });
     },
-    async updateCapabilitySetting(app, patch) {
+    async updateCapabilitySetting(app, { markup, ...rest }) {
       await latency(160, 320);
-      return mock(mockUpdateCapability(app, patch));
+      if (markup !== undefined) await markups.write(app, markup);
+      return mock({ app, ...mockUpdateCapability(app, rest), markup: markups.read()[app] ?? null });
     },
   };
   return client;
