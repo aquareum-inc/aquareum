@@ -3,7 +3,7 @@
 import { Button, Chip, Field, Input, Sheet, Switch } from "@aquareum/ui";
 import { useState, type FormEvent } from "react";
 
-import { LogoField } from "../components/logo-field";
+import { BrandPreview, ColourInput, MarkRow } from "../components/appearance";
 import { ConsolePage, Panel } from "../components/parts";
 
 /** The editable part of the instance config. Mirrors packages/config's schema. */
@@ -60,7 +60,7 @@ function Line({ label, hint, children }: { label: string; hint?: string; childre
         <p className="text-[13px] font-medium">{label}</p>
         {hint ? <p className="text-[12px] text-muted-foreground">{hint}</p> : null}
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">{children}</div>
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">{children}</div>
     </div>
   );
 }
@@ -97,24 +97,11 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
   return (
     <ConsolePage title="Instance settings" description="What this instance is called, who can join, what it serves and what it allows.">
       <form onSubmit={submit}>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Panel title="Brand">
+        <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
+          <Panel title="Identity">
             <div className="flex flex-col gap-3 rounded-card border border-hairline bg-card p-4">
               <Field label="Name"><Input value={value.name} onChange={(event) => set({ name: event.target.value })} maxLength={40} required /></Field>
               <Field label="Domain" hint="The public hostname, used in code samples and links."><Input value={value.domain} onChange={(event) => set({ domain: event.target.value })} placeholder="video.example.com" className="font-mono" /></Field>
-              <LogoField kind="wordmark" label="Logo" hint="The sidebar and headers. Without one, the name is shown." value={value.logoWordmark} brand={brand} onChange={(logoWordmark) => set({ logoWordmark })} />
-              <LogoField kind="symbol" label="Symbol" hint="Square, for small places. Without one, the first letter." value={value.logoSymbol} brand={brand} onChange={(logoSymbol) => set({ logoSymbol })} />
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-caption font-medium text-foreground">Match text colour</p>
-                  <p className="text-caption text-subtle-foreground">White in the dark theme, black in the light. Off for a logo in colour.</p>
-                </div>
-                <Switch checked={value.logoTint} onCheckedChange={(logoTint) => set({ logoTint })} aria-label="Match text colour" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Primary, dark theme" hint="Any CSS colour. Blank keeps the default."><Input value={value.primaryDark} onChange={(event) => set({ primaryDark: event.target.value })} placeholder="oklch(0.922 0 0)" className="font-mono" /></Field>
-                <Field label="Primary, light theme"><Input value={value.primaryLight} onChange={(event) => set({ primaryLight: event.target.value })} placeholder="oklch(0.205 0.006 286)" className="font-mono" /></Field>
-              </div>
             </div>
           </Panel>
 
@@ -128,6 +115,26 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
               <Line label="Keep prompts and outputs on this server" hint="Off, the instance doesn't retain them. This is stated on the users' Privacy page.">
                 <Switch checked={value.retainChats} onCheckedChange={(retainChats) => set({ retainChats })} aria-label="Keep prompts and outputs" />
               </Line>
+            </div>
+          </Panel>
+
+          <Panel title="Appearance" description="How the app and the console look, in both themes." className="lg:col-span-2">
+            <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+              <BrandPreview brand={brand} primary={{ dark: value.primaryDark, light: value.primaryLight }} />
+              <div className="flex flex-col gap-4">
+                <div className="divide-y divide-hairline rounded-card border border-hairline bg-card">
+                  <MarkRow kind="wordmark" label="Logo" fallback="shows the name" value={value.logoWordmark} brand={brand} onChange={(logoWordmark) => set({ logoWordmark })} />
+                  <MarkRow kind="symbol" label="Symbol" fallback="shows the first letter" value={value.logoSymbol} brand={brand} onChange={(logoSymbol) => set({ logoSymbol })} />
+                  <Line label="Match text colour" hint="White in the dark theme, black in the light. Off for a logo in colour.">
+                    <Switch checked={value.logoTint} onCheckedChange={(logoTint) => set({ logoTint })} aria-label="Match text colour" />
+                  </Line>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Primary, dark theme"><ColourInput label="Primary, dark theme" value={value.primaryDark} placeholder="oklch(0.922 0 0)" onChange={(primaryDark) => set({ primaryDark })} /></Field>
+                  <Field label="Primary, light theme"><ColourInput label="Primary, light theme" value={value.primaryLight} placeholder="oklch(0.205 0.006 286)" onChange={(primaryLight) => set({ primaryLight })} /></Field>
+                </div>
+                <p className="-mt-2 text-caption text-subtle-foreground">Any CSS colour. Blank keeps the default.</p>
+              </div>
             </div>
           </Panel>
 
