@@ -59,11 +59,15 @@ export interface Plan {
   active: boolean;
 }
 
+/** A one-off top-up the provider sells at a fixed price. Buying one adds to the user's allocation. */
 export interface CreditPack {
   id: string;
   credits: number;
   price: Money;
+  /** Shown first and marked to users. At most one pack is. */
   popular: boolean;
+  /** Offered to users. Packs are withdrawn rather than deleted, so past purchases still name them. */
+  active: boolean;
 }
 
 /**
@@ -143,7 +147,10 @@ export interface PaymentProvider {
     updatePlan(id: string, patch: Partial<Omit<Plan, "id">>): Promise<Plan>;
     getUserPlan(userId: string): Promise<Plan | null>;
     assignPlan(userId: string, planId: string | null): Promise<Plan | null>;
+    /** Every pack, offered or not, cheapest first. */
     listCreditPacks(): Promise<CreditPack[]>;
+    createCreditPack(input: Omit<CreditPack, "id">): Promise<CreditPack>;
+    updateCreditPack(id: string, patch: Partial<Omit<CreditPack, "id">>): Promise<CreditPack>;
     getTopUpRange(): Promise<TopUpRange>;
     updateTopUpRange(patch: Partial<TopUpRange>): Promise<TopUpRange>;
   };
@@ -172,7 +179,7 @@ export function creditsFor(wholesaleUsd: number, app: string, rule: MarkupRule):
  */
 export function topUpCredits(amountUsd: number, packs: ReadonlyArray<CreditPack>, creditsPerUsd: number): number {
   const reached = packs
-    .filter((pack) => Number(pack.price.amount) > 0 && Number(pack.price.amount) <= amountUsd)
+    .filter((pack) => pack.active && Number(pack.price.amount) > 0 && Number(pack.price.amount) <= amountUsd)
     .sort((a, b) => Number(b.price.amount) - Number(a.price.amount))[0];
   const rate = reached ? reached.credits / Number(reached.price.amount) : creditsPerUsd;
   return Math.floor(amountUsd * rate + 1e-9);

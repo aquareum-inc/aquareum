@@ -179,12 +179,20 @@ const DEFAULT_PRICING: MarkupRule = { creditsPerUsd: 100, default: 1.3 };
 const DEMO_USER = { id: "usr_demo_adam", name: "Adam Soffer" };
 let sharedMockProvider: PaymentProvider | null = null;
 
+/**
+ * The one mock provider a process uses, so the operator console and the user app see the same users,
+ * plans and packs: a pack the operator adds is the one users are offered.
+ */
+export function mockProvider(): PaymentProvider {
+  return (sharedMockProvider ??= createMockProvider());
+}
+
 export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   const env = options.env ?? process.env;
   const engine = options.engine;
   const user = options.user ?? DEMO_USER;
   const pricing = options.pricing ?? DEFAULT_PRICING;
-  const provider = options.provider ?? (sharedMockProvider ??= createMockProvider());
+  const provider = options.provider ?? mockProvider();
   const mock = <T>(data: T): Sourced<T> => ({ data, source: "mock" });
 
   const balance = async (): Promise<CreditBalance> => {
@@ -304,14 +312,14 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       return mock({
         plan,
         plans: plans.filter((entry) => entry.active),
-        packs,
+        packs: packs.filter((entry) => entry.active),
         top_up: provider.features.custom_top_up && range.enabled ? { min: range.min, max: range.max, credits_per_usd: pricing.creditsPerUsd } : null,
         provider: { id: provider.id, name: provider.name, features: provider.features },
       });
     },
     async buyCreditPack(packId) {
       await latency(400, 700);
-      const pack = (await provider.plans.listCreditPacks()).find((entry) => entry.id === packId);
+      const pack = (await provider.plans.listCreditPacks()).find((entry) => entry.id === packId && entry.active);
       if (!pack) throw new Error("That credit pack is no longer offered.");
       // A credit pack is a one-off top-up of the user's allocation.
       await provider.budgets.topUpAllocation(user.id, {

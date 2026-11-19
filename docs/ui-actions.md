@@ -66,6 +66,7 @@ a popover, switching theme) change local state and are not listed.
 | Operator · User | See keys and usage | `listAccessKeys`, `provider.usage.listUsage` |
 | Operator · Pricing | See provider and features, plans, packs, markup | `provider.features`, `provider.plans.listPlans`, `provider.plans.listCreditPacks` |
 | Operator · Pricing | Create or edit a plan | `provider.plans.createPlan`, `provider.plans.updatePlan` |
+| Operator · Pricing | Add a credit pack; change its credits or price, highlight it, stop offering it | `provider.plans.createCreditPack`, `provider.plans.updateCreditPack` |
 | Operator · Pricing | Allow other amounts; set the minimum and maximum | `provider.plans.getTopUpRange`, `provider.plans.updateTopUpRange` |
 | Operator · Billing | Connect a processor, tax setting | `getBillingSettings`, `updateBillingSettings` |
 | Operator · Billing | See payments, invoices, failed payments; refund | `listPayments`, `refundPayment` |

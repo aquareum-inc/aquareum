@@ -1,13 +1,11 @@
 import "server-only";
 
-import { createBatteriesProvider, createMockProvider, createOperatorClient, type OperatorClient, type PaymentProvider } from "@aquareum/api-client";
+import { createBatteriesProvider, createOperatorClient, mockProvider, type OperatorClient, type PaymentProvider } from "@aquareum/api-client";
 
 import { getSession } from "../auth/session";
 import { env } from "../env";
 import { instance } from "../instance";
 import { configMarkupStore } from "./settings";
-
-let mockProvider: PaymentProvider | null = null;
 
 export function pricing() {
   const config = instance().pricing;
@@ -23,7 +21,7 @@ export function paymentProvider(): PaymentProvider {
     const admin = env("ENGINE_ADMIN_TOKEN");
     return createBatteriesProvider({ url, ...(reader ? { reader } : {}), ...(admin ? { admin } : {}) });
   }
-  return (mockProvider ??= createMockProvider());
+  return mockProvider();
 }
 
 /**
