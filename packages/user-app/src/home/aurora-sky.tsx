@@ -22,9 +22,9 @@ uniform vec2 imageSize;
 uniform float time;
 uniform float paper;
 
-const float EXPOSURE = 0.6;
+const float EXPOSURE = 0.44;
 // The night sky sits darker than the rest; stars keep their brightness against it.
-const float SKY_EXPOSURE = 0.46;
+const float SKY_EXPOSURE = 0.36;
 const float AURORA_SPEED = 5.0;
 const float AURORA_LIGHT = 0.48;
 const int STEPS = 24;
@@ -133,7 +133,9 @@ void main() {
   light = 1.0 - exp(-light * 1.6);
 
   vec3 stars = sparkle * point;
-  vec3 night = plate * SKY_EXPOSURE + stars * (EXPOSURE - SKY_EXPOSURE) + light * AURORA_LIGHT;
+  // Deepen the darks more than the highlights, so space reads near black and the stars still carry.
+  vec3 deep = pow(plate, vec3(1.4));
+  vec3 night = deep * SKY_EXPOSURE + stars * (EXPOSURE - SKY_EXPOSURE) + light * AURORA_LIGHT;
 
   // On a pale page there is no night sky: the same aurora tints a light sky, like watercolour on
   // paper, taking away the colours it isn't.
@@ -149,5 +151,5 @@ void main() {
 `;
 
 export function AuroraSky({ src, className }: AuroraSkyProps) {
-  return <ShaderStill src={src} fragment={FRAGMENT} stillBrightness={0.6} stillWhileLoading={false} stillInLightTheme={false} {...(className ? { className } : {})} />;
+  return <ShaderStill src={src} fragment={FRAGMENT} stillBrightness={0.44} stillWhileLoading={false} stillInLightTheme={false} {...(className ? { className } : {})} />;
 }
