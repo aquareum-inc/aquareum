@@ -25,6 +25,11 @@ export interface ShaderStillProps {
   stillWhileLoading?: boolean;
   /** Show the still in the light theme. Off for a night photo that only suits the dark theme. */
   stillInLightTheme?: boolean;
+  /**
+   * A frame of the shader's own picture, shown in the dark theme while the canvas starts, so the live
+   * picture takes over without a step. Used with `stillWhileLoading` off.
+   */
+  loadingStill?: string;
   className?: string;
 }
 
@@ -47,7 +52,7 @@ function compile(gl: WebGLRenderingContext, type: number, source: string): WebGL
 
 const MAX_PIXEL_RATIO = 1.5;
 
-export function ShaderStill({ src, fragment: fragmentSource, stillBrightness = 1, stillWhileLoading = true, stillInLightTheme = true, className }: ShaderStillProps) {
+export function ShaderStill({ src, fragment: fragmentSource, stillBrightness = 1, stillWhileLoading = true, stillInLightTheme = true, loadingStill, className }: ShaderStillProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [live, setLive] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -180,6 +185,10 @@ export function ShaderStill({ src, fragment: fragmentSource, stillBrightness = 1
         )}
         style={{ filter: `brightness(${stillBrightness})` }}
       />
+      {loadingStill && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element -- painted before the canvas can start
+        <img src={loadingStill} alt="" fetchPriority="high" className="absolute inset-0 size-full scale-[1.06] object-cover light:hidden motion-reduce:hidden" />
+      ) : null}
       <canvas
         ref={canvasRef}
         className={cn("absolute inset-0 size-full transition-opacity duration-700 ease-out-expo", live ? "opacity-100" : "opacity-0")}

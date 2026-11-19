@@ -11,6 +11,8 @@ import { ShaderStill } from "./shader-still";
 export interface AuroraSkyProps {
   /** The night-sky photograph. */
   src: string;
+  /** The opening frame, sky and stars without the aurora, shown in the dark theme while the shader starts. */
+  poster?: string | null;
   className?: string;
 }
 
@@ -150,6 +152,6 @@ void main() {
 }
 `;
 
-export function AuroraSky({ src, className }: AuroraSkyProps) {
-  return <ShaderStill src={src} fragment={FRAGMENT} stillBrightness={0.44} stillWhileLoading={false} stillInLightTheme={false} {...(className ? { className } : {})} />;
+export function AuroraSky({ src, poster, className }: AuroraSkyProps) {
+  return <ShaderStill src={src} fragment={FRAGMENT} stillBrightness={0.44} stillWhileLoading={false} stillInLightTheme={false} {...(poster ? { loadingStill: poster } : {})} {...(className ? { className } : {})} />;
 }

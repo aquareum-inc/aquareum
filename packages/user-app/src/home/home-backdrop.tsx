@@ -6,7 +6,7 @@ import { LivingStill } from "./living-still";
 export interface HomeBackdropProps {
   /** A looping, silent video. */
   video?: string | null;
-  /** Still shown while the video loads, and in its place for reduced motion. */
+  /** Still shown while the video loads, and in its place for reduced motion; with the aurora, its opening frame. */
   poster?: string | null;
   /** A photograph brought gently to life, used when there is no video. */
   image?: string | null;
@@ -60,7 +60,7 @@ export function HomeBackdrop({ video, poster, image, aurora = false }: HomeBackd
           ) : null}
         </>
       ) : image && aurora ? (
-        <AuroraSky src={image} />
+        <AuroraSky src={image} poster={poster ?? null} />
       ) : image ? (
         <LivingStill src={image} />
       ) : (

@@ -33,6 +33,7 @@
   },
   "home": {
     "backgroundImage": "/home/aurora.webp",
+    "backgroundPoster": "/home/aurora-sky.webp",
     "aurora": true
   }
 }
