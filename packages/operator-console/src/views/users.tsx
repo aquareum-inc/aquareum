@@ -35,7 +35,12 @@ export function UsersView({ users, Link, sources }: { users: UserRow[]; Link: Li
         rowKey={(user) => user.id}
         empty="No users yet. People appear here when they sign up and are given an allocation."
         columns={[
-          { key: "name", header: "User", cell: (user) => <Link href={`/operator/users/${encodeURIComponent(user.id)}`} className="font-medium text-foreground underline-offset-2 hover:underline">{user.name}</Link> },
+          { key: "name", header: "User", cell: (user) => (
+              <div className="min-w-0">
+                <Link href={`/operator/users/${encodeURIComponent(user.id)}`} className="font-medium text-foreground underline-offset-2 hover:underline">{user.name}</Link>
+                {user.email ? <p className="truncate text-[12px] text-muted-foreground">{user.email}</p> : null}
+              </div>
+            ) },
           { key: "status", header: "Status", cell: (user) => <Status value={user.status} /> },
           { key: "plan", header: "Plan", cell: (user) => user.plan ?? "—", wide: true },
           { key: "budget", header: "Budget", cell: (user) => (user.budget === null ? "—" : usd(user.budget)), mono: true, align: "right", wide: true },

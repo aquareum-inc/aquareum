@@ -29,6 +29,7 @@ Found during research (2026-11-17). Detail and evidence are in `docs/research/en
 | R6 | Published engine images or releases to pin against. | The self-hosting bundle must reference published images; today everything is built from Git contexts. | open |
 | R7 | Clarify the reader credential: it is an `auditor` key scoped to one application and cannot read `GET /v1/admin/grants`. | The brief assumes a reader token covers every read-only operator view across builders. | open |
 | R8 | Publish app names that are capabilities only, with the model as its own field (the SPEC's migration: `blueclaw/chat/qwen3.8-27b` → `chat` with model `qwen3.8-27b`, `live/flux-klein` → `live-video-to-video` with model `flux-klein`), and group offerings by capability, then model. | The composer lists models (the agent's language model) and the studio lists capabilities; today the app tells them apart by parsing names (`lib/capability-menu.ts`), and a plain `chat` hides which model serves it. | open |
+| R9 | Let provisioning link an actor to the sign-in identity: an `external_id` (the identity provider's user id) and an optional `email` on the actor, set when the admin token creates it at sign-up, returned by `GET /v1/admin/actors` and filterable. | The operator console's Users view joins the identity provider's people to the engine's accounts by id. With no link stored on the engine, the actor id must equal the provider's user id, and accounts made outside sign-up show with no name or email. Settle this before sign-up provisioning is built. | open |
 
 ## Additional questions
 

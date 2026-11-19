@@ -13,7 +13,7 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
   const id = decodeURIComponent((await params).id);
   const client = await operatorApi();
   const { provider } = client;
-  const [{ rows, live }, keys, plans] = await Promise.all([userRows(client), client.listAccessKeys(), provider.plans.listPlans()]);
+  const [{ rows, sources }, keys, plans] = await Promise.all([userRows(client), client.listAccessKeys(), provider.plans.listPlans()]);
   const user = rows.find((row) => row.id === id);
   if (!user) notFound();
   const usage = await provider.usage.listUsage({ userId: id, limit: 20 }).catch(() => []);
@@ -30,7 +30,7 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
       assignPlan={assignPlanAction.bind(null, id)}
       topUp={topUpUserAction.bind(null, id)}
       sources={[
-        { name: "listActors", source: live ? "live" : "mock" },
+        ...sources,
         { name: "listAccessKeys", source: keys.source },
         { name: "usage.listUsage", source: "mock" },
       ]}

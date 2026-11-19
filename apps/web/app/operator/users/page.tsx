@@ -9,16 +9,12 @@ export const metadata: Metadata = { title: "Users" };
 
 export default async function UsersPage() {
   const client = await operatorApi();
-  const { rows, live } = await userRows(client);
+  const { rows, sources } = await userRows(client);
   return (
     <UsersView
       users={rows}
       Link={ConsoleLink}
-      sources={[
-        { name: "listActors", source: live ? "live" : "mock" },
-        { name: "budgets.getAllocation", source: client.provider.id === "mock" ? "mock" : "live" },
-        { name: "plans.getUserPlan", source: "mock" },
-      ]}
+      sources={sources}
     />
   );
 }
