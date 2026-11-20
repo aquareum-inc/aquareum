@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { saveInstanceSettingsAction } from "@/lib/operator/actions";
 import { operatorApi } from "@/lib/operator/client";
+import { instance } from "@/lib/instance";
 import { currentSettings } from "@/lib/operator/settings";
 
 export const metadata: Metadata = { title: "Instance settings" };
@@ -10,5 +11,6 @@ export const metadata: Metadata = { title: "Instance settings" };
 export default async function SettingsPage() {
   await operatorApi();
   const { settings, file } = currentSettings();
-  return <SettingsView initial={settings} file={file} save={saveInstanceSettingsAction} />;
+  const apps = instance().mobile;
+  return <SettingsView initial={settings} phoneAppsNamed={Boolean(apps?.ios?.bundleId || apps?.android?.applicationId)} file={file} save={saveInstanceSettingsAction} />;
 }
