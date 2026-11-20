@@ -186,4 +186,6 @@ private struct MomentList: View {
 extension EnvironmentValues {
     /// Opens the studio on a medium with words to start from. The tabs set it; a conversation calls it.
     @Entry var openInStudio: (MediaKind, String) -> Void = { _, _ in }
+    /// Opens a conversation on Home, as "Ask about it" does from the library.
+    @Entry var openConversation: (Conversation) -> Void = { _ in }
 }

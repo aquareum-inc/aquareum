@@ -81,6 +81,10 @@ struct MainTabs: View {
         .overlay(alignment: .top) { NoticeBanner() }
         .environment(support)
         .environment(studio)
+        .environment(\.openConversation) { conversation in
+            homePath = [.conversation(id: conversation.id, preview: conversation)]
+            tab = .home
+        }
         .environment(\.openInStudio) { kind, prompt in
             studio.open(kind, prompt: prompt)
             tab = .studio
