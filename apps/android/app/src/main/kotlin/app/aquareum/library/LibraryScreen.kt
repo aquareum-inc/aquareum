@@ -1,5 +1,7 @@
 package app.aquareum.library
 
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -157,7 +159,7 @@ private fun Tile(item: MediaItem, open: () -> Unit) {
             Icon(when (item.kind) { MediaKind.Image -> Icons.Rounded.Image; MediaKind.Audio -> Icons.Rounded.GraphicEq; else -> Icons.Rounded.PlayArrow }, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
             BasicText(item.durationSeconds?.let { "${it.toInt()}s" } ?: item.kind.value, style = TypeSize.Caption.style(mono = true).copy(color = Color.White))
         }
-        BasicText(item.title, style = TypeSize.Body.style(FontWeight.Medium).copy(color = Color.White), modifier = Modifier.align(Alignment.BottomStart).padding(10.dp))
+        BasicText(item.title, style = TypeSize.Body.style(FontWeight.Medium).copy(color = Color.White), maxLines = if (LocalDensity.current.fontScale > 1.3f) 1 else 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.BottomStart).padding(10.dp))
     }
 }
 

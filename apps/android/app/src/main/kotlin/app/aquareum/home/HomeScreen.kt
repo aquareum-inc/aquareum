@@ -1,5 +1,7 @@
 package app.aquareum.home
 
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -9,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -176,9 +179,9 @@ fun HomeScreen(model: HomeViewModel, account: Account, support: ComposerSupport,
                 Phase.Loading -> GallerySkeleton()
                 Phase.Failed -> LoadFailure("Home didn't load. Check your connection and try again.") { model.load() }
                 Phase.Loaded -> if (state.showcase.isNotEmpty()) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 14.dp), verticalAlignment = Alignment.Bottom) {
+                    // The hint moves under the heading when large text leaves no room beside it.
+                    FlowRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, itemVerticalAlignment = Alignment.Bottom, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         BasicText("Made here", style = TypeSize.Body.style(FontWeight.SemiBold).copy(color = palette.foreground), modifier = Modifier.semantics { heading() })
-                        Spacer(Modifier.weight(1f))
                         BasicText("Pick one to start from its prompt", style = TypeSize.Caption.style().copy(color = palette.subtleForeground))
                     }
                     ShowcaseGrid(state.showcase) { use(it.prompt, it.app) }
@@ -210,10 +213,14 @@ private fun HomeBackdrop(instance: InstanceDescription?, modifier: Modifier) {
     val palette = LocalPalette.current
     val dark = LocalDarkTheme.current
     val home = instance?.home
-    // A night sky belongs to the dark theme; on the light theme the page stays pale, as on the web.
-    val picture = (home?.backgroundPoster ?: home?.backgroundImage)?.takeIf { dark || home?.aurora != true }
+    val picture = home?.backgroundPoster ?: home?.backgroundImage
+    val sky = home?.backgroundImage?.takeIf { home.aurora }
     Box(modifier) {
-        if (picture != null) {
+        if (sky != null) {
+            AuroraSky(sky, dark, Modifier.fillMaxSize())
+            // The drawn aurora paints its own pale sky on the light theme, so it needs only a light veil.
+            Box(Modifier.fillMaxSize().background(palette.panel.copy(alpha = if (dark) 0.22f else 0.15f)))
+        } else if (picture != null) {
             AsyncImage(model = picture, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             // A light scrim on the dark theme, a heavier one on the light, as on the web.
             Box(Modifier.fillMaxSize().background(palette.panel.copy(alpha = if (dark) 0.22f else 0.66f)))
@@ -272,7 +279,7 @@ private fun ShowcaseTile(item: ShowcaseItem, onUse: () -> Unit) {
             Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
             BasicText(label, style = TypeSize.Caption.style(mono = true).copy(color = Color.White))
         }
-        BasicText(item.title, style = TypeSize.Body.style(FontWeight.Medium).copy(color = Color.White), modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
+        BasicText(item.title, style = TypeSize.Body.style(FontWeight.Medium).copy(color = Color.White), maxLines = if (LocalDensity.current.fontScale > 1.3f) 1 else 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
     }
 }
 

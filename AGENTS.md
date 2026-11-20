@@ -95,7 +95,8 @@ Standing rules for changes are in `CLAUDE.md`; plans and research are in `docs/`
 
 ## Working on the native apps
 
-Requirements: macOS with Xcode 27 or later for iOS; for Android, a JDK 17 or later and the Android SDK
+Requirements: macOS with Xcode 27 or later for iOS, with Apple's Metal toolchain for Home's aurora shader
+(`xcodebuild -downloadComponent MetalToolchain`, once per machine); for Android, a JDK 17 or later and the Android SDK
 (platform 37, build-tools 36) with `apps/android/local.properties` holding `sdk.dir=<path to the SDK>`, or
 `ANDROID_HOME` set. Every command is non-interactive.
 

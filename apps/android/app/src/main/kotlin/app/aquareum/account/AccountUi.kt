@@ -1,5 +1,6 @@
 package app.aquareum.account
 
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -86,12 +87,9 @@ fun AccountTray(account: Account, theme: ThemePreference, signIn: () -> Unit, op
     LaunchedEffect(Unit) { account.refresh() }
 
     if (signedIn) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Avatar(initials(me?.name), 44)
-            Column(Modifier.weight(1f)) {
-                BasicText(me?.name.orEmpty(), style = TypeSize.Lead.style(FontWeight.SemiBold).copy(color = palette.foreground))
-                me?.email?.let { BasicText(it, style = TypeSize.Body.style().copy(color = palette.mutedForeground), maxLines = 1, overflow = TextOverflow.MiddleEllipsis) }
-            }
+        // At large text the credits go under the name and email instead of squeezing them.
+        val stacked = LocalDensity.current.fontScale > 1.3f
+        val credits: @Composable () -> Unit = {
             me?.balance?.credits?.let { credits ->
                 BasicText(
                     buildAnnotatedString {
@@ -101,6 +99,15 @@ fun AccountTray(account: Account, theme: ThemePreference, signIn: () -> Unit, op
                     style = TypeSize.Body.style().copy(color = palette.foreground),
                 )
             }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Avatar(initials(me?.name), 44)
+            Column(Modifier.weight(1f)) {
+                BasicText(me?.name.orEmpty(), style = TypeSize.Lead.style(FontWeight.SemiBold).copy(color = palette.foreground))
+                me?.email?.let { BasicText(it, style = TypeSize.Body.style().copy(color = palette.mutedForeground), maxLines = if (stacked) 2 else 1, overflow = TextOverflow.MiddleEllipsis) }
+                if (stacked) credits()
+            }
+            if (!stacked) credits()
         }
     } else {
         BasicText("Sign in to generate and save your work.", style = TypeSize.Body.style().copy(color = palette.mutedForeground))

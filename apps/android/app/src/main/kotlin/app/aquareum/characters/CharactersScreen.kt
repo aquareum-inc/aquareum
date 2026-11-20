@@ -199,6 +199,6 @@ fun CharacterStats(character: Character, modifier: Modifier = Modifier) {
     val chats = compactCount(character.chats)
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
         Icon(Icons.Rounded.Star, contentDescription = null, tint = palette.subtleForeground, modifier = Modifier.size(12.dp))
-        BasicText("%.1f".format(Locale.ENGLISH, character.rating) + "  $chats chats", style = TypeSize.Caption.style(mono = true).copy(color = palette.subtleForeground))
+        BasicText("%.1f".format(Locale.ENGLISH, character.rating) + "  $chats chats", style = TypeSize.Caption.style(mono = true).copy(color = palette.subtleForeground), maxLines = 1, softWrap = false)
     }
 }

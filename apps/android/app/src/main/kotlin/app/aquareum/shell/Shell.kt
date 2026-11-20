@@ -1,5 +1,7 @@
 package app.aquareum.shell
 
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -176,7 +178,8 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
                                 }
                             },
                             icon = { Icon(tab.icon, contentDescription = null) },
-                            label = { Text(tab.label) },
+                            // One line at any text size: at the largest, a label shrinks rather than breaking mid-word.
+                            label = { Text(tab.label, maxLines = 1, softWrap = false, autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp * LocalDensity.current.fontScale.coerceAtMost(1.3f))) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = palette.foreground,
                                 selectedTextColor = palette.foreground,

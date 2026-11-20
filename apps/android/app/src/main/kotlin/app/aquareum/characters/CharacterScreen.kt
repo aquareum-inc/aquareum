@@ -1,5 +1,7 @@
 package app.aquareum.characters
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +71,7 @@ import app.aquareum.generated.TypeSize
 import kotlinx.coroutines.launch
 
 /** One character: who they are, casting them in a scene, and, for someone else's, reporting or blocking it. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CharacterScreen(character: Character, model: CharactersModel, account: Account, instanceName: String, onBack: () -> Unit, castInScene: (Character) -> Unit) {
     val palette = LocalPalette.current
@@ -116,7 +119,8 @@ fun CharacterScreen(character: Character, model: CharactersModel, account: Accou
             CharacterPortrait(character, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 220.dp).fillMaxWidth().aspectRatio(4f / 5f).clip(shape).border(1.dp, palette.hairline, shape))
             BasicText(character.name, style = TypeSize.Title.style(FontWeight.SemiBold).copy(color = palette.foreground), modifier = Modifier.padding(top = 20.dp).semantics { heading() })
             BasicText(character.tagline, style = TypeSize.Lead.style().copy(color = palette.mutedForeground), modifier = Modifier.padding(top = 4.dp))
-            Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Wraps whole: the rating and chats move to their own line at large text instead of breaking up.
+            FlowRow(Modifier.padding(top = 8.dp), itemVerticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 BasicText("by ${character.author}", style = TypeSize.Caption.style(mono = true).copy(color = palette.subtleForeground))
                 if (character.chats > 0) CharacterStats(character)
             }

@@ -33,6 +33,7 @@ Checked on the project owner's Mac (Apple silicon, macOS 26.6.2) on 19 November 
 | Tool | State | Action |
 |------|-------|--------|
 | Xcode 27.1, Swift 6.4, iOS 26.5 simulators | Installed | None. |
+| Metal toolchain (a separate Xcode component, for `Aurora.metal`) | Installed 20 November 2026 | `xcodebuild -downloadComponent MetalToolchain` on any machine that builds the iOS app. |
 | Apple's Xcode MCP bridge (`xcrun mcpbridge`, and the headless `xcrun mcp-server`) | Shipped with Xcode, not registered | Xcode ▸ Settings ▸ Intelligence ▸ Model Context Protocol ▸ turn on **Xcode Tools**, then `claude mcp add --transport stdio xcode -- xcrun mcpbridge`. |
 | XcodeBuildMCP | Not installed. Renamed **MobileBuildMCP**; the old site and repository redirect to it (*verify*) | `claude mcp add MobileBuildMCP -- npx -y mobilebuildmcp@latest mcp`. Optional: the desktop app's own simulator tools already build, launch, drive and screenshot. |
 | Android Studio (Rabbit 2, 2026.2.2 Patch 1) | Not installed | `brew install --cask android-studio`, open it once and let the wizard install the SDK, platform tools and emulator. |
@@ -524,6 +525,26 @@ For the engine and provider (added to `docs/engine-requests.md`):
 - Q16: Can the provider record a top-up or a plan paid through Apple or Google?
 
 ## 17. What exists today
+
+### Polish pass (20 November 2026)
+
+- **The live aurora.** Home's night sky is now the web's shader on both phones: `Aurora.metal` as a SwiftUI
+  layer effect on iOS, AGSL through `RenderEffect` on Android 13 and later. The photo's own glow is taken
+  out, stars twinkle, and curtains are drawn over it; on the light theme the same aurora tints a pale sky
+  under a 15% veil. It holds still with Reduce Motion or Remove animations, and in Low Power Mode or
+  Battery Saver, and pauses when the app isn't in front. Sixteen ray steps instead of the web's 24, and
+  Android draws it at half resolution, as the web caps its pixel ratio. The iOS backdrop is now as tall as
+  the web's (86% of the screen, up to 820 pt). Not measured on real devices: the emulator is too slow to
+  judge either way. Screenshots: `docs/screenshots/mobile/{ios,android}-home-aurora-{dark,light}.jpg`.
+- **Screen readers.** Every tappable element on Android's main screens has a name (checked from the
+  accessibility tree of each screen, signed out and in); every icon-only button on iOS has a label.
+- **Largest text.** Android at font scale 2.0: tab labels shrink to one line instead of breaking mid-word,
+  tile titles keep to one line so they never run into the length badge, a character's rating and the
+  Home gallery's hint move to their own line, and Settings rows and the account tray put their numbers under
+  the name. iOS at the largest accessibility size scales and scrolls as it should.
+
+Not done in the polish pass: a real-device performance check of the aurora, and an automated accessibility
+audit in a UI test target (`performAccessibilityAudit`), which the project doesn't have yet.
 
 ### Slice 6: Settings (20 November 2026)
 

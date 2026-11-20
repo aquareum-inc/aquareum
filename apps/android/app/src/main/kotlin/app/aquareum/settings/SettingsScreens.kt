@@ -1,5 +1,6 @@
 package app.aquareum.settings
 
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -415,8 +416,16 @@ private fun NavigationRow(title: String, icon: ImageVector, detail: String?, ope
     val palette = LocalPalette.current
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).pressable(label = title, onClick = open).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Icon(icon, contentDescription = null, tint = palette.foreground, modifier = Modifier.size(20.dp))
-        BasicText(title, style = TypeSize.Lead.style().copy(color = palette.foreground), modifier = Modifier.weight(1f))
-        detail?.let { BasicText(it, style = TypeSize.Caption.style(mono = true).copy(color = palette.mutedForeground)) }
+        // At large text the detail goes under the title instead of squeezing it.
+        if (LocalDensity.current.fontScale > 1.3f) {
+            Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+                BasicText(title, style = TypeSize.Lead.style().copy(color = palette.foreground))
+                detail?.let { BasicText(it, style = TypeSize.Caption.style(mono = true).copy(color = palette.mutedForeground)) }
+            }
+        } else {
+            BasicText(title, style = TypeSize.Lead.style().copy(color = palette.foreground), modifier = Modifier.weight(1f))
+            detail?.let { BasicText(it, style = TypeSize.Caption.style(mono = true).copy(color = palette.mutedForeground)) }
+        }
         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = palette.subtleForeground, modifier = Modifier.size(20.dp))
     }
 }

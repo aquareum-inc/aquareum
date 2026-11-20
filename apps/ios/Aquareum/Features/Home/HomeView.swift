@@ -185,17 +185,21 @@ private struct HomeBackdrop: View {
     var body: some View {
         let home = instance.description?.home
         ZStack {
-            // A night sky belongs to the dark theme; on the light theme the page stays pale, as on the web.
-            if !(home?.aurora == true && scheme == .light), let address = home?.backgroundPoster ?? home?.backgroundImage, let url = URL(string: address) {
+            if home?.aurora == true, let address = home?.backgroundImage, let url = URL(string: address, relativeTo: BuildConfig.instanceURL) {
+                // The drawn aurora paints its own pale sky on the light theme, so it needs only a light veil.
+                AuroraSky(url: url)
+                palette.panel.opacity(scheme == .dark ? 0.22 : 0.15)
+            } else if let address = home?.backgroundPoster ?? home?.backgroundImage, let url = URL(string: address, relativeTo: BuildConfig.instanceURL) {
                 AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.6))) { phase in
                     if let picture = phase.image { picture.resizable().scaledToFill() }
                 }
                 // A light scrim on the dark theme, a heavier one on the light, as on the web.
                 palette.panel.opacity(scheme == .dark ? 0.22 : 0.66)
             }
-            LinearGradient(colors: [.clear, palette.background], startPoint: UnitPoint(x: 0.5, y: 0.55), endPoint: .bottom)
+            LinearGradient(colors: [.clear, palette.background], startPoint: UnitPoint(x: 0.5, y: 0.62), endPoint: .bottom)
         }
-        .frame(height: 560)
+        // As tall as the web's: most of the screen, so the sky reaches past the composer.
+        .containerRelativeFrame(.vertical) { length, _ in min(length * 0.86, 820) }
         .frame(maxWidth: .infinity)
         .clipped()
         .ignoresSafeArea(edges: .top)
