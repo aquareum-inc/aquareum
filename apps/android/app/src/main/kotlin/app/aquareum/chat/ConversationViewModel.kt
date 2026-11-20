@@ -48,7 +48,7 @@ data class ConversationState(
 
 /** One conversation, kept current while the agent works. */
 class ConversationViewModel(private val api: Api, private val id: String, seed: Conversation?) : ViewModel() {
-    private val _state = MutableStateFlow(ConversationState(conversation = seed))
+    private val _state = MutableStateFlow(ConversationState(conversation = seed, draft = seed?.let(::carriedOn) ?: Draft()))
     val state: StateFlow<ConversationState> = _state
 
     fun setDraft(draft: Draft) = _state.update { it.copy(draft = draft) }
@@ -74,7 +74,7 @@ class ConversationViewModel(private val api: Api, private val id: String, seed: 
     private suspend fun refresh() {
         try {
             val fresh = api.getConversation(id)
-            _state.update { it.copy(conversation = fresh, loadFailed = false) }
+            _state.update { it.copy(conversation = fresh, loadFailed = false, draft = if (it.conversation == null) carriedOn(fresh) else it.draft) }
         } catch (error: ApiError) {
             if (error.status == 404 || error.isSignedOut) _state.update { it.copy(loadFailed = true) }
             return
@@ -98,8 +98,17 @@ class ConversationViewModel(private val api: Api, private val id: String, seed: 
         _state.update { it.copy(sending = true, sendError = null) }
         viewModelScope.launch {
             try {
-                val fresh = api.sendMessage(id, text = draft.prompt.trim())
-                _state.update { it.copy(conversation = fresh, sending = false, draft = Draft()) }
+                val fresh = api.sendMessage(
+                    id,
+                    text = draft.text,
+                    app = draft.app,
+                    aspect = if (draft.isVideo) draft.aspect else null,
+                    durationSeconds = if (draft.isVideo) draft.durationSeconds.toDouble() else null,
+                    attachmentIds = draft.attachments.map { it.id }.ifEmpty { null },
+                    agentModel = draft.model,
+                    characterSlug = draft.cast?.slug,
+                )
+                _state.update { it.copy(conversation = fresh, sending = false, draft = draft.carriedOn) }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
@@ -107,4 +116,13 @@ class ConversationViewModel(private val api: Api, private val id: String, seed: 
             }
         }
     }
+}
+
+/**
+ * A conversation carries on as it was: the same model runs the agent, and a cast character stays cast so
+ * the next message can direct them further.
+ */
+private fun carriedOn(conversation: Conversation): Draft {
+    val last = conversation.messages.filterIsInstance<Message.User>().lastOrNull()?.value ?: return Draft()
+    return Draft(cast = last.cast, model = last.agentModel)
 }

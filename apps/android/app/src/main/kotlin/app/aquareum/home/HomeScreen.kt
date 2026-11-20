@@ -65,6 +65,14 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.aquareum.account.Account
+import app.aquareum.composer.AttachTray
+import app.aquareum.composer.CastTray
+import app.aquareum.composer.ComposerSupport
+import app.aquareum.composer.ComposerTray
+import app.aquareum.design.Tray
+import app.aquareum.design.glass
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.runtime.saveable.rememberSaveable
 import app.aquareum.design.Chip
 import app.aquareum.design.LocalDarkTheme
 import app.aquareum.design.LoadFailure
@@ -88,8 +96,11 @@ private val STARTER_ICONS = mapOf("make-video" to Icons.Rounded.Movie, "animate-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(model: HomeViewModel, account: Account, instance: InstanceDescription?, composerModifier: Modifier, accountButton: @Composable () -> Unit, onOpen: (Conversation) -> Unit) {
+fun HomeScreen(model: HomeViewModel, account: Account, support: ComposerSupport, instance: InstanceDescription?, composerModifier: Modifier, accountButton: @Composable () -> Unit, openHistory: () -> Unit, onOpen: (Conversation) -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
+    val models by support.models.collectAsStateWithLifecycle()
+    val signedIn by account.signedIn.collectAsStateWithLifecycle()
+    var tray by rememberSaveable { mutableStateOf<ComposerTray?>(null) }
     val palette = LocalPalette.current
     val motion = rememberMotion()
     val scroll = rememberScrollState()
@@ -127,7 +138,13 @@ fun HomeScreen(model: HomeViewModel, account: Account, instance: InstanceDescrip
                     Composer(state.draft, model::setDraft, onSend = {
                         // A guest signs in here and carries on: the request is still in the composer.
                         scope.launch { if (account.requireSignIn("Sign in to send this. What you wrote stays here.")) model.send(onOpen) }
-                    }, modifier = composerModifier.padding(top = 28.dp).padding(horizontal = 16.dp), sending = state.sending, focus = focus)
+                    }, choices = ComposerChoices(
+                        models,
+                        casting = instance?.content?.characters == true,
+                        // Attaching and casting need an account, so a guest signs in first and then the tray opens.
+                        attach = { scope.launch { if (account.requireSignIn("Sign in to attach from your library.")) tray = ComposerTray.Attach } },
+                        castCharacter = { scope.launch { if (account.requireSignIn("Sign in to put a character in it.")) tray = ComposerTray.Cast } },
+                    ), modifier = composerModifier.padding(top = 28.dp).padding(horizontal = 16.dp), sending = state.sending, focus = focus)
 
                     AnimatedVisibility(state.sendError != null) {
                         BasicText(state.sendError.orEmpty(), style = TypeSize.Caption.style().copy(color = palette.destructive), modifier = Modifier.padding(top = 8.dp))
@@ -169,7 +186,21 @@ fun HomeScreen(model: HomeViewModel, account: Account, instance: InstanceDescrip
             }
             Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars).height(32.dp))
         }
-        Box(Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(end = 4.dp)) { accountButton() }
+        Row(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (signedIn) {
+                Box(Modifier.size(48.dp).pressable(round = true, label = "Your conversations", onClick = openHistory).semantics { contentDescription = "Your conversations" }, contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.History, contentDescription = null, tint = palette.foreground, modifier = Modifier.glass(CircleShape).padding(7.dp).size(20.dp))
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            accountButton()
+        }
+    }
+
+    when (tray) {
+        ComposerTray.Attach -> Tray("Attach from your library", onDismiss = { tray = null }) { AttachTray(support, state.draft, model::setDraft) }
+        ComposerTray.Cast -> Tray("Put a character in it", onDismiss = { tray = null }) { close -> CastTray(support, state.draft, model::setDraft, close) }
+        null -> {}
     }
 }
 

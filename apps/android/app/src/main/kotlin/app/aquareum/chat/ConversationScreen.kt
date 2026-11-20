@@ -95,12 +95,24 @@ import app.aquareum.generated.Radius
 import app.aquareum.generated.TypeSize
 import app.aquareum.generated.UserMessage
 import app.aquareum.generated.VideoMoment
+import app.aquareum.composer.AttachTray
+import app.aquareum.composer.CastTray
+import app.aquareum.composer.ComposerSupport
+import app.aquareum.composer.ComposerTray
+import app.aquareum.design.Tray
+import app.aquareum.design.absolute
 import app.aquareum.home.Composer
+import app.aquareum.home.ComposerChoices
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import kotlin.math.roundToInt
 
 @Composable
-fun ConversationScreen(model: ConversationViewModel, symbol: VectorMark?, instanceName: String, composerModifier: Modifier, onBack: () -> Unit) {
+fun ConversationScreen(model: ConversationViewModel, support: ComposerSupport, casting: Boolean, symbol: VectorMark?, instanceName: String, composerModifier: Modifier, onBack: () -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
+    val models by support.models.collectAsStateWithLifecycle()
+    var tray by rememberSaveable { mutableStateOf<ComposerTray?>(null) }
     val palette = LocalPalette.current
     val list = rememberLazyListState()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -142,8 +154,22 @@ fun ConversationScreen(model: ConversationViewModel, symbol: VectorMark?, instan
 
         Column(Modifier.windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime)).padding(horizontal = 12.dp).padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             state.sendError?.let { BasicText(it, style = TypeSize.Caption.style().copy(color = palette.destructive)) }
-            Composer(state.draft, model::setDraft, onSend = model::send, modifier = composerModifier, placeholder = "Ask for a change, or describe the next shot…", sending = state.sending)
+            Composer(
+                state.draft,
+                model::setDraft,
+                onSend = model::send,
+                modifier = composerModifier,
+                placeholder = "Ask for a change, or describe the next shot…",
+                sending = state.sending,
+                choices = ComposerChoices(models, casting, attach = { tray = ComposerTray.Attach }, castCharacter = { tray = ComposerTray.Cast }),
+            )
         }
+    }
+
+    when (tray) {
+        ComposerTray.Attach -> Tray("Attach from your library", onDismiss = { tray = null }) { AttachTray(support, state.draft, model::setDraft) }
+        ComposerTray.Cast -> Tray("Put a character in it", onDismiss = { tray = null }) { close -> CastTray(support, state.draft, model::setDraft, close) }
+        null -> {}
     }
 }
 
@@ -151,7 +177,16 @@ fun ConversationScreen(model: ConversationViewModel, symbol: VectorMark?, instan
 private fun UserBubble(message: UserMessage) {
     val palette = LocalPalette.current
     val shape = RoundedCornerShape(Radius.Card.dp)
-    Box(Modifier.fillMaxWidth().padding(start = 48.dp), contentAlignment = Alignment.CenterEnd) {
+    Column(Modifier.fillMaxWidth().padding(start = 48.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        message.cast?.let { cast ->
+            Row(Modifier.semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(Modifier.size(20.dp).clip(CircleShape).background(palette.secondary), contentAlignment = Alignment.Center) {
+                    BasicText(cast.name.take(1), style = TypeSize.Caption.style(FontWeight.SemiBold).copy(color = palette.foreground))
+                    cast.image?.let { AsyncImage(absolute(it), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
+                }
+                BasicText("With ${cast.name}", style = TypeSize.Caption.style(FontWeight.Medium).copy(color = palette.mutedForeground))
+            }
+        }
         SelectionContainer {
             BasicText(message.text, style = TypeSize.Lead.style().copy(color = palette.foreground), modifier = Modifier.background(palette.card, shape).border(1.dp, palette.hairline, shape).padding(horizontal = 16.dp, vertical = 10.dp))
         }

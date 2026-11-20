@@ -14,7 +14,7 @@ To switch a function from mock to live: implement it in `packages/api-client/src
 | `listPromptStarters` | mock | instance content (config) | — | No engine endpoint; instance-owned. | Built (iOS sample) |
 | `createGeneration` | mock | `POST /v1/jobs` with `mode: "async"` | builder key | Engine returns 501 for async jobs; no video generation capability is on the live network today. | Slice 3 |
 | `getGeneration` | mock | `GET /v1/jobs/{id}` + `GET /v1/jobs/{id}/result` | builder key | `/result` returns 501. | Built (iOS sample) |
-| `listConversations`, `getConversation`, `createConversation`, `sendMessage`, `deleteConversation` | mock | instance-owned store + agent runtime calling `POST /v1/jobs` per tool step | builder key | No agent runtime yet; it depends on async jobs and results (501). The live `chat` capability can answer text turns once paid jobs are approved. A message's `agent_model` names the language model that runs the agent (the mock echoes it on the user message and its planning steps). A message's `character_slug` casts a character: the mock agent starts an `image-to-video` shot with the portrait as `first_frame` and echoes the cast on the user message; the real agent will pass the portrait as the job's image input, as an absolute URL or an upload, since the engine cannot read the app's relative paths. | Built (iOS sample); list and delete in slice 2 |
+| `listConversations`, `getConversation`, `createConversation`, `sendMessage`, `deleteConversation` | mock | instance-owned store + agent runtime calling `POST /v1/jobs` per tool step | builder key | No agent runtime yet; it depends on async jobs and results (501). The live `chat` capability can answer text turns once paid jobs are approved. A message's `agent_model` names the language model that runs the agent (the mock echoes it on the user message and its planning steps). A message's `character_slug` casts a character: the mock agent starts an `image-to-video` shot with the portrait as `first_frame` and echoes the cast on the user message; the real agent will pass the portrait as the job's image input, as an absolute URL or an upload, since the engine cannot read the app's relative paths. | Built (slice 2): send with attachments, a cast and a model; list and delete |
 
 This table covers what is built so far. The full client is specified in `docs/architecture.md`.
 
@@ -23,7 +23,7 @@ This table covers what is built so far. The full client is specified in `docs/ar
 | Function | Source | Endpoint (used or planned) | Token | Blocked by | Mobile |
 |----------|--------|----------------------------|-------|------------|--------|
 | `listMedia`, `deleteMedia` | mock | Instance-owned media store; descriptions and tags from a video understanding capability | builder key | No media store or understanding capability on the network yet. | Slice 4 |
-| `listAgentModels` | mock | Live: `GET /v1/offerings` plus each language app's runners (`describeApps`, reader token, server-side) | builder key + reader | Mock while the agent is: the model menu picks a model for the mock agent, so it lists the mock agent's models (`mock/agent-models.ts`, real open models with their published context sizes). Switch to live together with `createConversation` and `sendMessage`. The live path is built and tested. | Slice 2 |
+| `listAgentModels` | mock | Live: `GET /v1/offerings` plus each language app's runners (`describeApps`, reader token, server-side) | builder key + reader | Mock while the agent is: the model menu picks a model for the mock agent, so it lists the mock agent's models (`mock/agent-models.ts`, real open models with their published context sizes). Switch to live together with `createConversation` and `sendMessage`. The live path is built and tested. | Built (slice 2) |
 | `listCharacters`, `getCharacter`, `createCharacter` | mock | Instance-owned store | session | Needs the instance database (not built). | Slice 5 |
 | `getCreditBalance`, `getAccount`, `buyCreditPack`, `buyCredits`, `changePlan`, `getUsage` | mock, through the provider interface | `budgets.getAllocation` → `GET /v1/allowance?actor_id=`; plans and packs from the provider | reader / builder key | Batteries has no plans, packs, top-ups of the user's own amount (`buyCredits`, limits from `plans.getTopUpRange`) or per-user usage; PymtHouse isn't wired into the engine. The Batteries provider is implemented and unit-tested, but its write request bodies are not verified against a live admin key. | Slices 1, 6 |
 | `listApiKeys`, `createApiKey`, `revokeApiKey` | mock | `GET/POST /v1/admin/keys`, `…/revoke` | admin token | The `.env` admin token is an actor key (403). | Not on mobile |
@@ -34,7 +34,7 @@ This table covers what is built so far. The full client is specified in `docs/ar
 
 | Function | Source | Endpoint (used or planned) | Token | Blocked by | Mobile |
 |----------|--------|----------------------------|-------|------------|--------|
-| `analyseVideo` | mock | `POST /v1/jobs` against a video understanding capability | builder key | No such capability is on the network; paid. | Slice 2, through the agent |
+| `analyseVideo` | mock | `POST /v1/jobs` against a video understanding capability | builder key | No such capability is on the network; paid. | Built (slice 2), through the agent |
 | `startLiveSession`, `updateLiveSession`, `stopLiveSession` | mock | `POST /v1/sessions` and its update and close calls | builder key | `POST /v1/sessions` returns 501 (engine request R2). | Planned, after live sessions |
 | `getLiveHealth` | mock | `GET /v1/events` for the session | builder key | The events feed returns 501. | Planned, after live sessions |
 | `listLiveLooks`, `saveLiveLook`, `listLiveDestinations`, `addLiveDestination`, `removeLiveDestination` | mock | Instance-owned store; stream keys sealed server-side | session | Needs the instance database. | Planned, after live sessions |
@@ -86,7 +86,12 @@ the instance config, the other is derived.
 | Operation | Source | Reads | Token |
 |-----------|--------|-------|-------|
 | `get_instance` | config | `instance.config.json`: name, logo, theme overrides (resolved to sRGB hex), surfaces, the apps built for it (`mobile`), sign-in methods, content settings, home backdrop | none |
-| `list_capability_labels` | derived from `listOfferings` and runner models (`describeApps`, reader token, server-side) | The readable name of each capability, by the rules in `packages/user-app/src/lib/capability-menu.ts` | none |
+| `list_capability_labels` | derived from `listOfferings`, runner models (`describeApps`, reader token, server-side) and `listAgentModels` | The readable name of each capability and of each model the agent runs on, by the rules in `packages/user-app/src/lib/capability-menu.ts` | none |
+| `list_agent_model_menu` | derived from `listAgentModels` | The agent's model menu, one row per model, by `agentModelEntries` in the same file | none |
+
+Every `GET` answers with a weak `ETag` and `Cache-Control: private, no-cache`; a client that sends it back
+as `If-None-Match` gets `304` with no body while nothing has changed. Both apps do, so following a long
+render costs almost nothing.
 
 **Device sessions** belong to the instance, not the engine or the provider, so they aren't API client
 functions either. They are kept by `apps/web/lib/devices` in `DATA_DIR/device-sessions.json` (a database

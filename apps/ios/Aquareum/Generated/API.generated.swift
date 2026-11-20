@@ -63,7 +63,7 @@ struct API: Sendable {
         try await transport.send("GET", "/agent-models/menu", query: [:], body: nil)
     }
 
-    /// List the readable name of each capability on offer, as the interface shows it, with the model that does the work when known.
+    /// List the readable name of each capability on offer and each model the agent can run on, as the interface shows it, with the model that does the work when known.
     /// Open to guests.
     func listCapabilityLabels() async throws -> [CapabilityLabel] {
         try await transport.send("GET", "/offerings/labels", query: [:], body: nil)

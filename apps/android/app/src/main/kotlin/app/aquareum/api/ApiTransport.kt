@@ -35,6 +35,27 @@ class ApiError(val status: Int, override val message: String, val code: String? 
  */
 class Refusal(val error: ApiError, val token: String)
 
+/**
+ * The last answer to each read and its ETag, so a read that hasn't changed comes back as 304 with no body.
+ * Small: it only needs to hold what is being followed right now.
+ */
+class ReadCache {
+    private class Entry(val etag: String, val body: String, val token: String?)
+    private val entries = LinkedHashMap<String, Entry>()
+
+    @Synchronized fun validator(url: String, token: String?): String? = entries[url]?.takeIf { it.token == token }?.etag
+    @Synchronized fun body(url: String): String? = entries[url]?.body
+
+    @Synchronized fun store(url: String, etag: String, body: String, token: String?) {
+        if (entries.size >= LIMIT && url !in entries) entries.remove(entries.keys.first())
+        entries[url] = Entry(etag, body, token)
+    }
+
+    private companion object {
+        const val LIMIT = 64
+    }
+}
+
 /** Sends requests to one instance's `/api/v1`. The generated `Api` calls this; nothing else does. */
 class ApiTransport(
     baseUrl: String,
@@ -43,6 +64,7 @@ class ApiTransport(
     private val client: OkHttpClient,
     /** Told about refusals that end the session or close the app; see [Refusal]. */
     private val refused: (Refusal) -> Unit = {},
+    private val cache: ReadCache = ReadCache(),
 ) {
     private val root = baseUrl.trimEnd('/') + "/api/v1"
 
@@ -58,12 +80,16 @@ class ApiTransport(
         }.build()
         val payload = body?.let { fields -> json.encodeToString(JsonObject.serializer(), JsonObject(fields.filterValues { it != null }.mapValues { it.value!! })).toRequestBody(JSON) }
         val sent = token()
+        val key = url.toString()
         val request = Request.Builder().url(url).header("Accept", "application/json").method(method, payload).apply {
             sent?.let { header("Authorization", "Bearer $it") }
+            if (method == "GET") cache.validator(key, sent)?.let { header("If-None-Match", it) }
         }.build()
 
         client.newCall(request).await().use { response ->
+            if (response.code == 304) cache.body(key)?.let { return json.decodeFromString(output, it) }
             val text = response.body.string()
+            if (method == "GET" && response.code == 200) response.header("ETag")?.let { cache.store(key, it, text, sent) }
             if (!response.isSuccessful) {
                 val body = runCatching { json.decodeFromString(Envelope.serializer(), text).error }.getOrNull()
                 val error = ApiError(response.code, body?.message ?: "The request failed.", body?.code)

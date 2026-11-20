@@ -73,7 +73,15 @@ class HomeViewModel(private val api: Api, account: Account) : ViewModel() {
         _state.update { it.copy(sending = true, sendError = null) }
         viewModelScope.launch {
             try {
-                val conversation = api.createConversation(text = draft.prompt.trim(), app = draft.app, aspect = draft.aspect, durationSeconds = draft.durationSeconds.toDouble())
+                val conversation = api.createConversation(
+                    text = draft.text,
+                    app = draft.app,
+                    aspect = draft.aspect,
+                    durationSeconds = draft.durationSeconds.toDouble(),
+                    attachmentIds = draft.attachments.map { it.id }.ifEmpty { null },
+                    agentModel = draft.model,
+                    characterSlug = draft.cast?.slug,
+                )
                 _state.update { it.copy(sending = false, draft = Draft()) }
                 onOpen(conversation)
             } catch (error: Exception) {

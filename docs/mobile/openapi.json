@@ -405,7 +405,7 @@
     "/offerings/labels": {
       "get": {
         "operationId": "list_capability_labels",
-        "summary": "List the readable name of each capability on offer, as the interface shows it, with the model that does the work when known.",
+        "summary": "List the readable name of each capability on offer and each model the agent can run on, as the interface shows it, with the model that does the work when known.",
         "security": [],
         "responses": {
           "200": {

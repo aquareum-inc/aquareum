@@ -241,7 +241,7 @@ app can claim) are stronger and are the follow-up; the instance would serve
 
 The web polls every 700 ms.
 
-**Proposed for the first release: polling with backoff, on the existing operations.** While a turn or a
+**Built for the first release (slice 2): polling with backoff, on the existing operations.** While a turn or a
 render is working: every 700 ms for the first 10 seconds, then 1.5 s, then 3 s, capped at 5 s. Polling
 stops when the app leaves the foreground and resumes with one immediate read when it returns. Responses
 carry an `ETag`; an unchanged poll answers 304 with no body, so a long render costs almost nothing.
@@ -521,6 +521,36 @@ For the engine and provider (added to `docs/engine-requests.md`):
 - Q16: Can the provider record a top-up or a plan paid through Apple or Google?
 
 ## 17. What exists today
+
+### Slice 2: Home and chat (20 November 2026)
+
+- **Server.** `delete_conversation`; `list_agent_model_menu`, the agent's model menu named by the web's own
+  rules; `list_capability_labels` names the agent's models too, so a step the agent planned reads "Gemma 3
+  27B" and not the app's path; `send_message` takes the shot's capability, shape and length; every read
+  answers with an `ETag` and 304 while nothing changed.
+- **Both apps.** The composer's + menu (attach from the library, put a character in it, the agent's model),
+  chips for what is chosen, the attach and cast trays, the model and cast carrying on through a
+  conversation, "With Mara" on sent messages, History with search and swipe to delete, conversations opened
+  by id, and ETags in the transport (checked in the server log: repeat reads come back 304). iOS 14 tests,
+  Android 15 unit tests.
+- **Run on both** against a mock-only instance: cast Mara and send (the agent casts her, the shot renders,
+  she stays cast); attach a library video and send with no words (a summary and its moments come back);
+  delete from History; open an older conversation. Screenshots:
+  `docs/screenshots/mobile/{ios,android}-{home-cast,cast,attach,chat-cast,history}-{dark,light}.jpg`,
+  `ios-chat-attached-*.jpg`, `android-menu-*.jpg`.
+- **Found while running it.** On iOS a tap on the second line of a wrapped placeholder missed the field
+  (now the whole field focuses it); the swipe-to-delete action took the app's tint instead of red; an
+  agent step named the chosen model by its app path.
+
+Not done in slice 2, and why:
+
+- **Opening a shot or a found moment in the studio** waits for the studio (slice 3).
+- **The live aurora** on Home (a Metal and AGSL port of the web's shader) is still a still photograph.
+  It's design work of its own and doesn't block any flow; it moves to slice 3, where Home's backdrop meets
+  the studio's.
+- **Server-sent events** wait for the engine's events feed (R2), as planned.
+- **Not reproduced:** once on Android the attach tray said the library didn't load, while the server had
+  answered 200; Try again loaded it, and the same steps didn't fail again.
 
 ### Slice 1: shell and sign-in (20 November 2026)
 

@@ -9,21 +9,22 @@ in `apps/web/lib/public-api/operations.ts`.
 
 | Screen | Action | API function | Mobile |
 |--------|--------|--------------|--------|
-| Home | Load capability list for the picker | `listOfferings` | Slice 2 |
+| Home | Load capability list for the picker | `listOfferings` | Not on mobile: the agent picks; casting reads `list_capability_labels` to know image to video is on offer |
 | Home | Load starting points | `listPromptStarters` | Built (iOS sample) |
 | Home | Load example gallery | `listShowcase` | Built (iOS sample) |
 | Home | Send a request | `createConversation` | Built (iOS sample) |
-| Shell | List recent conversations (open sidebar) | `listConversations` | Slice 2 |
-| Chat | Open a conversation | `getConversation` | Built (iOS sample) |
+| Shell | List recent conversations (open sidebar) | `listConversations` | Built (slice 2): History, from Home, with search by title |
+| Chat | Open a conversation | `getConversation` | Built (iOS sample); from History by its id in slice 2 |
 | Chat | Send a follow-up | `sendMessage` | Built (iOS sample) |
 | Chat | Follow the agent's steps | `getConversation` | Built (iOS sample) |
 | Chat | Follow a shot rendering | `getGeneration` | Built (iOS sample) |
-| Chat | Open a shot in the studio | Navigation with the shot's prompt; `getGeneration` in the studio from slice (c). | Slice 2 |
+| Chat | Open a shot in the studio | Navigation with the shot's prompt; `getGeneration` in the studio from slice (c). | Slice 3, with the studio |
 | Sign-in | Choose a method (Google, Apple, Discord, wallet, email, passkey), sign out | Auth provider (`authorizationUrl` with the method, `exchange`); see `apps/web/lib/auth`. On mobile: the same flow in the system auth session, then `create_device_session`; sign out is `end_device_session`. Wallet and Coinbase aren't offered on phones yet (engine question Q12). | Built (slice 1) |
 | Shell (mobile) | Open the account tray: name, email, credits | `get_me` (session identity and `getCreditBalance`) | Built (slice 1) |
 | Shell (mobile) | Choose the theme (system, dark, light) | Kept on the device; no API function | Built (slice 1) |
+| History (mobile) | Delete a conversation (swipe, then confirm) | `deleteConversation` (`delete_conversation`) | Built (slice 2) |
 | Settings · Devices | List signed-in phones and tablets, sign one out | `list_devices`, `revoke_device` (device sessions, `apps/web/lib/devices`) | API built in slice 1; screens in slice 6 |
-| Shell | Show credit balance | `getCreditBalance` | Slice 2 |
+| Shell | Show credit balance | `getCreditBalance` | Built (slice 1): the account tray, through `get_me` |
 | Studio (video, image, audio) | Load capabilities for the medium and mode | `listOfferings` | Slice 3 |
 | Studio | Generate (once per variant) | `createGeneration` | Slice 3 |
 | Studio | Follow a render | `getGeneration` | Slice 3 |
@@ -47,12 +48,12 @@ in `apps/web/lib/public-api/operations.ts`.
 | Settings | Choose, switch or cancel a plan | `changePlan` | Not yet: purchasing is undecided |
 | Settings | See usage | `getUsage` | Slice 6 |
 | Settings | Sign out | `POST /auth/sign-out` | Slice 6 |
-| Chat, Home | Attach a video from the library | `listMedia`, then `createConversation` / `sendMessage` with `attachment_ids` | Slice 2 |
-| Chat, Home | Pick the model that runs the agent | `listAgentModels`, then `createConversation` / `sendMessage` with `agent_model` | Slice 2 |
-| Chat, Home | Put a character in a video (cast picker in the composer) | `listCharacters` (own, then public; mature only if shown), then `createConversation` / `sendMessage` with `character_slug` | Slice 2 |
+| Chat, Home | Attach a video from the library | `listMedia`, then `createConversation` / `sendMessage` with `attachment_ids` | Built (slice 2) |
+| Chat, Home | Pick the model that runs the agent | `listAgentModels`, then `createConversation` / `sendMessage` with `agent_model` | Built (slice 2): `list_agent_model_menu`, the same rows as the web |
+| Chat, Home | Put a character in a video (cast picker in the composer) | `listCharacters` (own, then public; mature only if shown), then `createConversation` / `sendMessage` with `character_slug` | Built (slice 2); mature characters aren't listed on phones (section 12 of the plan) |
 | Characters | Make a video with this character (opens Home with `?with=<slug>`) | `getCharacter`, then `createConversation` with `character_slug` | Slice 5 |
-| Chat | Summarise, find moments, ask about a video | `sendMessage` (the agent calls a video understanding capability) | Slice 2 |
-| Chat | Open a found moment in the studio | Navigation with the moment as the prompt | Slice 2 |
+| Chat | Summarise, find moments, ask about a video | `sendMessage` (the agent calls a video understanding capability) | Built (slice 2) |
+| Chat | Open a found moment in the studio | Navigation with the moment as the prompt | Slice 3, with the studio |
 | Studio Live | Load looks and destinations | `listLiveLooks`, `listLiveDestinations` | Planned, after live sessions |
 | Studio Live | Save a look | `saveLiveLook` | Planned, after live sessions |
 | Studio Live | Add or remove a destination | `addLiveDestination`, `removeLiveDestination` | Planned, after live sessions |

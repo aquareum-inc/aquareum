@@ -87,6 +87,8 @@ import app.aquareum.generated.MediaItem
 import app.aquareum.generated.TypeSize
 import app.aquareum.home.HomeScreen
 import app.aquareum.home.HomeViewModel
+import app.aquareum.history.HistoryScreen
+import app.aquareum.history.HistoryViewModel
 import app.aquareum.library.LibraryScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -121,6 +123,14 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
     val prompt by account.prompt.collectAsStateWithLifecycle()
     val navigation = rememberNavController()
     val entry by navigation.currentBackStackEntryAsState()
+    val signedIn by account.signedIn.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { container.composer.load() }
+    LaunchedEffect(signedIn) {
+        if (!signedIn) {
+            container.composer.signedOut()
+            navigation.popBackStack(Tab.Home.route, inclusive = false)
+        }
+    }
     // Saved, so the tray stays open through a rotation or a theme change.
     var accountOpen by rememberSaveable { mutableStateOf(false) }
     // Set when the account tray hands over to sign-in, which opens once it has closed.
@@ -169,7 +179,7 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
             NavHost(navigation, startDestination = Tab.Home.route, enterTransition = { fadeIn(motion.enter()) }, exitTransition = { fadeOut(motion.exit()) }) {
                 composable(Tab.Home.route) {
                     val model = viewModel<HomeViewModel>(factory = viewModelFactory { initializer { HomeViewModel(container.api, account) } })
-                    HomeScreen(model, account, description, Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() }), accountButton) { conversation ->
+                    HomeScreen(model, account, container.composer, description, Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() }), accountButton, openHistory = { navigation.navigate("history") }) { conversation ->
                         container.conversations[conversation.id] = conversation
                         navigation.navigate("conversation/${conversation.id}")
                     }
@@ -182,10 +192,14 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
                     val model = viewModel<ListModel<Character>>(factory = viewModelFactory { initializer { ListModel(account) { container.api.listCharacters() } } })
                     CharactersScreen(model, signIn, accountButton)
                 }
+                composable("history") {
+                    val model = viewModel<HistoryViewModel>(factory = viewModelFactory { initializer { HistoryViewModel(container.api) } })
+                    HistoryScreen(model, onBack = { navigation.popBackStack() }) { summary -> navigation.navigate("conversation/${summary.id}") }
+                }
                 composable("conversation/{id}") { entry ->
                     val id = entry.arguments?.getString("id").orEmpty()
                     val model = viewModel<ConversationViewModel>(factory = viewModelFactory { initializer { ConversationViewModel(container.api, id, container.conversations[id]) } })
-                    ConversationScreen(model, symbol, description?.name ?: appName, Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() })) {
+                    ConversationScreen(model, container.composer, description?.content?.characters == true, symbol, description?.name ?: appName, Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() })) {
                         navigation.popBackStack()
                     }
                 }

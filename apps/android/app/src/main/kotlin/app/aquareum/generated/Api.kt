@@ -55,7 +55,7 @@ class Api(private val transport: ApiTransport) {
     suspend fun listAgentModelMenu(): List<AgentModelEntry> =
         transport.send(ListSerializer(AgentModelEntry.serializer()), "GET", "/agent-models/menu", query = emptyMap(), body = null)
 
-    /** List the readable name of each capability on offer, as the interface shows it, with the model that does the work when known. Open to guests. */
+    /** List the readable name of each capability on offer and each model the agent can run on, as the interface shows it, with the model that does the work when known. Open to guests. */
     suspend fun listCapabilityLabels(): List<CapabilityLabel> =
         transport.send(ListSerializer(CapabilityLabel.serializer()), "GET", "/offerings/labels", query = emptyMap(), body = null)
 
