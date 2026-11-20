@@ -1,5 +1,12 @@
 package app.aquareum.chat
 
+import app.aquareum.design.orb.ThinkingOrb
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
@@ -208,8 +215,12 @@ private fun AgentTurn(turn: AgentMessage, generations: Map<String, Generation>, 
     val open = working || expanded
 
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // While it works, an orb shows what kind of work it is doing; when it's done, the instance's mark comes back.
         Box(Modifier.size(28.dp).border(1.dp, palette.hairline, CircleShape), contentAlignment = Alignment.Center) {
-            BrandSymbol(symbol, instanceName, palette.foreground, Modifier.size(12.dp))
+            AnimatedContent(working, transitionSpec = { (fadeIn(motion.enter()) + scaleIn(motion.enter(), initialScale = 0.8f)) togetherWith (fadeOut(motion.exit()) + scaleOut(motion.exit(), targetScale = 0.8f)) }, label = "agent mark") { busy ->
+                if (busy) ThinkingOrb(orbState(turn.steps.firstOrNull { it.state == AgentStepState.Running }))
+                else BrandSymbol(symbol, instanceName, palette.foreground, Modifier.size(12.dp))
+            }
         }
         Column(Modifier.weight(1f).animateContentSize(motion.morph()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (working) {

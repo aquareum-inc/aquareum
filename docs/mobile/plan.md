@@ -348,7 +348,7 @@ Third-party dependencies, each justified:
 | kotlinx.serialization, kotlinx.coroutines | Android | JetBrains' own; the standard for Kotlin. |
 | AndroidX (Compose, Navigation, Lifecycle, Browser, DataStore) | Android | Google's own. |
 | Coil | Android | Compose has no image loader of its own; Coil is the one Google's documentation uses. |
-| Thinking orbs (vendored in `apps/ios/Aquareum/Vendor/ThinkingOrbs`, MIT) | iOS | The agent's working indicator, the same drawing as the web's `thinking-orbs` package. Vendored from a pinned commit rather than SwiftPM: the package tracks a branch of a 284 MB repository. |
+| Thinking orbs (vendored in `apps/ios/Aquareum/Vendor/ThinkingOrbs`; ported to Kotlin in `apps/android/.../design/orb`; MIT) | iOS, Android | The agent's working indicator, the same drawing as the web's `thinking-orbs` package. Vendored from a pinned commit rather than SwiftPM: the package tracks a branch of a 284 MB repository. |
 | Material icons (extended) | Android | The platform's own icon set as Compose vectors. Unused icons are stripped from release builds. |
 | None | iOS | Everything is in the SDK. |
 
@@ -550,10 +550,11 @@ For the engine and provider (added to `docs/engine-requests.md`):
   orb replaces the instance's mark beside the step and shows the kind of work (`agentOrbState`: planning
   solves, watching searches, making media composes, writing a prompt weaves); when it's done the mark comes
   back. Web: `thinking-orbs` 0.3.2 from npm (7 KB gzipped, no dependencies, no install scripts). iOS: the
-  SwiftUI port vendored at commit `14ae9d2`. Android has no Compose version yet, so it keeps the mark and the
-  breathing step title. Screenshot: `docs/screenshots/mobile/ios-chat-orb-dark.jpg`.
+  SwiftUI port vendored at commit `14ae9d2`. Android: a Kotlin port of the six states the app uses
+  (`design/orb`), checked dot for dot against the library's own golden frames (24 cases, within 0.0001).
+  Screenshots: `docs/screenshots/mobile/{ios,android}-chat-orb-dark.jpg`, `android-chat-orb-done-light.jpg`.
 
-Not done in the polish pass: a Compose port of the orb, a real-device performance check of the aurora, and an automated accessibility
+Not done in the polish pass: a real-device performance check of the aurora, and an automated accessibility
 audit in a UI test target (`performAccessibilityAudit`), which the project doesn't have yet.
 
 ### Slice 6: Settings (20 November 2026)
