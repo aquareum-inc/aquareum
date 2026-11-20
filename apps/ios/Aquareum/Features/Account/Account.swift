@@ -133,6 +133,14 @@ final class Account {
         forget()
     }
 
+    /// Deletes the account on the instance, then forgets it here. False when the instance didn't.
+    func deleteAccount() async -> Bool {
+        guard (try? await api.deleteAccount()) != nil else { return false }
+        forget()
+        notice = "Your account was deleted."
+        return true
+    }
+
     private func forget() {
         vault.set(nil)
         signedIn = false

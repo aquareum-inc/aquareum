@@ -23,7 +23,7 @@ in `apps/web/lib/public-api/operations.ts`.
 | Shell (mobile) | Open the account tray: name, email, credits | `get_me` (session identity and `getCreditBalance`) | Built (slice 1) |
 | Shell (mobile) | Choose the theme (system, dark, light) | Kept on the device; no API function | Built (slice 1) |
 | History (mobile) | Delete a conversation (swipe, then confirm) | `deleteConversation` (`delete_conversation`) | Built (slice 2) |
-| Settings · Devices | List signed-in phones and tablets, sign one out | `list_devices`, `revoke_device` (device sessions, `apps/web/lib/devices`) | API built in slice 1; screens in slice 6 |
+| Settings · Devices | List signed-in phones and tablets, sign one out | `list_devices`, `revoke_device` (device sessions, `apps/web/lib/devices`); on the web `revokeDeviceAction` | Built (slice 6); this phone signs out from the account tray instead |
 | Shell | Show credit balance | `getCreditBalance` | Built (slice 1): the account tray, through `get_me` |
 | Studio (video, image, audio) | Load capabilities for the medium and mode | `listOfferings` | Built (slice 3): `list_studio_mediums`, the web's mediums resolved against the network |
 | Studio | Generate (once per variant) | `createGeneration`, priced first with `quote_generation` | Built (slice 3) |
@@ -43,13 +43,15 @@ in `apps/web/lib/public-api/operations.ts`.
 | Developers | List capabilities | `listOfferings` | Not on mobile |
 | Developers | Run a capability | `runCapability` | Not on mobile |
 | Developers | List, create, revoke keys | `listApiKeys`, `createApiKey`, `revokeApiKey` | Not on mobile |
-| Settings | Change a preference, confirm age, switch adult content | `updatePreferences` | Slice 6 |
-| Settings | See plan, packs and balance | `getAccount`, `getCreditBalance` | Slice 6 |
+| Settings | Change a preference, confirm age, switch adult content | `updatePreferences` | Built (slice 6): shape, length, saving conversations and asking before spending. Adult content is shown, never switched: the API refuses it from a device session (`web_only`) |
+| Settings | See plan, packs and balance | `getAccount`, `getCreditBalance` | Built (slice 6): balance and plan only; packs aren't shown, since nothing is bought on phones (plan §11, option A) |
 | Settings | Add credits (a pack) | `buyCreditPack` | Not yet: purchasing is undecided |
 | Settings | Add credits (an amount of their own, within the operator's limits) | `buyCredits` | Not yet: purchasing is undecided |
 | Settings | Choose, switch or cancel a plan | `changePlan` | Not yet: purchasing is undecided |
-| Settings | See usage | `getUsage` | Slice 6 |
-| Settings | Sign out | `POST /auth/sign-out` | Slice 6 |
+| Settings | See usage | `getUsage` | Built (slice 6) |
+| Settings | Read who can see a job | `get_privacy` (`describePrivacy`, the instance's `privacy.retainChats`) | Built (slice 6) |
+| Settings | Delete the account | `deleteAccount` (`delete_account`: also signs out every device and forgets the person's blocks); on the web `deleteAccountAction` | Built (slice 6) |
+| Settings | Sign out | `POST /auth/sign-out`; on phones `end_device_session` from the account tray | Built (slice 1) |
 | Chat, Home | Attach a video from the library | `listMedia`, then `createConversation` / `sendMessage` with `attachment_ids` | Built (slice 2) |
 | Chat, Home | Pick the model that runs the agent | `listAgentModels`, then `createConversation` / `sendMessage` with `agent_model` | Built (slice 2): `list_agent_model_menu`, the same rows as the web |
 | Chat, Home | Put a character in a video (cast picker in the composer) | `listCharacters` (own, then public; mature only if shown), then `createConversation` / `sendMessage` with `character_slug` | Built (slice 2); mature characters aren't listed on phones (section 12 of the plan) |

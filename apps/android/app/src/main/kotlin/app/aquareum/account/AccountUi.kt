@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Person
@@ -72,7 +74,7 @@ import java.text.NumberFormat
 
 /** The account menu: who is signed in and their credits, the theme, and signing out. For a guest, the way in. */
 @Composable
-fun AccountTray(account: Account, theme: ThemePreference, signIn: () -> Unit) {
+fun AccountTray(account: Account, theme: ThemePreference, signIn: () -> Unit, openSettings: () -> Unit) {
     val palette = LocalPalette.current
     val signedIn by account.signedIn.collectAsStateWithLifecycle()
     val me by account.me.collectAsStateWithLifecycle()
@@ -109,6 +111,15 @@ fun AccountTray(account: Account, theme: ThemePreference, signIn: () -> Unit) {
     Segmented(listOf(ThemePreference.Choice.System to "System", ThemePreference.Choice.Dark to "Dark", ThemePreference.Choice.Light to "Light"), choice, theme::set)
 
     if (signedIn) {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp).pressable(label = "Settings", onClick = openSettings),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(Icons.Rounded.Settings, contentDescription = null, tint = palette.foreground, modifier = Modifier.size(20.dp))
+            BasicText("Settings", style = TypeSize.Body.style(FontWeight.Medium).copy(color = palette.foreground), modifier = Modifier.weight(1f))
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = palette.subtleForeground, modifier = Modifier.size(20.dp))
+        }
         Row(
             Modifier.fillMaxWidth().heightIn(min = 48.dp).pressable { haptics.performHapticFeedback(HapticFeedbackType.LongPress); confirming = true },
             verticalAlignment = Alignment.CenterVertically,

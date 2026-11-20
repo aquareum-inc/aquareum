@@ -21,6 +21,9 @@ struct MainTabs: View {
     @State private var accountOpen: AccountTrayItem?
     /// Set when the account tray hands over to sign-in, which opens once it has closed.
     @State private var signInNext = false
+    /// Set when the account tray hands over to Settings, which opens once it has closed.
+    @State private var settingsNext = false
+    @State private var settingsOpen = false
     @Namespace private var travel
 
     enum Destination: Hashable { case home, studio, library, characters }
@@ -68,15 +71,23 @@ struct MainTabs: View {
             }
         }
         .tray(item: $accountOpen, title: { _ in "Account" }, dismissed: {
-            guard signInNext else { return }
-            signInNext = false
-            Task { _ = await account.requireSignIn() }
+            if signInNext {
+                signInNext = false
+                Task { _ = await account.requireSignIn() }
+            } else if settingsNext {
+                settingsNext = false
+                settingsOpen = true
+            }
         }) { _ in
             AccountTray {
                 signInNext = true
                 accountOpen = nil
+            } openSettings: {
+                settingsNext = true
+                accountOpen = nil
             }
         }
+        .sheet(isPresented: $settingsOpen) { SettingsView(api: api) }
         .tray(item: $account.prompt, title: { _ in "Sign in or sign up" }, dismissed: account.promptClosed) { prompt in
             SignInTray(reason: prompt.reason)
         }

@@ -91,6 +91,13 @@ import app.aquareum.home.HomeViewModel
 import app.aquareum.history.HistoryScreen
 import app.aquareum.history.HistoryViewModel
 import app.aquareum.library.LibraryScreen
+import app.aquareum.settings.DevicesSettingsScreen
+import app.aquareum.settings.PlanSettingsScreen
+import app.aquareum.settings.PreferencesSettingsScreen
+import app.aquareum.settings.PrivacySettingsScreen
+import app.aquareum.settings.SettingsPage
+import app.aquareum.settings.SettingsScreen
+import app.aquareum.settings.UsageSettingsScreen
 import app.aquareum.library.LibraryViewModel
 import app.aquareum.studio.StudioScreen
 import app.aquareum.chat.LocalOpenInStudio
@@ -134,6 +141,7 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
     LaunchedEffect(signedIn) {
         if (!signedIn) {
             container.composer.signedOut()
+            container.settings.signedOut()
             navigation.popBackStack(Tab.Home.route, inclusive = false)
         }
     }
@@ -141,6 +149,8 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
     var accountOpen by rememberSaveable { mutableStateOf(false) }
     // Set when the account tray hands over to sign-in, which opens once it has closed.
     var signInNext by rememberSaveable { mutableStateOf(false) }
+    // Set when the account tray hands over to Settings, which opens once it has closed.
+    var settingsNext by rememberSaveable { mutableStateOf(false) }
 
     val tabs = Tab.entries.filter { it != Tab.Characters || description?.content?.characters == true }
     val onTab = tabs.any { tab -> entry?.destination?.route == tab.route }
@@ -234,6 +244,20 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
                         navigation.navigate("character/${made.slug}") { popUpTo(Tab.Characters.route) }
                     }
                 }
+                composable("settings") {
+                    SettingsScreen(account, onBack = { navigation.popBackStack() }) { page -> navigation.navigate("settings/${page.route}") }
+                }
+                composable("settings/{page}") { entry ->
+                    val back = { navigation.popBackStack(); Unit }
+                    when (SettingsPage.entries.firstOrNull { it.route == entry.arguments?.getString("page") }) {
+                        SettingsPage.Plan -> PlanSettingsScreen(container.settings, account, back)
+                        SettingsPage.Usage -> UsageSettingsScreen(container.settings, back)
+                        SettingsPage.Preferences -> PreferencesSettingsScreen(container.settings, description?.content?.adultContent == true, back)
+                        SettingsPage.Devices -> DevicesSettingsScreen(container.settings, back)
+                        SettingsPage.Privacy -> PrivacySettingsScreen(container.settings, back)
+                        null -> back()
+                    }
+                }
                 composable("history") {
                     val model = viewModel<HistoryViewModel>(factory = viewModelFactory { initializer { HistoryViewModel(container.api) } })
                     HistoryScreen(model, onBack = { navigation.popBackStack() }) { summary -> navigation.navigate("conversation/${summary.id}") }
@@ -256,10 +280,16 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
             if (signInNext) {
                 signInNext = false
                 signIn()
+            } else if (settingsNext) {
+                settingsNext = false
+                navigation.navigate("settings")
             }
         }) { close ->
-            AccountTray(account, container.theme) {
+            AccountTray(account, container.theme, signIn = {
                 signInNext = true
+                close()
+            }) {
+                settingsNext = true
                 close()
             }
         }

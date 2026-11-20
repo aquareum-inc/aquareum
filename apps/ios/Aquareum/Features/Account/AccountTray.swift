@@ -4,6 +4,8 @@ import SwiftUI
 struct AccountTray: View {
     /// Closes this tray and opens sign-in in its place.
     let signIn: () -> Void
+    /// Closes this tray and opens Settings in its place.
+    let openSettings: () -> Void
     @Environment(Account.self) private var account
     @Environment(\.palette) private var palette
     @AppStorage("theme") private var theme = "system"
@@ -32,6 +34,18 @@ struct AccountTray: View {
             }
 
             if account.signedIn {
+                Button(action: openSettings) {
+                    HStack {
+                        Label("Settings", systemImage: "gearshape").text(.body, weight: .medium).foregroundStyle(palette.foreground)
+                        Spacer()
+                        Image(systemName: "chevron.right").imageScale(.small).foregroundStyle(palette.subtleForeground)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressStyle())
+                .accessibilityHint("Plan and credits, usage, preferences, devices and privacy")
+
                 Button(role: .destructive) { confirmingSignOut = true } label: {
                     Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
                         .text(.body, weight: .medium)

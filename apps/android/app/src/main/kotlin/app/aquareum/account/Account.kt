@@ -157,6 +157,18 @@ class Account(
         forget()
     }
 
+    /** Deletes the account on the instance, then forgets it here. False when the instance didn't. */
+    suspend fun deleteAccount(): Boolean = try {
+        api.deleteAccount()
+        forget()
+        notice.value = "Your account was deleted."
+        true
+    } catch (error: kotlinx.coroutines.CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        false
+    }
+
     private fun forget() {
         vault.set(null)
         _signedIn.value = false

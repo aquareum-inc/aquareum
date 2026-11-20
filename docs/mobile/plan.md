@@ -87,7 +87,7 @@ each calling one existing API client function unless marked **new**.
 | `get_character` | `GET /characters/{slug}` | `getCharacter` | yes, public ones | 5 |
 | `create_character` | `POST /characters` | `createCharacter` | | 5 |
 | `report_character`, `block_character` | `POST /characters/{slug}/report`, `…/block` | **new** (section 12) | | 5 |
-| `get_account` | `GET /account` | `getAccount` | | 6 |
+| `get_account` | `GET /account` (answers with `PlanAndCredits`) | `getAccount` | | 6 |
 | `get_preferences`, `update_preferences` | `GET`, `PATCH /preferences` | `getPreferences`, `updatePreferences` | | 6 |
 | `delete_account` | `DELETE /me` | **new**, provider identity (section 12, question Q14) | | 6 |
 
@@ -524,6 +524,37 @@ For the engine and provider (added to `docs/engine-requests.md`):
 - Q16: Can the provider record a top-up or a plan paid through Apple or Google?
 
 ## 17. What exists today
+
+### Slice 6: Settings (20 November 2026)
+
+- **Server.** `get_account` (its type renamed `PlanAndCredits`, so it can't be confused with who is signed
+  in), `get_preferences`, `update_preferences` (adult content and the age confirmation are refused from a
+  device session with `web_only`), `get_privacy` (the web's privacy tiers, now shared through
+  `@aquareum/user-app/privacy`), and `delete_account`: the provider deletes the user
+  (`identity.deleteUser`, new; Batteries answers 501, Q14), every device session ends, and the person's
+  blocks are forgotten while their reports stay, unattributed. Left out of MCP.
+- **Web.** Settings ▸ Devices lists the phones and tablets signed in and signs any out; Settings ▸ Profile
+  has Delete account, confirmed in a sheet.
+- **Both apps.** Settings opens from the account tray: who you are, then Plan and credits (balance and plan,
+  nothing to buy), Usage (totals, by capability, recent jobs), Preferences (shape, length, saving
+  conversations, asking before spending; adult content shown as On or Off with where to change it, never
+  switched), Devices (sign out any other phone), Privacy, and Delete account. iOS 22 tests, Android 27 unit
+  tests.
+- **Run on both** against a mock-only instance: every page in dark and light; a preference changed and read
+  back from the API; another device signed out; the account deleted on each, which signed every device out
+  with "Your account was deleted." Screenshots:
+  `docs/screenshots/mobile/{ios,android}-settings{,-plan,-usage,-preferences,-devices,-privacy,-delete}-{dark,light}.jpg`.
+- **Found while running it.** On iOS the switches were white on white in the dark theme: they took the
+  foreground colour as their tint. On Android the delete dialog closed when the activity was recreated.
+
+Not done in slice 6, and why:
+
+- **Buying credits or a plan.** Option A of section 11 until the store decision is made: the apps show the
+  balance and plan and say nothing about buying.
+- **Notifications when a render finishes,** and **Enter sends**: the first needs push, which isn't built; the
+  second is a keyboard setting for the web.
+- **The preferred shape and length don't yet set the composer's starting values** on any surface; they are
+  saved to the account for when they do.
 
 ### Slice 5: Characters (20 November 2026)
 
