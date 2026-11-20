@@ -4,8 +4,8 @@ struct HomeView: View {
     let travel: Namespace.ID
     let openAccount: () -> Void
     let openHistory: () -> Void
+    @Bindable var model: HomeModel
     let open: (Conversation) -> Void
-    @State private var model: HomeModel
     @State private var tray: ComposerTray?
     @FocusState private var composing: Bool
     @Environment(Account.self) private var account
@@ -14,13 +14,6 @@ struct HomeView: View {
     @Environment(\.palette) private var palette
     @Environment(\.motion) private var motion
 
-    init(api: API, travel: Namespace.ID, openAccount: @escaping () -> Void, openHistory: @escaping () -> Void, open: @escaping (Conversation) -> Void) {
-        self.travel = travel
-        self.openAccount = openAccount
-        self.openHistory = openHistory
-        self.open = open
-        _model = State(initialValue: HomeModel(api: api))
-    }
 
     private static let starterSymbols = ["make-video": "film", "animate-image": "photo.on.rectangle.angled", "understand-video": "text.viewfinder", "restyle-live": "dot.radiowaves.left.and.right"]
 

@@ -73,7 +73,9 @@ import app.aquareum.R
 import app.aquareum.account.AccountButton
 import app.aquareum.account.AccountTray
 import app.aquareum.account.SignInTray
+import app.aquareum.characters.CharacterScreen
 import app.aquareum.characters.CharactersScreen
+import app.aquareum.characters.NewCharacterScreen
 import app.aquareum.chat.ConversationScreen
 import app.aquareum.chat.ConversationViewModel
 import app.aquareum.design.LocalPalette
@@ -83,7 +85,6 @@ import app.aquareum.design.Tray
 import app.aquareum.design.glass
 import app.aquareum.design.rememberMotion
 import app.aquareum.design.style
-import app.aquareum.generated.Character
 import app.aquareum.generated.TypeSize
 import app.aquareum.home.HomeScreen
 import app.aquareum.home.HomeViewModel
@@ -191,7 +192,7 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
         SharedTransitionLayout(Modifier.padding(bottom = padding.calculateBottomPadding()).consumeWindowInsets(padding)) {
             NavHost(navigation, startDestination = Tab.Home.route, enterTransition = { fadeIn(motion.enter()) }, exitTransition = { fadeOut(motion.exit()) }) {
                 composable(Tab.Home.route) {
-                    val model = viewModel<HomeViewModel>(factory = viewModelFactory { initializer { HomeViewModel(container.api, account) } })
+                    val model = viewModel<HomeViewModel>(factory = viewModelFactory { initializer { HomeViewModel(container.api, account, container.composer) } })
                     HomeScreen(model, account, container.composer, description, Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() }), accountButton, openHistory = { navigation.navigate("history") }) { conversation ->
                         container.conversations[conversation.id] = conversation
                         navigation.navigate("conversation/${conversation.id}")
@@ -206,8 +207,32 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
                     }
                 }
                 composable(Tab.Characters.route) {
-                    val model = viewModel<ListModel<Character>>(factory = viewModelFactory { initializer { ListModel(account) { container.api.listCharacters() } } })
-                    CharactersScreen(model, signIn, accountButton)
+                    LaunchedEffect(signedIn) {
+                        if (!signedIn) container.characters.signedOut()
+                        container.characters.load()
+                    }
+                    CharactersScreen(container.characters, account, accountButton, open = { navigation.navigate("character/${it.slug}") }) {
+                        scope.launch { if (account.requireSignIn("Sign in to make a character of your own.")) navigation.navigate("characters/new") }
+                    }
+                }
+                composable("character/{slug}") { entry ->
+                    val slug = entry.arguments?.getString("slug").orEmpty()
+                    val state by container.characters.state.collectAsStateWithLifecycle()
+                    // Gone once blocked; the screen leaves as it goes.
+                    state.all.firstOrNull { it.slug == slug }?.let { character ->
+                        CharacterScreen(character, container.characters, account, description?.name ?: appName, onBack = { navigation.popBackStack() }) { cast ->
+                            container.composer.pendingCast.value = cast
+                            navigation.navigate(Tab.Home.route) {
+                                popUpTo(navigation.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                }
+                composable("characters/new") {
+                    NewCharacterScreen(container.characters, onClose = { navigation.popBackStack() }) { made ->
+                        navigation.navigate("character/${made.slug}") { popUpTo(Tab.Characters.route) }
+                    }
                 }
                 composable("history") {
                     val model = viewModel<HistoryViewModel>(factory = viewModelFactory { initializer { HistoryViewModel(container.api) } })

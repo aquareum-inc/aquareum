@@ -46,6 +46,7 @@ class AppContainer(context: Context) {
     val theme = ThemePreference(context)
     val composer = app.aquareum.composer.ComposerSupport(api)
     val studio = app.aquareum.studio.StudioModel(api)
+    val characters = app.aquareum.characters.CharactersModel(api)
 
     /** Conversations as last seen, so opening one shows it at once and then refreshes. */
     val conversations = mutableMapOf<String, Conversation>()

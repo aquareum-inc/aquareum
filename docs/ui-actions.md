@@ -34,10 +34,12 @@ in `apps/web/lib/public-api/operations.ts`.
 | Library | Open in studio | Navigation with the item's prompt | Built (slice 4) |
 | Library | Ask about it | `createConversation` with the item in `attachment_ids` | Built (slice 4) |
 | Library | Convert or export | Opens the capability's run screen → `runCapability` | Not on phones: it opens the Developers pages, which stay on the web |
-| Characters | List mine and shared | `listCharacters` | List built (slice 1); the rest slice 5 |
-| Characters | Open one | `getCharacter` | Slice 5 |
-| Characters | Create | `createCharacter` | Slice 5 |
-| Characters | Start chatting | `createConversation` | Slice 5 |
+| Characters | List mine and shared, search | `listCharacters` (shared ones open to guests; nothing for adults only, taken down or blocked) | Built (slice 5) |
+| Characters | Open one | `getCharacter` | Built (slice 5) |
+| Characters | Create | `createCharacter` | Built (slice 5); always private-or-shared, never for adults only, on phones |
+| Characters | Start chatting | `createConversation` | Not on phones: conversations have no in-character mode yet, so the web's button starts an ordinary conversation (plan, slice 5) |
+| Characters | Report a shared character, with a reason | `report_character` (instance-owned, `apps/web/lib/moderation`) | Built (slice 5); not on the web yet |
+| Characters | Block a shared character and its author | `block_character` (instance-owned) | Built (slice 5); not on the web yet |
 | Developers | List capabilities | `listOfferings` | Not on mobile |
 | Developers | Run a capability | `runCapability` | Not on mobile |
 | Developers | List, create, revoke keys | `listApiKeys`, `createApiKey`, `revokeApiKey` | Not on mobile |
@@ -51,7 +53,7 @@ in `apps/web/lib/public-api/operations.ts`.
 | Chat, Home | Attach a video from the library | `listMedia`, then `createConversation` / `sendMessage` with `attachment_ids` | Built (slice 2) |
 | Chat, Home | Pick the model that runs the agent | `listAgentModels`, then `createConversation` / `sendMessage` with `agent_model` | Built (slice 2): `list_agent_model_menu`, the same rows as the web |
 | Chat, Home | Put a character in a video (cast picker in the composer) | `listCharacters` (own, then public; mature only if shown), then `createConversation` / `sendMessage` with `character_slug` | Built (slice 2); mature characters aren't listed on phones (section 12 of the plan) |
-| Characters | Make a video with this character (opens Home with `?with=<slug>`) | `getCharacter`, then `createConversation` with `character_slug` | Slice 5 |
+| Characters | Make a video with this character (opens Home with `?with=<slug>`) | `getCharacter`, then `createConversation` with `character_slug` | Built (slice 5): "Cast them in a scene" puts them in Home's composer |
 | Chat | Summarise, find moments, ask about a video | `sendMessage` (the agent calls a video understanding capability) | Built (slice 2) |
 | Chat | Open a found moment in the studio | Navigation with the moment as the prompt | Built (slice 3) |
 | Studio Live | Load looks and destinations | `listLiveLooks`, `listLiveDestinations` | Planned, after live sessions |
@@ -85,6 +87,8 @@ in `apps/web/lib/public-api/operations.ts`.
 | Operator · Compute | See operators that served jobs; allow or block | `listComputeOperators`, `setComputeOperatorBlocked` | Not on mobile |
 | Operator · Grants | List, create, add funding | `provider.budgets.listGrants`, `createGrant`, `fundGrant` | Not on mobile |
 | Operator · Settings | Name, domain, logo and symbol (upload, replace, remove; previewed in both themes; checked and cleaned on save by `lib/operator/logo.ts`), colours, sign-up, privacy, surfaces (app, API, MCP, phone apps, reviewed before any is switched off; the console is shown on and disabled), content policy | Writes the instance config (`@aquareum/config` `validateConfig`) | Not on mobile |
+| Operator · Reports | List reports of shared characters, open first | `operator_list_reports` (`moderation().reports()`) | Not on mobile |
+| Operator · Reports | Keep a character up, or take it down for everyone | `operator_resolve_report` (`moderation().resolve()`) | Not on mobile |
 | Operator · Keys | List, issue, revoke | `listAccessKeys`, `issueAccessKey`, `revokeAccessKey` | Not on mobile |
 | Operator · System | Health, versions, doctor, data sources | `getEngineHealth`, doctor checks | Not on mobile |
 | Shell (mobile) | Learn the instance's name, marks, theme, surfaces, sign-in methods and content settings | `get_instance` (the instance config; no engine call) | Built (iOS sample) |

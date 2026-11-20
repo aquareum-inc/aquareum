@@ -188,4 +188,6 @@ extension EnvironmentValues {
     @Entry var openInStudio: (MediaKind, String) -> Void = { _, _ in }
     /// Opens a conversation on Home, as "Ask about it" does from the library.
     @Entry var openConversation: (Conversation) -> Void = { _ in }
+    /// Puts a character in Home's composer, ready for a scene.
+    @Entry var castInScene: (Character) -> Void = { _ in }
 }

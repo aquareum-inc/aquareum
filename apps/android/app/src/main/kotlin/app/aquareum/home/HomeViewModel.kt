@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.aquareum.account.Account
 import app.aquareum.api.ApiError
+import app.aquareum.composer.ComposerSupport
 import app.aquareum.generated.Api
 import app.aquareum.generated.Conversation
 import app.aquareum.generated.PromptStarter
@@ -13,6 +14,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -29,7 +31,7 @@ data class HomeState(
     val sendError: String? = null,
 )
 
-class HomeViewModel(private val api: Api, account: Account) : ViewModel() {
+class HomeViewModel(private val api: Api, account: Account, composer: ComposerSupport) : ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state
 
@@ -37,6 +39,13 @@ class HomeViewModel(private val api: Api, account: Account) : ViewModel() {
         load()
         // Again on signing in or out: what loaded with an old session may have been refused.
         viewModelScope.launch { account.signedIn.drop(1).collect { refresh() } }
+        // A character cast from their page arrives in the composer, ready for a scene.
+        viewModelScope.launch {
+            composer.pendingCast.filterNotNull().collect { character ->
+                _state.update { it.copy(draft = composer.cast(character, it.draft)) }
+                composer.pendingCast.value = null
+            }
+        }
     }
 
     fun load() = viewModelScope.launch { refresh() }

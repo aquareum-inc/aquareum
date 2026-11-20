@@ -428,10 +428,13 @@ choice is the default in the template.
   it; they never offer the switch. An operator who turns the mobile flag on is declaring it in their store
   rating; the documentation says so.
 - Public characters marked mature are filtered on the server for mobile callers unless all three hold, so
-  an app never receives what it must not show.
+  an app never receives what it must not show. *Built in slice 5 as the strict case:* `list_characters` and
+  `get_character` never return a character for adults only, and `create_character` never makes one. The
+  `content.mobileAdultContent` flag isn't built; it relaxes this when it is.
 - Every public character has **Report** (a reason, sent to the operator) and **Block** (hides that
-  character and its author for this user). Reports need an operator queue in the console and a store,
-  which is new work on the web side in slice 5.
+  character and its author for this user). *Built in slice 5:* `report_character`, `block_character`, a
+  store in `apps/web/lib/moderation`, and the console's Reports page, where an operator keeps a character up
+  or takes it down for everyone.
 - Settings has **Delete account**, behind a confirmation tray, calling `delete_account`.
 
 ## 13. Self-hosters: `./aquareum mobile` (designed now, built after the apps work)
@@ -521,6 +524,37 @@ For the engine and provider (added to `docs/engine-requests.md`):
 - Q16: Can the provider record a top-up or a plan paid through Apple or Google?
 
 ## 17. What exists today
+
+### Slice 5: Characters (20 November 2026)
+
+- **Server.** `get_character`; `list_characters` and `get_character` open to guests (shared characters only);
+  `create_character` (private unless shared, never for adults only); `report_character` and
+  `block_character`, kept in `DATA_DIR/moderation.json` by `apps/web/lib/moderation` behind a `StateStore`
+  that device sessions now share (`apps/web/lib/data`). Everything that reads characters, on the API and on
+  the web, leaves out what the operator took down and what the person blocked. The console has a Reports
+  page: open reports first, then decided ones, with Keep it up and Take it down (confirmed).
+- **Both apps.** The Characters tab: yours (or the way to make your first), then shared by others, with
+  search; guests see the shared ones. A character's page: portrait, who they are, how they open, and Cast
+  them in a scene, which puts them in Home's composer. Someone else's character has Report (a reason and a
+  note, in a tray) and Block (confirmed; it and everything by its author leave at once). New character is a
+  form: name, one line, who they are, how they open, and Share with everyone here. iOS 20 tests, Android 25
+  unit tests.
+- **Run on both** against a mock-only instance: browsed, searched, reported Mara, blocked her, created Wren,
+  cast Wren in a scene; the report showed in the console and taking Mara down removed her for guests too.
+  Screenshots:
+  `docs/screenshots/mobile/{ios,android}-{characters,characters-yours,character,character-report,character-block,character-new}-{dark,light}.jpg`.
+- **Found while running it.** Android couldn't send a POST with no inputs: OkHttp refuses a bodiless POST,
+  so Block never left the phone. The transport now sends an empty object. On the web, a new server action
+  isn't registered until the dev server restarts.
+
+Not done in slice 5, and why:
+
+- **Talking to a character.** The web's Start chatting sends the message as an ordinary request: the
+  conversation API has no way to answer in character, and `character_slug` means "put them on screen". The
+  apps lead with Cast in a scene and leave talking out until conversations can answer in character (calls,
+  section 10, are the other half of it).
+- **Report and Block on the web.** The operations exist; the web's character page doesn't offer them yet.
+- **Editing or deleting a character,** and a portrait for a new one: the API client has neither yet.
 
 ### Slice 4: Library (20 November 2026)
 

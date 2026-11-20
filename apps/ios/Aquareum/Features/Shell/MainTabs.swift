@@ -17,6 +17,7 @@ struct MainTabs: View {
     @State private var homePath: [Route] = []
     @State private var support: ComposerSupport
     @State private var studio: StudioModel
+    @State private var home: HomeModel
     @State private var accountOpen: AccountTrayItem?
     /// Set when the account tray hands over to sign-in, which opens once it has closed.
     @State private var signInNext = false
@@ -30,6 +31,7 @@ struct MainTabs: View {
         self.api = api
         _support = State(initialValue: ComposerSupport(api: api))
         _studio = State(initialValue: StudioModel(api: api))
+        _home = State(initialValue: HomeModel(api: api))
     }
 
     var body: some View {
@@ -38,7 +40,7 @@ struct MainTabs: View {
         TabView(selection: $tab) {
             Tab("Home", systemImage: "house", value: Destination.home) {
                 NavigationStack(path: $homePath) {
-                    HomeView(api: api, travel: travel, openAccount: openAccount, openHistory: { homePath.append(.history) }) { conversation in
+                    HomeView(travel: travel, openAccount: openAccount, openHistory: { homePath.append(.history) }, model: home) { conversation in
                         homePath.append(.conversation(id: conversation.id, preview: conversation))
                     }
                     .navigationDestination(for: Route.self) { route in
@@ -61,7 +63,7 @@ struct MainTabs: View {
             }
             if instance.description?.content.characters == true {
                 Tab("Characters", systemImage: "person.2", value: Destination.characters) {
-                    NavigationStack { CharactersView(api: api, openAccount: openAccount) }
+                    CharactersView(api: api, openAccount: openAccount)
                 }
             }
         }
@@ -83,6 +85,11 @@ struct MainTabs: View {
         .environment(studio)
         .environment(\.openConversation) { conversation in
             homePath = [.conversation(id: conversation.id, preview: conversation)]
+            tab = .home
+        }
+        .environment(\.castInScene) { character in
+            support.cast(character, into: &home.draft)
+            homePath.removeAll()
             tab = .home
         }
         .environment(\.openInStudio) { kind, prompt in

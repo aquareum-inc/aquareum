@@ -74,6 +74,8 @@ class ComposerSupport(private val api: Api) {
     val models: StateFlow<List<AgentModelEntry>> = _models
     val library: StateFlow<Load<List<MediaItem>>> = _library
     val characters: StateFlow<Load<List<Character>>> = _characters
+    /** A character waiting to be put in Home's composer, from "Cast in a scene" on their page. */
+    val pendingCast = MutableStateFlow<Character?>(null)
 
     suspend fun load() {
         runCatching { api.listAgentModelMenu() }.onSuccess { _models.value = it }

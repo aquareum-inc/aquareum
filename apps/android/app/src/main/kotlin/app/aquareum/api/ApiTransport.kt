@@ -80,7 +80,9 @@ class ApiTransport(
         val url = (root + path).toHttpUrl().newBuilder().apply {
             for ((key, value) in query.toSortedMap()) (value as? JsonPrimitive)?.let { addQueryParameter(key, it.content) }
         }.build()
-        val payload = body?.let { fields -> json.encodeToString(JsonObject.serializer(), JsonObject(fields.filterValues { it != null }.mapValues { it.value!! })).toRequestBody(JSON) }
+        // OkHttp refuses a POST, PUT or PATCH without a body, so one with no inputs sends an empty object.
+        val fields = body ?: if (method == "POST" || method == "PUT" || method == "PATCH") emptyMap() else null
+        val payload = fields?.let { json.encodeToString(JsonObject.serializer(), JsonObject(it.filterValues { value -> value != null }.mapValues { entry -> entry.value!! })).toRequestBody(JSON) }
         val sent = token()
         val key = url.toString()
         val request = Request.Builder().url(url).header("Accept", "application/json").method(method, payload).apply {
