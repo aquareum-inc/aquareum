@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Camera
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MobileOff
 import androidx.compose.material.icons.rounded.SystemUpdate
@@ -90,11 +91,15 @@ import app.aquareum.home.HomeViewModel
 import app.aquareum.history.HistoryScreen
 import app.aquareum.history.HistoryViewModel
 import app.aquareum.library.LibraryScreen
+import app.aquareum.studio.StudioScreen
+import app.aquareum.chat.LocalOpenInStudio
+import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Home("home", "Home", Icons.Rounded.Home),
+    Studio("studio", "Studio", Icons.Rounded.Camera),
     Library("library", "Library", Icons.Rounded.GridView),
     Characters("characters", "Characters", Icons.Rounded.Groups),
 }
@@ -175,6 +180,14 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
         },
     ) { padding ->
         // The composer is one object that travels: it is shared between Home and a conversation.
+        val openInStudio: (app.aquareum.generated.MediaKind, String) -> Unit = { kind, prompt ->
+            container.studio.open(kind, prompt)
+            navigation.navigate(Tab.Studio.route) {
+                popUpTo(navigation.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+            }
+        }
+        CompositionLocalProvider(LocalOpenInStudio provides openInStudio) {
         SharedTransitionLayout(Modifier.padding(bottom = padding.calculateBottomPadding()).consumeWindowInsets(padding)) {
             NavHost(navigation, startDestination = Tab.Home.route, enterTransition = { fadeIn(motion.enter()) }, exitTransition = { fadeOut(motion.exit()) }) {
                 composable(Tab.Home.route) {
@@ -184,6 +197,7 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
                         navigation.navigate("conversation/${conversation.id}")
                     }
                 }
+                composable(Tab.Studio.route) { StudioScreen(container.studio, account, accountButton) }
                 composable(Tab.Library.route) {
                     val model = viewModel<ListModel<MediaItem>>(factory = viewModelFactory { initializer { ListModel(account) { container.api.searchLibrary() } } })
                     LibraryScreen(model, signIn, accountButton)
@@ -204,6 +218,7 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
                     }
                 }
             }
+        }
         }
     }
 

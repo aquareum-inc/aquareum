@@ -45,6 +45,7 @@ class AppContainer(context: Context) {
     val account = Account(api, vault, instance, MainScope(), deviceName(context)).also { account -> refusals = account::refused }
     val theme = ThemePreference(context)
     val composer = app.aquareum.composer.ComposerSupport(api)
+    val studio = app.aquareum.studio.StudioModel(api)
 
     /** Conversations as last seen, so opening one shows it at once and then refreshes. */
     val conversations = mutableMapOf<String, Conversation>()

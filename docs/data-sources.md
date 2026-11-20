@@ -88,6 +88,8 @@ the instance config, the other is derived.
 | `get_instance` | config | `instance.config.json`: name, logo, theme overrides (resolved to sRGB hex), surfaces, the apps built for it (`mobile`), sign-in methods, content settings, home backdrop | none |
 | `list_capability_labels` | derived from `listOfferings`, runner models (`describeApps`, reader token, server-side) and `listAgentModels` | The readable name of each capability and of each model the agent runs on, by the rules in `packages/user-app/src/lib/capability-menu.ts` | none |
 | `list_agent_model_menu` | derived from `listAgentModels` | The agent's model menu, one row per model, by `agentModelEntries` in the same file | none |
+| `list_studio_mediums` | derived from `listOfferings` | The studio's mediums and modes, by `describeStudio` in `packages/user-app/src/studio/mediums.ts`: each mode's capability, whether it is on offer and whether it needs an input | none |
+| `quote_generation` | mock (`quoteCredits`, as the web's studio uses) | What one result of a draft costs, in credits. Goes live with pricing from the engine's offerings and the instance's markup (`creditsFor`) when generation does | none |
 
 Every `GET` answers with a weak `ETag` and `Cache-Control: private, no-cache`; a client that sends it back
 as `If-None-Match` gets `304` with no body while nothing has changed. Both apps do, so following a long

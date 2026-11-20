@@ -1,6 +1,8 @@
 package app.aquareum.api
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -86,18 +88,23 @@ class ApiTransport(
             if (method == "GET") cache.validator(key, sent)?.let { header("If-None-Match", it) }
         }.build()
 
-        client.newCall(request).await().use { response ->
-            if (response.code == 304) cache.body(key)?.let { return json.decodeFromString(output, it) }
-            val text = response.body.string()
-            if (method == "GET" && response.code == 200) response.header("ETag")?.let { cache.store(key, it, text, sent) }
-            if (!response.isSuccessful) {
-                val body = runCatching { json.decodeFromString(Envelope.serializer(), text).error }.getOrNull()
-                val error = ApiError(response.code, body?.message ?: "The request failed.", body?.code)
-                if (sent != null && (error.isSignedOut || error.isMobileOff)) refused(Refusal(error, sent))
-                throw error
+        // The reply is read and decoded off the main thread: a large or chunked body is still arriving when
+        // the call returns, and reading it is network work.
+        val (status, text) = withContext(Dispatchers.IO) {
+            client.newCall(request).await().use { response ->
+                val text = if (response.code == 304) cache.body(key) else response.body.string()
+                if (method == "GET" && response.code == 200 && text != null) response.header("ETag")?.let { cache.store(key, it, text, sent) }
+                response.code to text
             }
-            return json.decodeFromString(output, text)
         }
+        if (status == 304 && text != null) return json.decodeFromString(output, text)
+        if (status !in 200..299 || text == null) {
+            val body = text?.let { runCatching { json.decodeFromString(Envelope.serializer(), it).error }.getOrNull() }
+            val error = ApiError(status, body?.message ?: "The request failed.", body?.code)
+            if (sent != null && (error.isSignedOut || error.isMobileOff)) refused(Refusal(error, sent))
+            throw error
+        }
+        return json.decodeFromString(output, text)
     }
 
     companion object {

@@ -522,6 +522,31 @@ For the engine and provider (added to `docs/engine-requests.md`):
 
 ## 17. What exists today
 
+### Slice 3: Studio (20 November 2026)
+
+- **Server.** `list_studio_mediums`, the web's studio (`describeStudio` in `mediums.ts`) resolved against
+  the network, with a words-only placeholder for clients that can't add inputs and a `needs_input` flag;
+  `quote_generation`, the web studio's quote. The web's empty-stage copy no longer says "on the left".
+- **Both apps.** A Studio tab with Video, Image and Audio, a draft for each, the settings each medium and
+  mode have, Generate with its cost, a guest asked to sign in, up to four variants rendering in place and
+  followed with backoff, "Use these words again" on a result, and "Open in the studio" from a finished shot
+  or a found moment. iOS 16 tests, Android 18 unit tests.
+- **Run on both** against a mock-only instance: a video and four images generated and finished; Audio's two
+  modes; opened from a conversation. Screenshots:
+  `docs/screenshots/mobile/{ios,android}-studio-{video,image,audio}-{dark,light}.jpg`,
+  `ios-studio-rendering-*.jpg`, `android-studio-rendering-*.jpg`.
+- **Found while running it.** Android read every reply on the main thread after the request returned; a
+  reply still arriving (four images at once) threw, and Generate said it hadn't started. Replies are now read
+  on the IO dispatcher. This was very likely slice 2's unreproduced "library didn't load" too. On iOS the
+  prompt box needed the same tap-anywhere fix as the composer.
+
+Not done in slice 3, and why:
+
+- **References, Edit and first and last frames** need uploads, which the API client doesn't have yet
+  (`uploadMedia`).
+- **The live aurora** stays a still photograph. It's a design port (Metal and AGSL) with no flow behind it;
+  it moves to a polish pass after the slices rather than holding up Library.
+
 ### Slice 2: Home and chat (20 November 2026)
 
 - **Server.** `delete_conversation`; `list_agent_model_menu`, the agent's model menu named by the web's own
@@ -546,11 +571,10 @@ Not done in slice 2, and why:
 
 - **Opening a shot or a found moment in the studio** waits for the studio (slice 3).
 - **The live aurora** on Home (a Metal and AGSL port of the web's shader) is still a still photograph.
-  It's design work of its own and doesn't block any flow; it moves to slice 3, where Home's backdrop meets
-  the studio's.
+  It's design work of its own and doesn't block any flow (see slice 3).
 - **Server-sent events** wait for the engine's events feed (R2), as planned.
-- **Not reproduced:** once on Android the attach tray said the library didn't load, while the server had
-  answered 200; Try again loaded it, and the same steps didn't fail again.
+- **Not reproduced at the time:** once on Android the attach tray said the library didn't load, while the
+  server had answered 200. Found and fixed in slice 3 (replies read on the main thread).
 
 ### Slice 1: shell and sign-in (20 November 2026)
 

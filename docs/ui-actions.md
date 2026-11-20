@@ -18,17 +18,17 @@ in `apps/web/lib/public-api/operations.ts`.
 | Chat | Send a follow-up | `sendMessage` | Built (iOS sample) |
 | Chat | Follow the agent's steps | `getConversation` | Built (iOS sample) |
 | Chat | Follow a shot rendering | `getGeneration` | Built (iOS sample) |
-| Chat | Open a shot in the studio | Navigation with the shot's prompt; `getGeneration` in the studio from slice (c). | Slice 3, with the studio |
+| Chat | Open a shot in the studio | Navigation with the shot's prompt; `getGeneration` in the studio from slice (c). | Built (slice 3) |
 | Sign-in | Choose a method (Google, Apple, Discord, wallet, email, passkey), sign out | Auth provider (`authorizationUrl` with the method, `exchange`); see `apps/web/lib/auth`. On mobile: the same flow in the system auth session, then `create_device_session`; sign out is `end_device_session`. Wallet and Coinbase aren't offered on phones yet (engine question Q12). | Built (slice 1) |
 | Shell (mobile) | Open the account tray: name, email, credits | `get_me` (session identity and `getCreditBalance`) | Built (slice 1) |
 | Shell (mobile) | Choose the theme (system, dark, light) | Kept on the device; no API function | Built (slice 1) |
 | History (mobile) | Delete a conversation (swipe, then confirm) | `deleteConversation` (`delete_conversation`) | Built (slice 2) |
 | Settings · Devices | List signed-in phones and tablets, sign one out | `list_devices`, `revoke_device` (device sessions, `apps/web/lib/devices`) | API built in slice 1; screens in slice 6 |
 | Shell | Show credit balance | `getCreditBalance` | Built (slice 1): the account tray, through `get_me` |
-| Studio (video, image, audio) | Load capabilities for the medium and mode | `listOfferings` | Slice 3 |
-| Studio | Generate (once per variant) | `createGeneration` | Slice 3 |
-| Studio | Follow a render | `getGeneration` | Slice 3 |
-| Studio | Improve prompt, attach frames/references, download, open in chat | Not wired in the sample; `enhancePrompt`, `uploadMedia`, `getMediaUrl`, `createConversation` in slices (b)–(c). | Slice 3 |
+| Studio (video, image, audio) | Load capabilities for the medium and mode | `listOfferings` | Built (slice 3): `list_studio_mediums`, the web's mediums resolved against the network |
+| Studio | Generate (once per variant) | `createGeneration`, priced first with `quote_generation` | Built (slice 3) |
+| Studio | Follow a render | `getGeneration` | Built (slice 3) |
+| Studio | Improve prompt, attach frames/references, download, open in chat | Not wired in the sample; `enhancePrompt`, `uploadMedia`, `getMediaUrl`, `createConversation` in slices (b)–(c). | Not on mobile until `uploadMedia` exists: modes that need an input (References, Edit) aren't offered on phones |
 | Library | List, search by content, filter by type | `listMedia` | List built (slice 1); search and filters slice 4 |
 | Library | Delete | `deleteMedia` | Slice 4 |
 | Library | Open in studio | Navigation with the item's prompt | Slice 4 |
@@ -53,7 +53,7 @@ in `apps/web/lib/public-api/operations.ts`.
 | Chat, Home | Put a character in a video (cast picker in the composer) | `listCharacters` (own, then public; mature only if shown), then `createConversation` / `sendMessage` with `character_slug` | Built (slice 2); mature characters aren't listed on phones (section 12 of the plan) |
 | Characters | Make a video with this character (opens Home with `?with=<slug>`) | `getCharacter`, then `createConversation` with `character_slug` | Slice 5 |
 | Chat | Summarise, find moments, ask about a video | `sendMessage` (the agent calls a video understanding capability) | Built (slice 2) |
-| Chat | Open a found moment in the studio | Navigation with the moment as the prompt | Slice 3, with the studio |
+| Chat | Open a found moment in the studio | Navigation with the moment as the prompt | Built (slice 3) |
 | Studio Live | Load looks and destinations | `listLiveLooks`, `listLiveDestinations` | Planned, after live sessions |
 | Studio Live | Save a look | `saveLiveLook` | Planned, after live sessions |
 | Studio Live | Add or remove a destination | `addLiveDestination`, `removeLiveDestination` | Planned, after live sessions |

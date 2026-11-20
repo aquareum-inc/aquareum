@@ -95,6 +95,8 @@ import app.aquareum.generated.Radius
 import app.aquareum.generated.TypeSize
 import app.aquareum.generated.UserMessage
 import app.aquareum.generated.VideoMoment
+import androidx.compose.material.icons.rounded.NorthEast
+import app.aquareum.generated.MediaKind
 import app.aquareum.composer.AttachTray
 import app.aquareum.composer.CastTray
 import app.aquareum.composer.ComposerSupport
@@ -227,7 +229,17 @@ private fun AgentTurn(turn: AgentMessage, generations: Map<String, Generation>, 
             AnimatedVisibility(open && turn.steps.isNotEmpty()) {
                 Column { turn.steps.forEachIndexed { index, step -> StepRow(step, step.app?.let { labels[it] ?: it }, last = index == turn.steps.lastIndex) } }
             }
-            for (id in turn.generationIds) GenerationTile(generations[id], generations[id]?.request?.aspect?.value ?: aspect)
+            for (id in turn.generationIds) {
+                val generation = generations[id]
+                GenerationTile(generation, generation?.request?.aspect?.value ?: aspect)
+                if (generation?.state == GenerationState.Succeeded) {
+                    val open = LocalOpenInStudio.current
+                    Row(Modifier.heightIn(min = 40.dp).pressable(label = "Open in the studio") { open(generation.request.kind, generation.request.prompt) }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Icon(Icons.Rounded.NorthEast, contentDescription = null, tint = palette.mutedForeground, modifier = Modifier.size(16.dp))
+                        BasicText("Open in the studio", style = TypeSize.Caption.style(FontWeight.Medium).copy(color = palette.mutedForeground))
+                    }
+                }
+            }
             turn.analysis?.moments?.takeIf { it.isNotEmpty() }?.let { MomentList(it) }
             turn.text?.let { SelectionContainer { BasicText(it, style = TypeSize.Lead.style().copy(color = palette.foreground)) } }
         }
@@ -269,7 +281,7 @@ private fun StepRow(step: AgentStep, label: String?, last: Boolean) {
  * renders, then the same tile sharpens. Finishing is marked once, with a green ring and a tap.
  */
 @Composable
-private fun GenerationTile(generation: Generation?, aspect: String) {
+fun GenerationTile(generation: Generation?, aspect: String) {
     val palette = LocalPalette.current
     val haptics = LocalHapticFeedback.current
     val shape = RoundedCornerShape(Radius.Media.dp)
@@ -323,15 +335,24 @@ private fun GenerationTile(generation: Generation?, aspect: String) {
 @Composable
 private fun MomentList(moments: List<VideoMoment>) {
     val palette = LocalPalette.current
+    val open = LocalOpenInStudio.current
     val shape = RoundedCornerShape(Radius.Card.dp)
     Column(Modifier.clip(shape).border(1.dp, palette.hairline, shape)) {
         moments.forEachIndexed { index, moment ->
-            Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                Modifier.fillMaxWidth().pressable(label = "Open the studio to extend this moment") { open(MediaKind.Video, "Extend the moment “${moment.label}”, keeping the same subject and light") }.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 val whole = moment.atSeconds.toInt()
                 BasicText("${whole / 60}:${(whole % 60).toString().padStart(2, '0')}", style = TypeSize.Caption.style(mono = true).copy(color = palette.mutedForeground), modifier = Modifier.width(48.dp).background(palette.active, CircleShape).padding(vertical = 3.dp, horizontal = 8.dp))
-                BasicText(moment.label, style = TypeSize.Body.style().copy(color = palette.foreground))
+                BasicText(moment.label, style = TypeSize.Body.style().copy(color = palette.foreground), modifier = Modifier.weight(1f))
+                Icon(Icons.Rounded.NorthEast, contentDescription = null, tint = palette.subtleForeground, modifier = Modifier.size(14.dp))
             }
             if (index < moments.lastIndex) Box(Modifier.fillMaxWidth().height(1.dp).background(palette.hairline))
         }
     }
 }
+
+/** Opens the studio on a medium with words to start from. The shell provides it; a conversation calls it. */
+val LocalOpenInStudio = androidx.compose.runtime.staticCompositionLocalOf<(MediaKind, String) -> Unit> { { _, _ -> } }
