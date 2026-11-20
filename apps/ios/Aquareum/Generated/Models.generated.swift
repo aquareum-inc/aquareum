@@ -822,6 +822,8 @@ struct StudioMode: Codable, Sendable, Hashable {
     var value: String
     var label: String
     var placeholder: String
+    /// The placeholder for clients that can't add this mode's inputs yet.
+    var wordsPlaceholder: String
     /// The capability a draft in this mode runs: one on offer, or the usual one when none is.
     var app: String
     /// Some compute operator offers it right now; without one, Generate stays off.
@@ -836,6 +838,7 @@ struct StudioMode: Codable, Sendable, Hashable {
         case value
         case label
         case placeholder
+        case wordsPlaceholder = "words_placeholder"
         case app
         case available
         case durations

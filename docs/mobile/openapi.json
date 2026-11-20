@@ -3059,6 +3059,10 @@
           "placeholder": {
             "type": "string"
           },
+          "words_placeholder": {
+            "type": "string",
+            "description": "The placeholder for clients that can't add this mode's inputs yet."
+          },
           "app": {
             "type": "string",
             "description": "The capability a draft in this mode runs: one on offer, or the usual one when none is."
@@ -3096,6 +3100,7 @@
           "value",
           "label",
           "placeholder",
+          "words_placeholder",
           "app",
           "available",
           "durations",

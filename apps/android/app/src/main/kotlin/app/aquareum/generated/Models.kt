@@ -757,6 +757,8 @@ data class StudioMode(
     @SerialName("value") val value: String,
     @SerialName("label") val label: String,
     @SerialName("placeholder") val placeholder: String,
+    /** The placeholder for clients that can't add this mode's inputs yet. */
+    @SerialName("words_placeholder") val wordsPlaceholder: String,
     /** The capability a draft in this mode runs: one on offer, or the usual one when none is. */
     @SerialName("app") val app: String,
     /** Some compute operator offers it right now; without one, Generate stays off. */

@@ -10,6 +10,7 @@ struct AgentTurnView: View {
     @State private var expanded = false
     @Environment(\.palette) private var palette
     @Environment(\.motion) private var motion
+    @Environment(\.openInStudio) private var openInStudio
 
     private var working: Bool { turn.state == .working }
     private var open: Bool { working || expanded }
@@ -34,7 +35,20 @@ struct AgentTurnView: View {
                 if !turn.generationIds.isEmpty {
                     VStack(spacing: 12) {
                         ForEach(turn.generationIds, id: \.self) { id in
-                            GenerationTile(generation: generations[id], aspect: generations[id]?.request.aspect.rawValue ?? aspect)
+                            VStack(alignment: .leading, spacing: 6) {
+                                GenerationTile(generation: generations[id], aspect: generations[id]?.request.aspect.rawValue ?? aspect)
+                                if let generation = generations[id], generation.state == .succeeded {
+                                    Button { openInStudio(generation.request.kind, generation.request.prompt) } label: {
+                                        Label("Open in the studio", systemImage: "arrow.up.right")
+                                            .labelStyle(.titleAndIcon)
+                                            .text(.caption, weight: .medium)
+                                            .foregroundStyle(palette.mutedForeground)
+                                            .frame(minHeight: 32)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(PressStyle())
+                                }
+                            }
                         }
                     }
                 }
@@ -137,10 +151,14 @@ private struct StepRow: View {
 private struct MomentList: View {
     let moments: [VideoMoment]
     @Environment(\.palette) private var palette
+    @Environment(\.openInStudio) private var openInStudio
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(moments.enumerated()), id: \.offset) { index, moment in
+                Button {
+                    openInStudio(.video, "Extend the moment “\(moment.label)”, keeping the same subject and light")
+                } label: {
                 HStack(spacing: 12) {
                     let whole = Int(moment.atSeconds)
                     Text("\(whole / 60):\(String(format: "%02d", whole % 60))")
@@ -148,14 +166,24 @@ private struct MomentList: View {
                         .foregroundStyle(palette.mutedForeground)
                         .frame(width: 48, height: 22)
                         .background(palette.active, in: Capsule())
-                    Text(moment.label).text(.body).foregroundStyle(palette.foreground).frame(maxWidth: .infinity, alignment: .leading)
+                    Text(moment.label).text(.body).foregroundStyle(palette.foreground).frame(maxWidth: .infinity, alignment: .leading).multilineTextAlignment(.leading)
+                    Image(systemName: "arrow.up.right").imageScale(.small).foregroundStyle(palette.subtleForeground)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
+                .contentShape(Rectangle())
+                }
+                .buttonStyle(PressStyle())
+                .accessibilityHint("Opens the studio to extend this moment")
                 if index < moments.count - 1 { Rectangle().fill(palette.hairline).frame(height: 1) }
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(palette.hairline, lineWidth: 1))
     }
+}
+
+extension EnvironmentValues {
+    /// Opens the studio on a medium with words to start from. The tabs set it; a conversation calls it.
+    @Entry var openInStudio: (MediaKind, String) -> Void = { _, _ in }
 }

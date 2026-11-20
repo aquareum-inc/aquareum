@@ -460,6 +460,8 @@ export interface StudioMode {
   value: string;
   label: string;
   placeholder: string;
+  /** The placeholder for clients that can't add this mode's inputs yet. */
+  words_placeholder: string;
   /** The capability a draft in this mode runs: one on offer, or the usual one when none is. */
   app: string;
   /** Some compute operator offers it right now; without one, Generate stays off. */

@@ -14,6 +14,8 @@ export interface ModeSpec {
   value: string;
   label: string;
   placeholder: string;
+  /** The placeholder where inputs can't be added yet, when `placeholder` mentions them. */
+  wordsPlaceholder?: string;
   slots: SlotSpec[];
   /** Which discovered apps this mode can run. */
   apps: RegExp;
@@ -54,6 +56,7 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
         value: "frames",
         label: "Frames",
         placeholder: "Describe the shot, or add a first and last frame…",
+        wordsPlaceholder: "Describe the shot: subject, movement, light…",
         slots: [frame, { ...frame, label: "Last frame" }],
         apps: /^(text|image)-to-video$/,
         fallbackApp: "text-to-video",
@@ -85,7 +88,7 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
     ],
     empty: {
       title: "Your shots land here",
-      body: "Describe a shot on the left and press Generate. Each one renders in place and is saved to your library.",
+      body: "Describe a shot and press Generate. Each one renders in place and is saved to your library.",
     },
   },
   image: {
@@ -188,6 +191,7 @@ export function describeStudio(offerings: ReadonlyArray<Offering>): StudioMedium
           value: mode.value,
           label: mode.label,
           placeholder: mode.placeholder,
+          words_placeholder: mode.wordsPlaceholder ?? mode.placeholder,
           app: offered[0]?.app ?? mode.fallbackApp,
           available: offered.length > 0,
           durations: mode.durations ?? null,

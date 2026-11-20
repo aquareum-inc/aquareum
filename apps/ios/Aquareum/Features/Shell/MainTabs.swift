@@ -16,18 +16,20 @@ struct MainTabs: View {
     @State private var tab = Destination.home
     @State private var homePath: [Route] = []
     @State private var support: ComposerSupport
+    @State private var studio: StudioModel
     @State private var accountOpen: AccountTrayItem?
     /// Set when the account tray hands over to sign-in, which opens once it has closed.
     @State private var signInNext = false
     @Namespace private var travel
 
-    enum Destination: Hashable { case home, library, characters }
+    enum Destination: Hashable { case home, studio, library, characters }
 
     private struct AccountTrayItem: Identifiable { let id = 0 }
 
     init(api: API) {
         self.api = api
         _support = State(initialValue: ComposerSupport(api: api))
+        _studio = State(initialValue: StudioModel(api: api))
     }
 
     var body: some View {
@@ -50,6 +52,9 @@ struct MainTabs: View {
                         }
                     }
                 }
+            }
+            Tab("Studio", systemImage: "camera.aperture", value: Destination.studio) {
+                NavigationStack { StudioView(openAccount: openAccount) }
             }
             Tab("Library", systemImage: "square.grid.2x2", value: Destination.library) {
                 NavigationStack { LibraryView(api: api, openAccount: openAccount) }
@@ -75,6 +80,11 @@ struct MainTabs: View {
         }
         .overlay(alignment: .top) { NoticeBanner() }
         .environment(support)
+        .environment(studio)
+        .environment(\.openInStudio) { kind, prompt in
+            studio.open(kind, prompt: prompt)
+            tab = .studio
+        }
         .task { await support.load() }
         .onChange(of: account.signedIn) { _, signedIn in
             if !signedIn {
