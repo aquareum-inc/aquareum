@@ -129,6 +129,7 @@ cd apps/android
 # 6. Run it on an emulator and take a screenshot (10.0.2.2 is the host, where the instance listens)
 $ANDROID_HOME/emulator/emulator -avd <name> -no-snapshot-save &
 adb wait-for-device && adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell pm grant app.aquareum.dev android.permission.ACCESS_LOCAL_NETWORK   # Android 17+, debug builds
 adb shell am start -n app.aquareum.dev/app.aquareum.MainActivity
 adb shell cmd uimode night yes                # or no
 adb exec-out screencap -p > home.png

@@ -44,7 +44,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import app.aquareum.design.LocalPalette
 import app.aquareum.design.glass
@@ -88,9 +90,12 @@ fun Composer(
     val shape = RoundedCornerShape(Radius.Sheet.dp)
     Column(modifier.fillMaxWidth().glass(shape).padding(start = 18.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Words that arrive from outside (an example, a cleared draft) put the cursor at their end.
+            var field by remember { mutableStateOf(TextFieldValue(draft.prompt, TextRange(draft.prompt.length))) }
+            if (field.text != draft.prompt) field = TextFieldValue(draft.prompt, TextRange(draft.prompt.length))
             BasicTextField(
-                value = draft.prompt,
-                onValueChange = { onDraft(draft.copy(prompt = it)) },
+                value = field,
+                onValueChange = { field = it; if (it.text != draft.prompt) onDraft(draft.copy(prompt = it.text)) },
                 textStyle = TypeSize.Lead.style().copy(color = palette.foreground),
                 cursorBrush = SolidColor(palette.brand),
                 maxLines = 6,

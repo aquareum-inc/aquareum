@@ -97,7 +97,8 @@ struct LoadFailure: View {
                 .foregroundStyle(palette.foreground)
                 .padding(.horizontal, 16)
                 .frame(minHeight: 44)
-                .background(palette.secondary, in: Capsule())
+                .background(palette.card, in: Capsule())
+                .overlay(Capsule().strokeBorder(palette.border, lineWidth: 1))
                 .buttonStyle(PressStyle())
         }
         .frame(maxWidth: .infinity)

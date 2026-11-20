@@ -100,7 +100,7 @@ fun LoadFailure(message: String, modifier: Modifier = Modifier, retry: () -> Uni
         BasicText(
             "Try again",
             style = TypeSize.Body.style(FontWeight.Medium).copy(color = palette.foreground),
-            modifier = Modifier.pressable(onClick = retry).background(palette.secondary, CircleShape).heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.pressable(onClick = retry).background(palette.card, CircleShape).border(1.dp, palette.border, CircleShape).heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 14.dp),
         )
     }
 }

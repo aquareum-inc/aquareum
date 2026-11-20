@@ -523,15 +523,19 @@ Built and run on 19 November 2026 against a mock-only instance:
 - **iOS.** Home and a conversation, in dark and light, with Dynamic Type, VoiceOver labels and Reduce
   Motion: `docs/screenshots/mobile/ios-*.jpg`. Eight tests pass, decoding the captured responses in
   `docs/mobile/fixtures/`.
+- **Android.** The same two screens in Compose, run on the API 37 emulator in dark and light:
+  `docs/screenshots/mobile/android-*.jpg`. Nine unit tests pass against the same fixtures. Two things
+  running it turned up: from Android 17 an app needs `ACCESS_LOCAL_NETWORK` to reach a private address such
+  as the emulator's host, so debug builds declare it (release builds don't); and the instance now builds
+  its absolute URLs from the address the client used, not its own idea of its origin.
 
 Not done, and why:
 
-- **Android sample: written and compiled, not yet run.** Android Studio's SDK (platform 37.0) and an
-  emulator were installed on 19 November. `apps/android` builds (`./gradlew :app:assembleDebug`) and its 9
-  unit tests pass, decoding the same fixtures as iOS. The emulator has not started: it needs about 7.4 GB
-  of free disk even with a 2 GB data partition, and the Mac has 6.2 GB. So Home and the conversation on
-  Android have not been seen running, and there are no Android screenshots yet. Nothing about how it looks
-  or behaves is claimed until it has run.
+- **Not yet checked on either platform:** the largest font sizes, a screen reader pass, animations
+  switched off, and the composer's shared transition on Android beyond seeing it run. Slice 1 starts with
+  those checks.
+- **Android has no backdrop blur.** Compose can't blur what is behind a control on every supported
+  version, so glass there is a more opaque fill with the same edge.
 - **Type option B (Inter bundled): no sample.** Inter isn't in the repository as a font file the app can
   bundle (the web loads it as WOFF2). It needs a download of Inter's own TTF, which needs a yes. The
   sample shows option A: system text with Geist Mono for facts.

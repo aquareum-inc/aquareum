@@ -17,6 +17,18 @@ function hexTokens(tokens: Record<string, string> | undefined): Record<string, s
 }
 
 /**
+ * Where a request reached the instance, as the caller addressed it. Read from the Host header (or the
+ * proxy's forwarded host), because a client such as the Android emulator reaches a development server at
+ * an address that isn't the server's own idea of its origin.
+ */
+export function requestOrigin(request: { headers: Headers; nextUrl: { origin: string; protocol: string } }): string {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (!host || !/^[\w.-]+(:\d+)?$/.test(host)) return request.nextUrl.origin;
+  const protocol = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  return `${protocol === "https" ? "https" : "http"}://${host}`;
+}
+
+/**
  * This instance as it describes itself to clients. `origin` is where the request arrived, used to make
  * paths absolute when the config has no public domain.
  */

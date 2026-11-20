@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { apiFor } from "@/lib/api";
 import { authenticate } from "@/lib/public-api/auth";
-import { describeInstance } from "@/lib/public-api/instance";
+import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
 import { capabilityLabels } from "@/lib/public-api/labels";
 import { ApiError, matchOperation } from "@/lib/public-api/operations";
 
@@ -36,7 +36,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   if (missing.length > 0) return error(400, `Missing: ${missing.join(", ")}`);
 
   try {
-    return NextResponse.json(await match.operation.run({ ...caller, instance: describeInstance(request.nextUrl.origin), labels: capabilityLabels }, input));
+    return NextResponse.json(await match.operation.run({ ...caller, instance: describeInstance(requestOrigin(request)), labels: capabilityLabels }, input));
   } catch (cause) {
     if (cause instanceof ApiError) return error(cause.status, cause.message);
     if (cause instanceof UnsupportedByProvider) return error(501, cause.message);

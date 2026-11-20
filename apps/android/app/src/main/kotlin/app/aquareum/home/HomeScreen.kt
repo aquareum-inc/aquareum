@@ -55,6 +55,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -93,12 +94,14 @@ fun HomeScreen(model: HomeViewModel, instance: InstanceDescription?, composerMod
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
     var refreshing by remember { mutableStateOf(false) }
 
     fun use(prompt: String, app: String) {
         model.fill(prompt, app)
         scope.launch { scroll.animateScrollTo(0) }
         focus.requestFocus()
+        keyboard?.show() // An example is a start: it lands ready to edit.
     }
 
     PullToRefreshBox(
@@ -108,8 +111,8 @@ fun HomeScreen(model: HomeViewModel, instance: InstanceDescription?, composerMod
     ) {
         Column(Modifier.fillMaxSize().verticalScroll(scroll)) {
             Box {
-                HomeBackdrop(instance)
-                Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 56.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                HomeBackdrop(instance, Modifier.matchParentSize())
+                Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 56.dp, bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     BasicText(
                         "Direct anything.",
                         style = TypeSize.Display.style(FontWeight.SemiBold).copy(color = palette.foreground, fontSize = 34.sp, lineHeight = 38.sp, letterSpacing = (-0.02).em, textAlign = TextAlign.Center),
@@ -152,7 +155,7 @@ fun HomeScreen(model: HomeViewModel, instance: InstanceDescription?, composerMod
                 Phase.Loading -> GallerySkeleton()
                 Phase.Failed -> LoadFailure("Home didn't load. Check your connection and try again.") { model.load() }
                 Phase.Loaded -> if (state.showcase.isNotEmpty()) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 36.dp, bottom = 14.dp), verticalAlignment = Alignment.Bottom) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 14.dp), verticalAlignment = Alignment.Bottom) {
                         BasicText("Made here", style = TypeSize.Body.style(FontWeight.SemiBold).copy(color = palette.foreground), modifier = Modifier.semantics { heading() })
                         Spacer(Modifier.weight(1f))
                         BasicText("Pick one to start from its prompt", style = TypeSize.Caption.style().copy(color = palette.subtleForeground))
@@ -167,13 +170,13 @@ fun HomeScreen(model: HomeViewModel, instance: InstanceDescription?, composerMod
 
 /** The instance's own picture behind the composer, fading into the page before the gallery. */
 @Composable
-private fun HomeBackdrop(instance: InstanceDescription?) {
+private fun HomeBackdrop(instance: InstanceDescription?, modifier: Modifier) {
     val palette = LocalPalette.current
     val dark = isSystemInDarkTheme()
     val home = instance?.home
     // A night sky belongs to the dark theme; on the light theme the page stays pale, as on the web.
     val picture = (home?.backgroundPoster ?: home?.backgroundImage)?.takeIf { dark || home?.aurora != true }
-    Box(Modifier.fillMaxWidth().height(560.dp)) {
+    Box(modifier) {
         if (picture != null) {
             AsyncImage(model = picture, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             // A light scrim on the dark theme, a heavier one on the light, as on the web.
