@@ -43,7 +43,7 @@ const SURFACES: Array<{ key: keyof InstanceSettings["surfaces"]; label: string; 
   { key: "app", label: "User app", name: "the user app", hint: "Chat, studio, characters and library.", stops: "Every user loses chat, studio, characters and library, including anything they have open." },
   { key: "api", label: "API", name: "the API", hint: "The instance's REST API.", stops: "Apps and scripts built on the API stop working. Their keys stay valid, but every request is refused." },
   { key: "mcp", label: "MCP server", name: "the MCP server", hint: "Tools for agents.", stops: "Agents connected over MCP lose their tools." },
-  { key: "mobile", label: "Phone apps", name: "the phone apps", hint: "The iOS and Android apps built for this instance. Turn off to stop them at once, say while a faulty release waits for a fix; phones stay signed in for when it's back on.", stops: "The apps stop working and say the service isn't offered on phones. Signed-in phones carry on when you turn it back on." },
+  { key: "mobile", label: "Phone apps", name: "the phone apps", hint: "This instance's iOS and Android apps. Turn off to pause them, say while a bad release is fixed. Phones stay signed in.", stops: "The apps stop working and say the service isn't offered on phones. Signed-in phones carry on when you turn it back on." },
 ];
 
 /** "the API", "the API and the MCP server", "the user app, the API and the MCP server". */
