@@ -1,7 +1,10 @@
 import { EngineError, UnsupportedByProvider } from "@aquareum/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { apiFor } from "@/lib/api";
 import { authenticate } from "@/lib/public-api/auth";
+import { describeInstance } from "@/lib/public-api/instance";
+import { capabilityLabels } from "@/lib/public-api/labels";
 import { ApiError, matchOperation } from "@/lib/public-api/operations";
 
 export const dynamic = "force-dynamic";
@@ -10,10 +13,10 @@ const error = (status: number, message: string) => NextResponse.json({ error: { 
 
 /** The instance's REST API: one route per operation in the registry. */
 async function handle(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
-  const caller = await authenticate(request);
-  if (!caller) return error(401, "Send an API key as a bearer token: Authorization: Bearer <key>");
-
   const match = matchOperation(request.method, (await context.params).path);
+  // A guest can call what a guest can see on the web; it runs as the instance's default account.
+  const caller = (await authenticate(request)) ?? (match?.operation.public ? { client: apiFor(null), operator: null } : null);
+  if (!caller) return error(401, "Send an API key as a bearer token: Authorization: Bearer <key>");
   if (!match) return error(404, "No such operation. GET /api/v1 lists them.");
 
   let body: Record<string, unknown> = {};
@@ -33,7 +36,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   if (missing.length > 0) return error(400, `Missing: ${missing.join(", ")}`);
 
   try {
-    return NextResponse.json(await match.operation.run(caller, input));
+    return NextResponse.json(await match.operation.run({ ...caller, instance: describeInstance(request.nextUrl.origin), labels: capabilityLabels }, input));
   } catch (cause) {
     if (cause instanceof ApiError) return error(cause.status, cause.message);
     if (cause instanceof UnsupportedByProvider) return error(501, cause.message);

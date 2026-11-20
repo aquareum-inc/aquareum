@@ -1,0 +1,19 @@
+{
+  "name": "@aquareum/mobile-codegen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Generates the native apps' design tokens and API clients from the web sources.",
+  "scripts": {
+    "tokens": "node src/tokens.ts",
+    "openapi": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/openapi.ts",
+    "clients": "node src/swift.ts",
+    "generate": "pnpm tokens && pnpm openapi && pnpm clients",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "ts-json-schema-generator": "^2.10.0",
+    "typescript": "5.9.2"
+  }
+}

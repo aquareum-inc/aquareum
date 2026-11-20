@@ -11,3 +11,4 @@ export {
   type CapabilityPlacement,
   type Surface,
 } from "./surfaces";
+export { colourToHex, parseColour, toHex, type Rgba } from "./colour";

@@ -373,3 +373,50 @@ export interface LiveHealth {
   /** Camera to restyled output. */
   latency_ms: number;
 }
+
+/** A way to sign in that an instance can offer. */
+export type SignInMethodName = "email" | "passkey" | "google" | "apple" | "discord" | "coinbase" | "wallet";
+
+/**
+ * What a client needs to know about an instance before anyone signs in: how it looks, what it serves and
+ * how to sign in. Read from the instance config, so there is no engine call behind it. URLs are absolute
+ * and theme colours are sRGB hex, so a client that can't read CSS can use them as they are.
+ */
+export interface InstanceDescription {
+  api_version: string;
+  name: string;
+  logo: {
+    /** A square mark, or null to set the name's first letter in type. */
+    symbol: string | null;
+    /** The full logo, or null to set the name in type. */
+    wordmark: string | null;
+    /** Draw the marks in the text colour, using only their shape. */
+    tint: boolean;
+  };
+  /** Overrides for colour tokens, per theme, keyed by token name ("primary"). Tokens not listed keep their default. */
+  theme: { dark: Record<string, string>; light: Record<string, string> };
+  surfaces: { app: boolean; api: boolean; mcp: boolean };
+  sign_in: { methods: SignInMethodName[]; sign_up: "open" | "invite" | "closed" };
+  content: { characters: boolean; adult_content: boolean };
+  home: {
+    background_image: string | null;
+    background_poster: string | null;
+    background_video: string | null;
+    /** Draw a live aurora over the background image. */
+    aurora: boolean;
+  };
+}
+
+/** The answer to a delete. */
+export interface Deleted {
+  deleted: boolean;
+}
+
+/** How a discovered app reads in the interface, so every client names it the same way. */
+export interface CapabilityLabel {
+  app: string;
+  /** What it is: "Text to video", or a language model's name. */
+  name: string;
+  /** How it reads where it did a piece of work, with its model when known: "Text to image · FLUX.2 klein 4B". */
+  work: string;
+}

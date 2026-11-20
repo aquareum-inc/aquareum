@@ -1,4 +1,4 @@
-import type { ApiClient, OperatorClient } from "@aquareum/api-client";
+import type { ApiClient, CapabilityLabel, InstanceDescription, OperatorClient } from "@aquareum/api-client";
 
 type Schema = Record<string, unknown>;
 
@@ -6,7 +6,17 @@ interface Context {
   client: ApiClient;
   /** Present for callers with the operator role. */
   operator: OperatorClient | null;
+  /** This instance, as it describes itself to clients. */
+  instance: InstanceDescription;
+  /** The readable name of each capability on offer, as the interface shows it. */
+  labels: () => Promise<CapabilityLabel[]>;
 }
+
+/**
+ * The exported API client type an operation answers with, or a one-element list for an array of it.
+ * The OpenAPI document and the native clients' models are generated from these names.
+ */
+export type Output = string | [string];
 
 export interface Operation {
   /** Tool name over MCP. */
@@ -16,7 +26,11 @@ export interface Operation {
   /** REST path under /api/v1; `{name}` segments become inputs. */
   path: string;
   input: Schema;
+  /** What it answers with. Operator operations may leave it out; they are not in the generated clients. */
+  output?: Output;
   operator?: boolean;
+  /** Answers without a caller, as the instance's default account: what a guest can see on the web. */
+  public?: boolean;
   run: (context: Context, input: Record<string, unknown>) => Promise<unknown>;
 }
 
@@ -31,12 +45,12 @@ const operator = (context: Context): OperatorClient => {
 };
 
 export class ApiError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
     super(message);
     this.name = "ApiError";
+    this.status = status;
   }
 }
 
@@ -51,13 +65,19 @@ const found = <T>(value: T | null, what: string): T => {
  * API can do exactly what the interface can.
  */
 export const OPERATIONS: Operation[] = [
-  { name: "list_capabilities", description: "List the capabilities discovered on the network that this instance offers.", method: "GET", path: "/offerings", input: object({}), run: async ({ client }) => (await client.listOfferings()).data },
-  { name: "run_capability", description: "Run any discovered capability with a request body of your own.", method: "POST", path: "/run", input: object({ app: text("Capability name from list_capabilities"), request: { type: "object", description: "The request body for the capability" } }, ["app"]), run: async ({ client }, input) => (await client.runCapability(str(input, "app"), input.request ?? {})).data },
+  { name: "get_instance", description: "Describe this instance: its name, logo and theme, what it serves, how to sign in and its content settings.", method: "GET", path: "/instance", output: "InstanceDescription", public: true, input: object({}), run: async ({ instance }) => instance },
+  { name: "list_prompt_starters", description: "List the starting points shown on Home, each with example requests.", method: "GET", path: "/starters", output: ["PromptStarter"], public: true, input: object({}), run: async ({ client }) => (await client.listPromptStarters()).data },
+  { name: "list_showcase", description: "List the examples in the instance's gallery, each with the request that made it.", method: "GET", path: "/showcase", output: ["ShowcaseItem"], public: true, input: object({}), run: async ({ client }) => (await client.listShowcase()).data },
+  { name: "list_agent_models", description: "List the language models the agent can run on, for the model menu.", method: "GET", path: "/agent-models", output: ["AgentModel"], public: true, input: object({}), run: async ({ client }) => (await client.listAgentModels()).data },
+  { name: "list_capability_labels", description: "List the readable name of each capability on offer, as the interface shows it, with the model that does the work when known.", method: "GET", path: "/offerings/labels", output: ["CapabilityLabel"], public: true, input: object({}), run: async ({ labels }) => labels() },
+  { name: "list_capabilities", description: "List the capabilities discovered on the network that this instance offers.", method: "GET", path: "/offerings", output: ["Offering"], public: true, input: object({}), run: async ({ client }) => (await client.listOfferings()).data },
+  { name: "run_capability", description: "Run any discovered capability with a request body of your own.", method: "POST", path: "/run", output: "CapabilityRun", input: object({ app: text("Capability name from list_capabilities"), request: { type: "object", description: "The request body for the capability" } }, ["app"]), run: async ({ client }, input) => (await client.runCapability(str(input, "app"), input.request ?? {})).data },
   {
     name: "create_generation",
     description: "Generate a video, image or audio clip. Returns a job to poll with get_generation.",
     method: "POST",
     path: "/generations",
+    output: "Generation",
     input: object(
       { kind: { enum: ["video", "image", "audio"] }, app: text("Capability to use, e.g. text-to-video"), prompt: text("What to make"), aspect, duration_seconds: { type: ["number", "null"] }, resolution: { enum: ["720p", "1080p", null] }, negative_prompt: text("What to leave out") },
       ["kind", "app", "prompt"],
@@ -75,35 +95,37 @@ export const OPERATIONS: Operation[] = [
         })
       ).data,
   },
-  { name: "get_generation", description: "Check a generation's state and progress.", method: "GET", path: "/generations/{id}", input: object({ id: text("Generation id") }, ["id"]), run: async ({ client }, input) => found((await client.getGeneration(str(input, "id"))).data, "Generation") },
-  { name: "list_conversations", description: "List the user's conversations with the agent, newest first.", method: "GET", path: "/conversations", input: object({}), run: async ({ client }) => (await client.listConversations()).data },
+  { name: "get_generation", description: "Check a generation's state and progress.", method: "GET", path: "/generations/{id}", output: "Generation", input: object({ id: text("Generation id") }, ["id"]), run: async ({ client }, input) => found((await client.getGeneration(str(input, "id"))).data, "Generation") },
+  { name: "list_conversations", description: "List the user's conversations with the agent, newest first.", method: "GET", path: "/conversations", output: ["ConversationSummary"], input: object({}), run: async ({ client }) => (await client.listConversations()).data },
   {
     name: "create_conversation",
     description: "Start a conversation with the agent. It plans the job, calls capabilities and reports each step.",
     method: "POST",
     path: "/conversations",
-    input: object({ text: text("The request"), app: text("Optional capability to use"), aspect, duration_seconds: { type: "number", default: 5 }, attachment_ids: { type: "array", items: { type: "string" }, description: "Library item ids to work from" } }, ["text"]),
+    output: "Conversation",
+    input: object({ text: text("The request"), app: text("Optional capability to use"), aspect, duration_seconds: { type: "number", default: 5 }, attachment_ids: { type: "array", items: { type: "string" }, description: "Library item ids to work from" }, agent_model: text("Language model to run the agent, from list_agent_models; leave out to let the agent choose"), character_slug: text("A character to put on screen") }, ["text"]),
     run: async ({ client }, input) => (await client.createConversation(message(input))).data,
   },
-  { name: "get_conversation", description: "Read a conversation, including the agent's steps, results and any video analysis.", method: "GET", path: "/conversations/{id}", input: object({ id: text("Conversation id") }, ["id"]), run: async ({ client }, input) => found((await client.getConversation(str(input, "id"))).data, "Conversation") },
-  { name: "send_message", description: "Send a follow-up message in a conversation.", method: "POST", path: "/conversations/{id}/messages", input: object({ id: text("Conversation id"), text: text("The message"), attachment_ids: { type: "array", items: { type: "string" } } }, ["id", "text"]), run: async ({ client }, input) => found((await client.sendMessage(str(input, "id"), message(input))).data, "Conversation") },
-  { name: "search_library", description: "Search the user's media by what is in it: subjects, places, actions, tags.", method: "GET", path: "/library", input: object({ query: text("What to look for"), kind: { enum: ["video", "image", "audio"] } }), run: async ({ client }, input) => (await client.listMedia({ ...(input.query ? { query: str(input, "query") } : {}), ...(input.kind ? { kind: input.kind as "video" | "image" | "audio" } : {}) })).data },
-  { name: "delete_media", description: "Delete an item from the library. This can't be undone.", method: "DELETE", path: "/library/{id}", input: object({ id: text("Library item id") }, ["id"]), run: async ({ client }, input) => ({ deleted: (await client.deleteMedia(str(input, "id"))).data }) },
-  { name: "understand_video", description: "Ask about a video: summarise it, find moments, answer a question.", method: "POST", path: "/understand", input: object({ source: text("A URL or a library item id"), question: text("What to find out") }, ["source", "question"]), run: async ({ client }, input) => (await client.analyseVideo({ source: str(input, "source"), question: str(input, "question") })).data },
-  { name: "list_characters", description: "List characters the user can chat with or call.", method: "GET", path: "/characters", input: object({ query: text("Filter by name, role or subject") }), run: async ({ client }, input) => (await client.listCharacters(input.query ? { query: str(input, "query") } : {})).data },
-  { name: "get_balance", description: "The user's credit balance and budget.", method: "GET", path: "/balance", input: object({}), run: async ({ client }) => (await client.getCreditBalance()).data },
-  { name: "get_usage", description: "What the user has spent, by capability, and recent jobs.", method: "GET", path: "/usage", input: object({}), run: async ({ client }) => (await client.getUsage()).data },
+  { name: "get_conversation", description: "Read a conversation, including the agent's steps, results and any video analysis.", method: "GET", path: "/conversations/{id}", output: "Conversation", input: object({ id: text("Conversation id") }, ["id"]), run: async ({ client }, input) => found((await client.getConversation(str(input, "id"))).data, "Conversation") },
+  { name: "send_message", description: "Send a follow-up message in a conversation.", method: "POST", path: "/conversations/{id}/messages", output: "Conversation", input: object({ id: text("Conversation id"), text: text("The message"), attachment_ids: { type: "array", items: { type: "string" } }, agent_model: text("Language model to run the agent; leave out to let the agent choose"), character_slug: text("A character to put on screen") }, ["id", "text"]), run: async ({ client }, input) => found((await client.sendMessage(str(input, "id"), message(input))).data, "Conversation") },
+  { name: "search_library", description: "Search the user's media by what is in it: subjects, places, actions, tags.", method: "GET", path: "/library", output: ["MediaItem"], input: object({ query: text("What to look for"), kind: { enum: ["video", "image", "audio"] } }), run: async ({ client }, input) => (await client.listMedia({ ...(input.query ? { query: str(input, "query") } : {}), ...(input.kind ? { kind: input.kind as "video" | "image" | "audio" } : {}) })).data },
+  { name: "delete_media", description: "Delete an item from the library. This can't be undone.", method: "DELETE", path: "/library/{id}", output: "Deleted", input: object({ id: text("Library item id") }, ["id"]), run: async ({ client }, input) => ({ deleted: (await client.deleteMedia(str(input, "id"))).data }) },
+  { name: "understand_video", description: "Ask about a video: summarise it, find moments, answer a question.", method: "POST", path: "/understand", output: "VideoAnalysis", input: object({ source: text("A URL or a library item id"), question: text("What to find out") }, ["source", "question"]), run: async ({ client }, input) => (await client.analyseVideo({ source: str(input, "source"), question: str(input, "question") })).data },
+  { name: "list_characters", description: "List characters the user can chat with or call.", method: "GET", path: "/characters", output: ["Character"], input: object({ query: text("Filter by name, role or subject") }), run: async ({ client }, input) => (await client.listCharacters(input.query ? { query: str(input, "query") } : {})).data },
+  { name: "get_balance", description: "The user's credit balance and budget.", method: "GET", path: "/balance", output: "CreditBalance", input: object({}), run: async ({ client }) => (await client.getCreditBalance()).data },
+  { name: "get_usage", description: "What the user has spent, by capability, and recent jobs.", method: "GET", path: "/usage", output: "Usage", input: object({}), run: async ({ client }) => (await client.getUsage()).data },
   {
     name: "open_session",
     description: "Open a real-time session, such as a live restyle of a camera. It stays open and is billed by the second until closed.",
     method: "POST",
     path: "/sessions",
+    output: "LiveSession",
     input: object({ app: text("A persistent capability, e.g. live-video-to-video"), prompt: text("The look or instruction"), destination_ids: { type: "array", items: { type: "string" } }, record: { type: "boolean", default: false } }, ["app", "prompt"]),
     run: async ({ client }, input) =>
       (await client.startLiveSession({ app: str(input, "app"), source: "camera", prompt: str(input, "prompt"), destination_ids: Array.isArray(input.destination_ids) ? input.destination_ids.map(String) : [], record: input.record === true })).data,
   },
-  { name: "update_session", description: "Change a running session's prompt without closing it.", method: "PATCH", path: "/sessions/{id}", input: object({ id: text("Session id"), prompt: text("The new look or instruction") }, ["id", "prompt"]), run: async ({ client }, input) => found((await client.updateLiveSession(str(input, "id"), str(input, "prompt"))).data, "Session") },
-  { name: "close_session", description: "Close a real-time session.", method: "DELETE", path: "/sessions/{id}", input: object({ id: text("Session id") }, ["id"]), run: async ({ client }, input) => found((await client.stopLiveSession(str(input, "id"))).data, "Session") },
+  { name: "update_session", description: "Change a running session's prompt without closing it.", method: "PATCH", path: "/sessions/{id}", output: "LiveSession", input: object({ id: text("Session id"), prompt: text("The new look or instruction") }, ["id", "prompt"]), run: async ({ client }, input) => found((await client.updateLiveSession(str(input, "id"), str(input, "prompt"))).data, "Session") },
+  { name: "close_session", description: "Close a real-time session.", method: "DELETE", path: "/sessions/{id}", output: "LiveSession", input: object({ id: text("Session id") }, ["id"]), run: async ({ client }, input) => found((await client.stopLiveSession(str(input, "id"))).data, "Session") },
 
   // Operator: administering the instance without the console.
   { name: "operator_overview", description: "Operator: active users, jobs today, revenue, wholesale cost and margin.", method: "GET", path: "/operator/overview", input: object({}), operator: true, run: async (context) => (await operator(context).getOverview()).data },
@@ -128,6 +150,8 @@ function message(input: Record<string, unknown>) {
     aspect: (input.aspect as "16:9" | "9:16" | "1:1" | undefined) ?? "16:9",
     duration_seconds: typeof input.duration_seconds === "number" ? input.duration_seconds : 5,
     ...(Array.isArray(input.attachment_ids) ? { attachment_ids: input.attachment_ids.map(String) } : {}),
+    ...(typeof input.agent_model === "string" && input.agent_model ? { agent_model: input.agent_model } : {}),
+    ...(typeof input.character_slug === "string" && input.character_slug ? { character_slug: input.character_slug } : {}),
   };
 }
 

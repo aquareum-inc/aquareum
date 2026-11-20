@@ -4,13 +4,17 @@
   "version": "0.1.0",
   "license": "MIT",
   "packageManager": "pnpm@10.33.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "pnpm --filter @aquareum/web dev",
     "build": "pnpm --filter @aquareum/web build",
     "start": "pnpm --filter @aquareum/web start",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "api:openapi": "pnpm --filter @aquareum/mobile-codegen openapi",
+    "mobile:generate": "pnpm --filter @aquareum/mobile-codegen generate"
   }
 }

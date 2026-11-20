@@ -1,4 +1,4 @@
-import { resolveSource } from "./data-sources";
+import { isMockOnly, resolveSource } from "./data-sources";
 import { agentModelsFrom, isLanguageApp } from "./runner-model";
 import { listOfferingsLive, type EngineConfig } from "./live/engine";
 import { createStoredKey, listStoredKeys, readStoredPreferences, revokeStoredKey, runStoredCapability, updateStoredPreferences, verifyStoredKey } from "./mock/account";
@@ -75,6 +75,9 @@ import type {
   VideoAnalysis,
 } from "./types";
 
+/** The one key a mock-only instance accepts without it having been created. Never valid on a real instance. */
+export const MOCK_ONLY_DEMO_KEY = "lpk_mock_only_demo_key";
+
 export * from "./types";
 export * from "./provider";
 export { DATA_SOURCES, isMockOnly, resolveSource, type ApiFunctionName } from "./data-sources";
@@ -99,6 +102,12 @@ export interface Account {
   /** Top-ups of the user's own amount, or null when the provider can't take them or the operator turned them off. */
   top_up: { min: Money; max: Money; credits_per_usd: number } | null;
   provider: { id: string; name: string; features: ProviderFeatures };
+}
+
+/** What a user has spent: totals by capability, and their recent jobs. */
+export interface Usage {
+  summary: UsageSummary;
+  entries: UsageEntry[];
 }
 
 export interface ApiClient {
@@ -131,7 +140,7 @@ export interface ApiClient {
   /** A one-off top-up of an amount the user chooses, within the operator's limits. */
   buyCredits(amount: Money): Promise<Sourced<CreditBalance>>;
   changePlan(planId: string | null): Promise<Sourced<Plan | null>>;
-  getUsage(): Promise<Sourced<{ summary: UsageSummary; entries: UsageEntry[] }>>;
+  getUsage(): Promise<Sourced<Usage>>;
 
   listApiKeys(): Promise<Sourced<ApiKey[]>>;
   createApiKey(label: string): Promise<Sourced<CreatedApiKey>>;
@@ -369,6 +378,11 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     },
 
     async verifyApiKey(secret) {
+      // Mock-only instances accept one documented key, so tests, CI and development builds of the native
+      // apps can call the API without a sign-in. It is refused whenever the instance isn't mock-only.
+      if (isMockOnly(env) && secret === MOCK_ONLY_DEMO_KEY) {
+        return mock({ id: "key_mock_only_demo", label: "Mock-only demo key", prefix: MOCK_ONLY_DEMO_KEY.slice(0, 8), created_at: "2026-11-19T00:00:00Z", last_used_at: null, status: "active" });
+      }
       return mock(verifyStoredKey(secret));
     },
 
