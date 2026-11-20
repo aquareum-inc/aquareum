@@ -348,6 +348,7 @@ Third-party dependencies, each justified:
 | kotlinx.serialization, kotlinx.coroutines | Android | JetBrains' own; the standard for Kotlin. |
 | AndroidX (Compose, Navigation, Lifecycle, Browser, DataStore) | Android | Google's own. |
 | Coil | Android | Compose has no image loader of its own; Coil is the one Google's documentation uses. |
+| Thinking orbs (vendored in `apps/ios/Aquareum/Vendor/ThinkingOrbs`, MIT) | iOS | The agent's working indicator, the same drawing as the web's `thinking-orbs` package. Vendored from a pinned commit rather than SwiftPM: the package tracks a branch of a 284 MB repository. |
 | Material icons (extended) | Android | The platform's own icon set as Compose vectors. Unused icons are stripped from release builds. |
 | None | iOS | Everything is in the SDK. |
 
@@ -543,7 +544,16 @@ For the engine and provider (added to `docs/engine-requests.md`):
   Home gallery's hint move to their own line, and Settings rows and the account tray put their numbers under
   the name. iOS at the largest accessibility size scales and scrolls as it should.
 
-Not done in the polish pass: a real-device performance check of the aurora, and an automated accessibility
+- **The agent's orb.** From libraries.dev, only thinking orbs met the brief (monochrome ink, motion only
+  while something is happening, a still frame for reduced motion); border beam, metal, gooey, the image
+  loader and bot avatars didn't, and the voice pieces wait for character calls. While the agent works, the
+  orb replaces the instance's mark beside the step and shows the kind of work (`agentOrbState`: planning
+  solves, watching searches, making media composes, writing a prompt weaves); when it's done the mark comes
+  back. Web: `thinking-orbs` 0.3.2 from npm (7 KB gzipped, no dependencies, no install scripts). iOS: the
+  SwiftUI port vendored at commit `14ae9d2`. Android has no Compose version yet, so it keeps the mark and the
+  breathing step title. Screenshot: `docs/screenshots/mobile/ios-chat-orb-dark.jpg`.
+
+Not done in the polish pass: a Compose port of the orb, a real-device performance check of the aurora, and an automated accessibility
 audit in a UI test target (`performAccessibilityAudit`), which the project doesn't have yet.
 
 ### Slice 6: Settings (20 November 2026)

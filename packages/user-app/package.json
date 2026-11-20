@@ -18,7 +18,8 @@
     "@aquareum/ui": "workspace:*",
     "liveline": "0.0.7",
     "lucide-react": "^1.48.0",
-    "motion": "^13.4.3"
+    "motion": "^13.4.3",
+    "thinking-orbs": "0.3.2"
   },
   "peerDependencies": {
     "react": "^19.2.1",

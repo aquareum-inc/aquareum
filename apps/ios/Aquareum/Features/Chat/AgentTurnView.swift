@@ -17,10 +17,22 @@ struct AgentTurnView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            BrandSymbol()
-                .frame(width: 12, height: 12)
-                .frame(width: 28, height: 28)
-                .overlay(Circle().strokeBorder(palette.hairline, lineWidth: 1))
+            // While it works, an orb shows what kind of work it is doing; when it's done, the instance's mark
+            // comes back. The summary beside it already says what's happening, so the orb isn't read out.
+            ZStack {
+                if working {
+                    ThinkingOrb(state: OrbState(step: turn.steps.first { $0.state == .running }), size: .px20)
+                        .accessibilityHidden(true)
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                } else {
+                    BrandSymbol()
+                        .frame(width: 12, height: 12)
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                }
+            }
+            .frame(width: 28, height: 28)
+            .overlay(Circle().strokeBorder(palette.hairline, lineWidth: 1))
+            .animation(motion(.enter), value: working)
 
             VStack(alignment: .leading, spacing: 12) {
                 summary

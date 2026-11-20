@@ -35,3 +35,19 @@ struct ComposerTests {
         #expect(try fixture("search_library", as: [MediaItem].self).allSatisfy { $0.kind == .video })
     }
 }
+
+/// The agent's orb says what kind of work the running step is, as on the web.
+struct AgentOrbTests {
+    private func step(_ kind: AgentStepKind, _ app: String?) -> AgentStep {
+        AgentStep(id: "stp", kind: kind, title: "", detail: "", app: app, state: .running)
+    }
+
+    @Test func eachStepReadsAsItsKindOfWork() {
+        #expect(OrbState(step: nil) == .breathing)
+        #expect(OrbState(step: step(.plan, nil)) == .solving)
+        #expect(OrbState(step: step(.review, "video-understanding")) == .searching)
+        #expect(OrbState(step: step(.tool, "image-to-video")) == .composing)
+        #expect(OrbState(step: step(.tool, "chat")) == .weaving)
+        #expect(OrbState(step: step(.tool, "something-new")) == .working)
+    }
+}

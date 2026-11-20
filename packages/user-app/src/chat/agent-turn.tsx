@@ -5,7 +5,9 @@ import { BrandSymbol, EASE_OUT_EXPO, cn } from "@aquareum/ui";
 import { Check, ChevronDown, Clapperboard, Eye, ListTree, Wrench } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { ThinkingOrb } from "thinking-orbs";
 
+import { agentOrbState } from "../lib/agent-orb";
 import { workLabel } from "../lib/capability-menu";
 import { GenerationTile } from "../studio/generation-tile";
 
@@ -72,8 +74,19 @@ export function AgentTurn({ message, generations, models, onOpenInStudio, onOpen
 
   return (
     <div className="flex gap-3">
-      <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-hairline text-foreground">
-        <BrandSymbol className="h-3 w-auto" />
+      {/* While it works, an orb shows what kind of work it is doing; when it's done, the instance's mark comes back. */}
+      <span className="relative mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-hairline text-foreground">
+        <AnimatePresence initial={false} mode="popLayout">
+          {working ? (
+            <motion.span key="orb" className="inline-flex" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.24, ease: EASE_OUT_EXPO }}>
+              <ThinkingOrb state={agentOrbState(running)} size={20} aria-hidden />
+            </motion.span>
+          ) : (
+            <motion.span key="mark" className="inline-flex" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.24, ease: EASE_OUT_EXPO }}>
+              <BrandSymbol className="h-3 w-auto" />
+            </motion.span>
+          )}
+        </AnimatePresence>
       </span>
       <div className="min-w-0 flex-1">
         <button
