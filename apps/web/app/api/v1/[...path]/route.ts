@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { EngineError, UnsupportedByProvider } from "@aquareum/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -5,12 +7,24 @@ import { devices } from "@/lib/devices";
 import { instance } from "@/lib/instance";
 import { authenticate, carriesDeviceToken, guest, type Caller } from "@/lib/public-api/auth";
 import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
-import { capabilityLabels } from "@/lib/public-api/labels";
+import { agentModelMenu, capabilityLabels } from "@/lib/public-api/labels";
 import { ApiError, matchOperation } from "@/lib/public-api/operations";
 
 export const dynamic = "force-dynamic";
 
 const error = (status: number, message: string, code?: string) => NextResponse.json({ error: { status, message, ...(code ? { code } : {}) } }, { status });
+
+/**
+ * A read, with an ETag. A client following work in progress sends it back as If-None-Match and, while
+ * nothing has changed, gets 304 with no body. `no-cache` means "check every time", not "don't keep".
+ */
+function read(request: NextRequest, value: unknown) {
+  const body = JSON.stringify(value);
+  const etag = `W/"${createHash("sha1").update(body).digest("base64url")}"`;
+  const headers = { ETag: etag, "Cache-Control": "private, no-cache", Vary: "Authorization, Cookie" };
+  if (request.headers.get("if-none-match") === etag) return new NextResponse(null, { status: 304, headers });
+  return new NextResponse(body, { status: 200, headers: { ...headers, "Content-Type": "application/json" } });
+}
 
 /** The instance's REST API: one route per operation in the registry. */
 async function handle(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
@@ -49,7 +63,8 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   if (missing.length > 0) return error(400, `Missing: ${missing.join(", ")}`);
 
   try {
-    return NextResponse.json(await match.operation.run({ ...caller, devices: devices(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels }, input));
+    const value = await match.operation.run({ ...caller, devices: devices(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu }, input);
+    return request.method === "GET" ? read(request, value) : NextResponse.json(value);
   } catch (cause) {
     if (cause instanceof ApiError) return error(cause.status, cause.message, cause.code);
     if (cause instanceof UnsupportedByProvider) return error(501, cause.message);

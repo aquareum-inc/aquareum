@@ -57,6 +57,12 @@ struct API: Sendable {
         try await transport.send("GET", "/agent-models", query: [:], body: nil)
     }
 
+    /// List the agent's model menu as the interface shows it: one row per language model, named and described, with the app to send as agent_model. Hidden when there are fewer than two rows.
+    /// Open to guests.
+    func listAgentModelMenu() async throws -> [AgentModelEntry] {
+        try await transport.send("GET", "/agent-models/menu", query: [:], body: nil)
+    }
+
     /// List the readable name of each capability on offer, as the interface shows it, with the model that does the work when known.
     /// Open to guests.
     func listCapabilityLabels() async throws -> [CapabilityLabel] {
@@ -99,9 +105,14 @@ struct API: Sendable {
         try await transport.send("GET", "/conversations/\(APITransport.escape(id))", query: [:], body: nil)
     }
 
+    /// Delete a conversation. Its shots stay in the library. This can't be undone.
+    func deleteConversation(id: String) async throws -> Deleted {
+        try await transport.send("DELETE", "/conversations/\(APITransport.escape(id))", query: [:], body: nil)
+    }
+
     /// Send a follow-up message in a conversation.
-    func sendMessage(id: String, text: String, attachmentIds: [String]? = nil, agentModel: String? = nil, characterSlug: String? = nil) async throws -> Conversation {
-        try await transport.send("POST", "/conversations/\(APITransport.escape(id))/messages", query: [:], body: ["text": .string(text), "attachment_ids": attachmentIds.map { .array($0.map { .string($0) }) }, "agent_model": agentModel.map { .string($0) }, "character_slug": characterSlug.map { .string($0) }])
+    func sendMessage(id: String, text: String, app: String? = nil, aspect: String? = nil, durationSeconds: Double? = nil, attachmentIds: [String]? = nil, agentModel: String? = nil, characterSlug: String? = nil) async throws -> Conversation {
+        try await transport.send("POST", "/conversations/\(APITransport.escape(id))/messages", query: [:], body: ["text": .string(text), "app": app.map { .string($0) }, "aspect": aspect.map { .string($0) }, "duration_seconds": durationSeconds.map { .number($0) }, "attachment_ids": attachmentIds.map { .array($0.map { .string($0) }) }, "agent_model": agentModel.map { .string($0) }, "character_slug": characterSlug.map { .string($0) }])
     }
 
     /// Search the user's media by what is in it: subjects, places, actions, tags.

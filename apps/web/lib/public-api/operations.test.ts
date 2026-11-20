@@ -28,7 +28,8 @@ const devices: DeviceAccess = {
   revoke: (userId, id) => userId === "usr_demo_adam" && id === phone.id,
   revokeAll: vi.fn(() => 1),
 };
-const base = { client, operator: null, account: null, devices, instance, labels };
+const agentModelMenu = async () => [];
+const base = { client, operator: null, account: null, devices, instance, labels, agentModelMenu };
 const adam: Account = { user: { id: "usr_demo_adam", name: "Adam Soffer", email: "adam@example.test" }, deviceId: "dev_1" };
 
 describe("public API operations", () => {
@@ -84,7 +85,7 @@ describe("public API operations", () => {
 
   it("only reads are open to guests, apart from collecting a sign-in, and none of them is the operator's", () => {
     const open = OPERATIONS.filter((operation) => operation.public);
-    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_instance", "list_agent_models", "list_capabilities", "list_capability_labels", "list_prompt_starters", "list_showcase"]);
+    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_instance", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_prompt_starters", "list_showcase"]);
     for (const operation of open) expect((operation.method === "GET" || operation.name === "create_device_session") && !operation.operator, operation.name).toBe(true);
   });
 
@@ -120,5 +121,20 @@ describe("public API operations", () => {
     expect((await client.verifyApiKey(MOCK_ONLY_DEMO_KEY)).data).toMatchObject({ status: "active" });
     const real = createApiClient({ env: {}, provider });
     expect((await real.verifyApiKey(MOCK_ONLY_DEMO_KEY)).data).toBeNull();
+  });
+
+  it("deletes a conversation once, and says so when it's gone", async () => {
+    const run = (name: string, input: Record<string, unknown>) => OPERATIONS.find((operation) => operation.name === name)!.run(base, input);
+    const conversation = (await run("create_conversation", { text: "A heron on a still pond" })) as { id: string };
+    expect(await run("delete_conversation", { id: conversation.id })).toEqual({ deleted: true });
+    await expect(run("delete_conversation", { id: conversation.id })).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("a follow-up can carry the shot's shape and length", async () => {
+    const run = (name: string, input: Record<string, unknown>) => OPERATIONS.find((operation) => operation.name === name)!.run(base, input);
+    const send = OPERATIONS.find((operation) => operation.name === "send_message")!;
+    expect(Object.keys((send.input as { properties: object }).properties)).toEqual(expect.arrayContaining(["app", "aspect", "duration_seconds"]));
+    const conversation = (await run("create_conversation", { text: "A heron on a still pond" })) as { id: string };
+    expect(await run("send_message", { id: conversation.id, text: "Make it vertical", aspect: "9:16", duration_seconds: 10 })).toMatchObject({ id: conversation.id });
   });
 });

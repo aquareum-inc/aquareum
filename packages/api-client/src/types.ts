@@ -438,6 +438,23 @@ export interface DeviceToken {
   device: DeviceSession;
 }
 
+/**
+ * One row of the agent's model menu: a language model, however many apps serve it. Named by the same rules
+ * as the web's menu, so every client lists models the same way.
+ */
+export interface AgentModelEntry {
+  /** The app to send as `agent_model`: the copy with a runner free and the most context. */
+  app: string;
+  /** Other apps serving the same model. */
+  also: string[];
+  /** The model's readable name, "Qwen3.8 27B". */
+  name: string;
+  /** What sets it apart, "128K context". */
+  description: string;
+  /** No runner is free right now, so a job would queue. */
+  busy: boolean;
+}
+
 /** The answer to a delete. */
 export interface Deleted {
   deleted: boolean;

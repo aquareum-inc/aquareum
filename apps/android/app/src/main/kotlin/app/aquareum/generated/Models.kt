@@ -29,6 +29,21 @@ data class AgentModel(
     @SerialName("busy") val busy: Boolean,
 )
 
+/** One row of the agent's model menu: a language model, however many apps serve it. Named by the same rules as the web's menu, so every client lists models the same way. */
+@Serializable
+data class AgentModelEntry(
+    /** The app to send as `agent_model`: the copy with a runner free and the most context. */
+    @SerialName("app") val app: String,
+    /** Other apps serving the same model. */
+    @SerialName("also") val also: List<String>,
+    /** The model's readable name, "Qwen3.8 27B". */
+    @SerialName("name") val name: String,
+    /** What sets it apart, "128K context". */
+    @SerialName("description") val description: String,
+    /** No runner is free right now, so a job would queue. */
+    @SerialName("busy") val busy: Boolean,
+)
+
 /** How a discovered app reads in the interface, so every client names it the same way. */
 @Serializable
 data class CapabilityLabel(

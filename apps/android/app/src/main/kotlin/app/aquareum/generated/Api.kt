@@ -51,6 +51,10 @@ class Api(private val transport: ApiTransport) {
     suspend fun listAgentModels(): List<AgentModel> =
         transport.send(ListSerializer(AgentModel.serializer()), "GET", "/agent-models", query = emptyMap(), body = null)
 
+    /** List the agent's model menu as the interface shows it: one row per language model, named and described, with the app to send as agent_model. Hidden when there are fewer than two rows. Open to guests. */
+    suspend fun listAgentModelMenu(): List<AgentModelEntry> =
+        transport.send(ListSerializer(AgentModelEntry.serializer()), "GET", "/agent-models/menu", query = emptyMap(), body = null)
+
     /** List the readable name of each capability on offer, as the interface shows it, with the model that does the work when known. Open to guests. */
     suspend fun listCapabilityLabels(): List<CapabilityLabel> =
         transport.send(ListSerializer(CapabilityLabel.serializer()), "GET", "/offerings/labels", query = emptyMap(), body = null)
@@ -83,9 +87,13 @@ class Api(private val transport: ApiTransport) {
     suspend fun getConversation(id: String): Conversation =
         transport.send(Conversation.serializer(), "GET", "/conversations/${ApiTransport.escape(id)}", query = emptyMap(), body = null)
 
+    /** Delete a conversation. Its shots stay in the library. This can't be undone. */
+    suspend fun deleteConversation(id: String): Deleted =
+        transport.send(Deleted.serializer(), "DELETE", "/conversations/${ApiTransport.escape(id)}", query = emptyMap(), body = null)
+
     /** Send a follow-up message in a conversation. */
-    suspend fun sendMessage(id: String, text: String, attachmentIds: List<String>? = null, agentModel: String? = null, characterSlug: String? = null): Conversation =
-        transport.send(Conversation.serializer(), "POST", "/conversations/${ApiTransport.escape(id)}/messages", query = emptyMap(), body = mapOf("text" to JsonPrimitive(text), "attachment_ids" to attachmentIds?.let { JsonArray(it.map(::JsonPrimitive)) }, "agent_model" to agentModel?.let { JsonPrimitive(it) }, "character_slug" to characterSlug?.let { JsonPrimitive(it) }))
+    suspend fun sendMessage(id: String, text: String, app: String? = null, aspect: String? = null, durationSeconds: Double? = null, attachmentIds: List<String>? = null, agentModel: String? = null, characterSlug: String? = null): Conversation =
+        transport.send(Conversation.serializer(), "POST", "/conversations/${ApiTransport.escape(id)}/messages", query = emptyMap(), body = mapOf("text" to JsonPrimitive(text), "app" to app?.let { JsonPrimitive(it) }, "aspect" to aspect?.let { JsonPrimitive(it) }, "duration_seconds" to durationSeconds?.let { JsonPrimitive(it) }, "attachment_ids" to attachmentIds?.let { JsonArray(it.map(::JsonPrimitive)) }, "agent_model" to agentModel?.let { JsonPrimitive(it) }, "character_slug" to characterSlug?.let { JsonPrimitive(it) }))
 
     /** Search the user's media by what is in it: subjects, places, actions, tags. */
     suspend fun searchLibrary(query: String? = null, kind: String? = null): List<MediaItem> =

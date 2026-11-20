@@ -370,6 +370,38 @@
         }
       }
     },
+    "/agent-models/menu": {
+      "get": {
+        "operationId": "list_agent_model_menu",
+        "summary": "List the agent's model menu as the interface shows it: one row per language model, named and described, with the app to send as agent_model. Hidden when there are fewer than two rows.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentModelEntry"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/offerings/labels": {
       "get": {
         "operationId": "list_capability_labels",
@@ -816,6 +848,53 @@
             }
           }
         }
+      },
+      "delete": {
+        "operationId": "delete_conversation",
+        "summary": "Delete a conversation. Its shots stay in the library. This can't be undone.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/conversations/{id}/messages": {
@@ -843,6 +922,22 @@
                   "text": {
                     "type": "string",
                     "description": "The message"
+                  },
+                  "app": {
+                    "type": "string",
+                    "description": "Optional capability to use"
+                  },
+                  "aspect": {
+                    "enum": [
+                      "16:9",
+                      "9:16",
+                      "1:1"
+                    ],
+                    "default": "16:9"
+                  },
+                  "duration_seconds": {
+                    "type": "number",
+                    "default": 5
                   },
                   "attachment_ids": {
                     "type": "array",
@@ -1433,6 +1528,43 @@
         ],
         "additionalProperties": false,
         "description": "A language model the agent can run on: one app serving it, with what the menu needs to show."
+      },
+      "AgentModelEntry": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string",
+            "description": "The app to send as `agent_model`: the copy with a runner free and the most context."
+          },
+          "also": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Other apps serving the same model."
+          },
+          "name": {
+            "type": "string",
+            "description": "The model's readable name, \"Qwen3.8 27B\"."
+          },
+          "description": {
+            "type": "string",
+            "description": "What sets it apart, \"128K context\"."
+          },
+          "busy": {
+            "type": "boolean",
+            "description": "No runner is free right now, so a job would queue."
+          }
+        },
+        "required": [
+          "app",
+          "also",
+          "name",
+          "description",
+          "busy"
+        ],
+        "additionalProperties": false,
+        "description": "One row of the agent's model menu: a language model, however many apps serve it. Named by the same rules as the web's menu, so every client lists models the same way."
       },
       "CapabilityLabel": {
         "type": "object",

@@ -1,0 +1,1 @@
+[{"app":"blueclaw/chat/qwen3.8-27b","also":["chat"],"name":"Qwen3.8 27B","description":"Up to 128K context","busy":false},{"app":"northlight/chat/gemma-3-27b","also":[],"name":"Gemma 3 27B","description":"128K context","busy":false},{"app":"harbor/chat/mistral-small-3.2","also":[],"name":"Mistral Small 3.2 24B","description":"128K context","busy":true}]

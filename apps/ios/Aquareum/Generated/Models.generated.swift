@@ -20,6 +20,20 @@ struct AgentModel: Codable, Sendable, Hashable {
     }
 }
 
+/// One row of the agent's model menu: a language model, however many apps serve it. Named by the same rules as the web's menu, so every client lists models the same way.
+struct AgentModelEntry: Codable, Sendable, Hashable {
+    /// The app to send as `agent_model`: the copy with a runner free and the most context.
+    var app: String
+    /// Other apps serving the same model.
+    var also: [String]
+    /// The model's readable name, "Qwen3.8 27B".
+    var name: String
+    /// What sets it apart, "128K context".
+    var description: String
+    /// No runner is free right now, so a job would queue.
+    var busy: Bool
+}
+
 /// How a discovered app reads in the interface, so every client names it the same way.
 struct CapabilityLabel: Codable, Sendable, Hashable {
     var app: String
