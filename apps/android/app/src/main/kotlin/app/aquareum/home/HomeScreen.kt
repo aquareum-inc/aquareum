@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,7 +64,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.aquareum.account.Account
 import app.aquareum.design.Chip
+import app.aquareum.design.LocalDarkTheme
 import app.aquareum.design.LoadFailure
 import app.aquareum.design.LocalPalette
 import app.aquareum.design.MediaStill
@@ -87,7 +88,7 @@ private val STARTER_ICONS = mapOf("make-video" to Icons.Rounded.Movie, "animate-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(model: HomeViewModel, instance: InstanceDescription?, composerModifier: Modifier, onOpen: (Conversation) -> Unit) {
+fun HomeScreen(model: HomeViewModel, account: Account, instance: InstanceDescription?, composerModifier: Modifier, accountButton: @Composable () -> Unit, onOpen: (Conversation) -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
     val palette = LocalPalette.current
     val motion = rememberMotion()
@@ -123,7 +124,10 @@ fun HomeScreen(model: HomeViewModel, instance: InstanceDescription?, composerMod
                         style = TypeSize.Lead.style().copy(color = palette.mutedForeground, textAlign = TextAlign.Center),
                         modifier = Modifier.padding(top = 10.dp).padding(horizontal = 28.dp),
                     )
-                    Composer(state.draft, model::setDraft, onSend = { model.send(onOpen) }, modifier = composerModifier.padding(top = 28.dp).padding(horizontal = 16.dp), sending = state.sending, focus = focus)
+                    Composer(state.draft, model::setDraft, onSend = {
+                        // A guest signs in here and carries on: the request is still in the composer.
+                        scope.launch { if (account.requireSignIn("Sign in to send this. What you wrote stays here.")) model.send(onOpen) }
+                    }, modifier = composerModifier.padding(top = 28.dp).padding(horizontal = 16.dp), sending = state.sending, focus = focus)
 
                     AnimatedVisibility(state.sendError != null) {
                         BasicText(state.sendError.orEmpty(), style = TypeSize.Caption.style().copy(color = palette.destructive), modifier = Modifier.padding(top = 8.dp))
@@ -165,6 +169,7 @@ fun HomeScreen(model: HomeViewModel, instance: InstanceDescription?, composerMod
             }
             Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars).height(32.dp))
         }
+        Box(Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.statusBars).padding(end = 4.dp)) { accountButton() }
     }
 }
 
@@ -172,7 +177,7 @@ fun HomeScreen(model: HomeViewModel, instance: InstanceDescription?, composerMod
 @Composable
 private fun HomeBackdrop(instance: InstanceDescription?, modifier: Modifier) {
     val palette = LocalPalette.current
-    val dark = isSystemInDarkTheme()
+    val dark = LocalDarkTheme.current
     val home = instance?.home
     // A night sky belongs to the dark theme; on the light theme the page stays pale, as on the web.
     val picture = (home?.backgroundPoster ?: home?.backgroundImage)?.takeIf { dark || home?.aurora != true }

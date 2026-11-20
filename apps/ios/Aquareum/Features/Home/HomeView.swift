@@ -2,15 +2,17 @@ import SwiftUI
 
 struct HomeView: View {
     let travel: Namespace.ID
+    let openAccount: () -> Void
     let open: (Conversation) -> Void
     @State private var model: HomeModel
     @FocusState private var composing: Bool
-    @Environment(InstanceStore.self) private var instance
+    @Environment(Account.self) private var account
     @Environment(\.palette) private var palette
     @Environment(\.motion) private var motion
 
-    init(api: API, travel: Namespace.ID, open: @escaping (Conversation) -> Void) {
+    init(api: API, travel: Namespace.ID, openAccount: @escaping () -> Void, open: @escaping (Conversation) -> Void) {
         self.travel = travel
+        self.openAccount = openAccount
         self.open = open
         _model = State(initialValue: HomeModel(api: api))
     }
@@ -36,17 +38,19 @@ struct HomeView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
+        .overlay(alignment: .topTrailing) { AccountButton(open: openAccount).padding(.trailing, 8) }
         .background(alignment: .top) { HomeBackdrop() }
         .background(palette.background)
         .toolbar(.hidden, for: .navigationBar)
-        .task { await model.load() }
+        // Again on signing in or out: what loaded with an old session may have been refused.
+        .task(id: account.signedIn) { await model.load() }
         .refreshable { await model.load() }
     }
 
     private var hero: some View {
         VStack(spacing: 0) {
             Text("Direct anything.")
-                .font(.system(size: 34, weight: .semibold))
+                .font(.system(.largeTitle, weight: .semibold))
                 .tracking(-0.68)
                 .foregroundStyle(palette.foreground)
                 .multilineTextAlignment(.center)
@@ -59,7 +63,11 @@ struct HomeView: View {
                 .padding(.horizontal, 12)
 
             Composer(draft: $model.draft, sending: model.sending, focused: $composing) {
-                Task { if let conversation = await model.send() { open(conversation) } }
+                Task {
+                    // A guest signs in here and carries on: the request is still in the composer.
+                    guard await account.requireSignIn("Sign in to send this. What you wrote stays here.") else { return }
+                    if let conversation = await model.send() { open(conversation) }
+                }
             }
             .matchedTransitionSource(id: "composer", in: travel)
             .padding(.top, 28)

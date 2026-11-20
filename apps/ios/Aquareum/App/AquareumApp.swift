@@ -4,56 +4,91 @@ import SwiftUI
 struct AquareumApp: App {
     private let api: API
     @State private var instance: InstanceStore
+    @State private var account: Account
 
     init() {
-        let api = API(transport: APITransport(baseURL: BuildConfig.instanceURL, token: { BuildConfig.demoKey }))
+        let vault = TokenVault()
+        let relay = RefusalRelay()
+        let api = API(transport: APITransport(baseURL: BuildConfig.instanceURL, token: { vault.token }, refused: { relay.send($0) }))
+        let instance = InstanceStore(api: api)
         self.api = api
-        _instance = State(initialValue: InstanceStore(api: api))
+        _instance = State(initialValue: instance)
+        _account = State(initialValue: Account(api: api, vault: vault, relay: relay, instance: instance))
     }
 
     var body: some Scene {
         WindowGroup {
             RootView(api: api)
                 .environment(instance)
+                .environment(account)
                 .task { await instance.refresh() }
         }
     }
 }
 
-/// Where a pushed screen goes.
-enum Route: Hashable {
-    case conversation(Conversation)
-}
-
 struct RootView: View {
     let api: API
     @Environment(InstanceStore.self) private var instance
+    @Environment(Account.self) private var account
     @Environment(\.colorScheme) private var systemScheme
     @Environment(\.scenePhase) private var scenePhase
     /// "dark" or "light" pins the theme; anything else follows the system.
     @AppStorage("theme") private var theme = "system"
-    @State private var path: [Route] = []
-    @Namespace private var travel
 
     private var scheme: ColorScheme { theme == "dark" ? .dark : theme == "light" ? .light : systemScheme }
 
     var body: some View {
         let palette = instance.palette(for: scheme)
-        NavigationStack(path: $path) {
-            HomeView(api: api, travel: travel) { conversation in path.append(.conversation(conversation)) }
-                .navigationDestination(for: Route.self) { route in
-                    switch route {
-                    case .conversation(let conversation):
-                        ConversationView(api: api, conversation: conversation)
-                            .navigationTransition(.zoom(sourceID: "composer", in: travel))
-                    }
-                }
+        Group {
+            switch instance.availability {
+            case .available:
+                MainTabs(api: api)
+            case .notOffered:
+                Unavailable(symbol: "iphone.slash", title: "Not on phones right now", message: "\(instance.name) doesn't offer its app on phones right now. You can still use it on the web.")
+            case .updateRequired:
+                Unavailable(symbol: "arrow.down.app", title: "Update to carry on", message: "This version of the app is too old for \(instance.name). Update it from the App Store, then open it again.")
+            }
         }
         .environment(\.palette, palette)
         .tint(palette.foreground)
         .preferredColorScheme(theme == "dark" ? .dark : theme == "light" ? .light : nil)
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await instance.refresh() } }
+            guard phase == .active else { return }
+            Task {
+                await instance.refresh()
+                await account.refresh()
+            }
         }
+    }
+}
+
+/// Shown instead of the app when it can't be used with this instance right now.
+private struct Unavailable: View {
+    let symbol: String
+    let title: String
+    let message: String
+    @Environment(InstanceStore.self) private var instance
+    @Environment(\.palette) private var palette
+    @State private var checking = false
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: symbol).font(.system(size: 34, weight: .light)).foregroundStyle(palette.mutedForeground).accessibilityHidden(true)
+            Text(title).text(.title, weight: .semibold).foregroundStyle(palette.foreground).multilineTextAlignment(.center).accessibilityAddTraits(.isHeader)
+            Text(message).text(.lead).foregroundStyle(palette.mutedForeground).multilineTextAlignment(.center)
+            SecondaryButton(label: checking ? "Checking…" : "Check again") {
+                checking = true
+                Task {
+                    await instance.refresh()
+                    checking = false
+                }
+            }
+            .disabled(checking)
+            .frame(maxWidth: 240)
+            .padding(.top, 10)
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(palette.background)
     }
 }

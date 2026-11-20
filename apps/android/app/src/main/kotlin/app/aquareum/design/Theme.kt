@@ -23,6 +23,9 @@ import app.aquareum.generated.TypeSize
 /** The colours of the current theme. Composables read tokens from here, never literal colours. */
 val LocalPalette = staticCompositionLocalOf { Palette.Dark }
 
+/** Whether the current theme is dark: the system's, unless the person chose one. */
+val LocalDarkTheme = staticCompositionLocalOf { true }
+
 /** "#RRGGBB" or "#RRGGBBAA", as the instance sends theme overrides. */
 fun parseHex(hex: String): Color? {
     val digits = hex.removePrefix("#")

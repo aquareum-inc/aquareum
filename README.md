@@ -87,8 +87,14 @@ who wants them builds and publishes their own. The plan, and what is built so fa
 A build belongs to one instance. `apps/ios/Config/Instance.xcconfig` holds the only build-time values (name,
 bundle identifier, instance URL); theme, sign-in methods and features come from the instance at run time.
 
+Phones are a surface an operator switches on (`surfaces.mobile`, off in both presets), naming the apps built
+for the instance in `mobile.ios.bundleId` and `mobile.android.applicationId`: sign-in hands a session only to
+those. The apps sign in in the system's own browser session and get a revocable device session of their own;
+the instance keeps sessions in `DATA_DIR` (`.data` in development, a volume in Docker).
+
 ```bash
-MOCK_ONLY=1 corepack pnpm dev                 # an instance for the app to talk to, on :3100
+# an instance with the apps switched on, for the apps to talk to, on :3100
+MOCK_ONLY=1 INSTANCE_CONFIG=docs/mobile/dev.instance.config.json corepack pnpm dev
 open apps/ios/Aquareum.xcodeproj              # then Run, on any iOS 18+ simulator
 (cd apps/android && ./gradlew :app:installDebug)   # onto a running emulator, Android 10+
 corepack pnpm mobile:generate                 # after changing tokens, operations or API types

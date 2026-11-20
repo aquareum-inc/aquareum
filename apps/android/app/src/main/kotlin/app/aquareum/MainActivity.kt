@@ -1,79 +1,82 @@
 package app.aquareum
 
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.activity.result.ActivityResultLauncher
+import androidx.browser.auth.AuthTabIntent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import app.aquareum.chat.ConversationScreen
-import app.aquareum.chat.ConversationViewModel
+import app.aquareum.design.LocalDarkTheme
 import app.aquareum.design.LocalPalette
-import app.aquareum.design.rememberMotion
 import app.aquareum.design.resolved
 import app.aquareum.generated.Palette
-import app.aquareum.home.HomeScreen
-import app.aquareum.home.HomeViewModel
+import app.aquareum.shell.AquareumRoot
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalSharedTransitionApi::class)
+    private val container get() = (application as AquareumApplication).container
+
+    /** Sign-in in an Auth Tab. Where the browser has none, it opens as a Custom Tab and comes back through [onNewIntent]. */
+    private lateinit var signIn: ActivityResultLauncher<Intent>
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        val container = (application as AquareumApplication).container
+        signIn = AuthTabIntent.registerActivityResultLauncher(this) { result ->
+            lifecycleScope.launch { container.account.finish(if (result.resultCode == AuthTabIntent.RESULT_OK) result.resultUri else null) }
+        }
+        intent?.let(::returnFromBrowser)
 
         setContent {
             val instance by container.instance.description.collectAsStateWithLifecycle()
-            val symbol by container.instance.symbol.collectAsStateWithLifecycle()
-            val dark = isSystemInDarkTheme()
+            val choice by container.theme.choice.collectAsStateWithLifecycle()
+            val dark = when (choice) {
+                ThemePreference.Choice.Dark -> true
+                ThemePreference.Choice.Light -> false
+                ThemePreference.Choice.System -> isSystemInDarkTheme()
+            }
             val palette = Palette.resolved(dark, (if (dark) instance?.theme?.dark else instance?.theme?.light).orEmpty())
-            val motion = rememberMotion()
-            val navigation = rememberNavController()
 
-            // The description is read again each time the app comes to the front.
+            DisposableEffect(dark) {
+                val bars = if (dark) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+                onDispose {}
+            }
+            // The description and the account are read again each time the app comes to the front.
             LifecycleResumeEffect(Unit) {
-                lifecycleScope.launch { container.instance.refresh() }
+                lifecycleScope.launch {
+                    container.instance.refresh()
+                    container.account.refresh()
+                }
                 onPauseOrDispose {}
             }
 
-            CompositionLocalProvider(LocalPalette provides palette) {
-                // The composer is one object that travels: it is shared between Home and a conversation.
-                SharedTransitionLayout {
-                    NavHost(navigation, startDestination = "home", enterTransition = { fadeIn(motion.enter()) }, exitTransition = { fadeOut(motion.exit()) }) {
-                        composable("home") {
-                            val model = viewModel<HomeViewModel>(factory = viewModelFactory { initializer { HomeViewModel(container.api) } })
-                            HomeScreen(model, instance, Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() })) { conversation ->
-                                container.conversations[conversation.id] = conversation
-                                navigation.navigate("conversation/${conversation.id}")
-                            }
-                        }
-                        composable("conversation/{id}") { entry ->
-                            val id = entry.arguments?.getString("id").orEmpty()
-                            val model = viewModel<ConversationViewModel>(factory = viewModelFactory { initializer { ConversationViewModel(container.api, id, container.conversations[id]) } })
-                            ConversationScreen(model, symbol, instance?.name ?: getString(R.string.app_name), Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() })) {
-                                navigation.popBackStack()
-                            }
-                        }
-                    }
-                }
+            CompositionLocalProvider(LocalPalette provides palette, LocalDarkTheme provides dark) {
+                AquareumRoot(container) { uri -> AuthTabIntent.Builder().build().launch(signIn, uri, BuildConfig.APPLICATION_ID) }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        returnFromBrowser(intent)
+    }
+
+    /** A Custom Tab returning to this app's own address at the end of a sign-in. */
+    private fun returnFromBrowser(intent: Intent) {
+        val uri: Uri = intent.data ?: return
+        if (uri.scheme != BuildConfig.APPLICATION_ID || uri.host != "auth") return
+        setIntent(Intent(this, MainActivity::class.java))
+        lifecycleScope.launch { container.account.finish(uri) }
     }
 }

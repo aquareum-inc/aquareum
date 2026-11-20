@@ -227,7 +227,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				MOCK_ONLY_DEMO_KEY = lpk_mock_only_demo_key;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(INSTANCE_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -254,7 +253,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				MOCK_ONLY_DEMO_KEY = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(INSTANCE_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

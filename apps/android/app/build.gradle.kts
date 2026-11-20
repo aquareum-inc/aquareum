@@ -22,15 +22,9 @@ android {
         versionName = "0.1.0"
         resValue("string", "app_name", instanceValue("name"))
         buildConfigField("String", "INSTANCE_URL", "\"${instanceValue("url")}\"")
-        // Development builds against a mock-only instance send its demo key until sign-in is built.
-        // A real instance refuses it, and release builds don't carry it.
-        buildConfigField("String", "MOCK_ONLY_DEMO_KEY", "\"\"")
     }
 
     buildTypes {
-        debug {
-            buildConfigField("String", "MOCK_ONLY_DEMO_KEY", "\"lpk_mock_only_demo_key\"")
-        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -58,6 +52,7 @@ dependencies {
     implementation(libs.compose.icons)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.activity.compose)
+    implementation(libs.browser)
     implementation(libs.navigation.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)

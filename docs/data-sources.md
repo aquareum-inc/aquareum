@@ -85,8 +85,24 @@ the instance config, the other is derived.
 
 | Operation | Source | Reads | Token |
 |-----------|--------|-------|-------|
-| `get_instance` | config | `instance.config.json`: name, logo, theme overrides (resolved to sRGB hex), surfaces, sign-in methods, content settings, home backdrop | none |
+| `get_instance` | config | `instance.config.json`: name, logo, theme overrides (resolved to sRGB hex), surfaces, the apps built for it (`mobile`), sign-in methods, content settings, home backdrop | none |
 | `list_capability_labels` | derived from `listOfferings` and runner models (`describeApps`, reader token, server-side) | The readable name of each capability, by the rules in `packages/user-app/src/lib/capability-menu.ts` | none |
 
-A mock-only instance accepts one documented key, `MOCK_ONLY_DEMO_KEY`, so tests and development builds can
-call signed-in operations before native sign-in exists. `verifyApiKey` refuses it unless `MOCK_ONLY=1`.
+**Device sessions** belong to the instance, not the engine or the provider, so they aren't API client
+functions either. They are kept by `apps/web/lib/devices` in `DATA_DIR/device-sessions.json` (a database
+replaces the file behind the same `DeviceSessionStore` interface when the instance gets one). The file holds
+an HMAC of each token keyed with `SESSION_SECRET`, never the token, and the user's builder key sealed as the
+browser session cookie holds it.
+
+| Operation | Does | Token |
+|-----------|------|-------|
+| `create_device_session` | Exchanges the one-time code from a native sign-in, with its PKCE verifier, for a device session | none (the code is the credential) |
+| `end_device_session` | Signs the calling device out | its device session |
+| `get_me` | The signed-in person and their balance (`getCreditBalance`) | a device or browser session |
+| `list_devices`, `revoke_device` | The person's device sessions; sign one out | a device or browser session |
+
+A mock-only instance still accepts one documented key, `MOCK_ONLY_DEMO_KEY`, for tests and scripts;
+`verifyApiKey` refuses it unless `MOCK_ONLY=1`. The apps no longer send it: they sign in.
+
+Suspending a user (`setActorStatus` to paused, from the console or `operator_set_user_status`) also ends their
+device sessions.

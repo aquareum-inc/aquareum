@@ -101,7 +101,7 @@ Requirements: macOS with Xcode 27 or later for iOS; for Android, a JDK 17 or lat
 
 ```bash
 # 1. An instance for the app to talk to (mock-only, port 3100: what Config/Instance.xcconfig points at)
-MOCK_ONLY=1 corepack pnpm dev &
+MOCK_ONLY=1 INSTANCE_CONFIG=docs/mobile/dev.instance.config.json corepack pnpm dev &   # phones switched on
 
 # 2. Regenerate tokens, the OpenAPI document and the Swift client after changing their sources
 corepack pnpm mobile:generate
@@ -141,7 +141,11 @@ adb exec-out screencap -p > home.png
   project (the folders are synchronised).
 - Never edit `apps/ios/Aquareum/Generated/*` or `apps/android/**/generated/*`: change the source and run
   `corepack pnpm mobile:generate`.
-- A debug build signs in to a mock-only instance with its demo key. A real instance refuses that key.
+- The apps sign in through the instance's own flow. On a mock-only instance every method signs in at once as
+  the test user, after the system's "wants to use … to sign in" prompt on iOS.
+- On a fresh emulator Chrome opens its first-run screen inside the sign-in tab. To skip it on a test emulator
+  without accepting anything: `adb shell 'echo "_ --disable-fre --no-first-run" > /data/local/tmp/chrome-command-line'`
+  then `adb shell am set-debug-app --persistent com.android.chrome`.
 - Decoding tests read the captured responses in `docs/mobile/fixtures/`; refresh them with `curl` against a
   mock-only instance when a response shape changes.
 

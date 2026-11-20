@@ -4,6 +4,7 @@ import { seal, unseal } from "@/lib/auth/seal";
 import { FLOW_COOKIE, SESSION_COOKIE, authProvider, createSession, sessionSecret } from "@/lib/auth/session";
 import { appCallback, devices, mobileEnabled } from "@/lib/devices";
 import { returnToApp, type NativeFlow } from "@/lib/devices/flow";
+import { publicOrigin } from "@/lib/public-api/instance";
 
 interface Flow {
   state: string;
@@ -19,6 +20,7 @@ interface Flow {
  */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
+  const origin = publicOrigin(request);
   const code = params.get("code");
   const flow = unseal<Flow>(request.cookies.get(FLOW_COOKIE)?.value ?? "", sessionSecret());
   const callback = flow?.native ? appCallback(flow.native.platform) : null;
@@ -29,10 +31,10 @@ export async function GET(request: NextRequest) {
 
   if (flow?.native && !callback) return finish(new NextResponse("This instance no longer has an app for that platform.", { status: 400 }));
   const fail = (reason: "expired" | "failed" | "mobile_off") =>
-    finish(flow?.native && callback ? returnToApp(callback, { error: reason, state: flow.native.state }) : NextResponse.redirect(new URL(`/sign-in?error=${reason === "mobile_off" ? "failed" : reason}`, request.url)));
+    finish(flow?.native && callback ? returnToApp(callback, { error: reason, state: flow.native.state }) : NextResponse.redirect(new URL(`/sign-in?error=${reason === "mobile_off" ? "failed" : reason}`, origin)));
 
   if (!code || !flow || flow.state !== params.get("state")) return fail("expired");
-  const redirectUri = new URL("/auth/callback", request.url).toString();
+  const redirectUri = new URL("/auth/callback", origin).toString();
   let identity;
   try {
     identity = await authProvider().exchange({ code, redirectUri, codeVerifier: flow.codeVerifier });
@@ -54,7 +56,7 @@ export async function GET(request: NextRequest) {
   }
 
   const destination = identity.role === "operator" || !flow.next.startsWith("/operator") ? flow.next : "/";
-  const response = NextResponse.redirect(new URL(destination, request.url));
+  const response = NextResponse.redirect(new URL(destination, origin));
   response.cookies.set(SESSION_COOKIE, seal(createSession(identity), sessionSecret()), {
     httpOnly: true,
     sameSite: "lax",

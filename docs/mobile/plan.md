@@ -150,10 +150,13 @@ CI check: `pnpm api:openapi && pnpm mobile:generate && git diff --exit-code`.
   "logo": { "symbol": "https://…/brand/symbol.svg", "wordmark": "…", "tint": true },
   "theme": { "dark": { "primary": "#EAEAEA" }, "light": { "primary": "#18181B" } },
   "surfaces": { "app": true, "api": true, "mcp": true, "mobile": true },
+  "mobile": {
+    "ios": { "bundle_id": "org.livepeer.app", "minimum_version": "1.0.0" },
+    "android": { "application_id": "org.livepeer.app", "minimum_version": null }
+  },
   "sign_in": { "methods": ["apple", "google", "email", "passkey"], "sign_up": "open" },
   "content": { "characters": true, "adult_content": false },
-  "home": { "background_image": "https://…", "background_video": null, "aurora": true },
-  "minimum_app_version": { "ios": "1.0.0", "android": "1.0.0" }
+  "home": { "background_image": "https://…", "background_video": null, "aurora": true }
 }
 ```
 
@@ -163,7 +166,9 @@ CI check: `pnpm api:openapi && pnpm mobile:generate && git diff --exit-code`.
   the tint.
 - The apps fetch it at launch, cache it, and re-fetch on foreground. A cached copy shows at once, so the
   theme never flashes.
-- `minimum_app_version` lets an instance ask an old build to update after a breaking API change.
+- `mobile` names the apps built for the instance (config `mobile.ios.bundleId`, `mobile.android.applicationId`).
+  Sign-in returns only to these, so an app that isn't listed shows "not on phones" instead of a sign-in that
+  can't finish. `minimum_version` lets an instance ask an old build to update after a breaking API change.
 
 ### 4.5 `surfaces.mobile`
 
@@ -491,15 +496,20 @@ notifications, their own purchasing and content choices, and time for store revi
 
 For the project owner:
 
-1. **Generator**: our own (recommended) or the two standard tools? (4.3)
-2. **`surfaces.mobile` in the `full` preset**: off (recommended) or on? (4.5)
-3. **Device session store**: a file store now (recommended), or the database foundation first? (5)
-4. **Callback**: custom scheme with PKCE for the first release (recommended), or universal links now? (5)
-5. **Type**: system text with Geist Mono (recommended), or bundle Inter as well? (7)
-6. **Minimum OS**: iOS 18 and Android 10? (8)
+Decided with the approval of the design sample (the recommended option in each case):
+
+1. **Generator**: our own (4.3). Built.
+2. **`surfaces.mobile` in the `full` preset**: off (4.5). Built.
+3. **Device session store**: a file store now (5). Built.
+4. **Callback**: custom scheme with PKCE for the first release (5). Built; universal links are the follow-up.
+5. **Type**: system text with Geist Mono (7).
+6. **Minimum OS**: iOS 18 and Android 10 (8).
+9. **Operator role on phones**: device sessions are always `user`. Built.
+
+Still open:
+
 7. **Purchasing**: A for testing, then B or C per store? (11)
 8. **Adult content on mobile**: the three-part rule in section 12?
-9. **Operator role on phones**: device sessions are always `user` (recommended)?
 
 For the engine and provider (added to `docs/engine-requests.md`):
 
@@ -510,7 +520,43 @@ For the engine and provider (added to `docs/engine-requests.md`):
 - Q15: Which transport will live sessions use, and is there a recommended native client?
 - Q16: Can the provider record a top-up or a plan paid through Apple or Google?
 
-## 17. What exists today (the design sample)
+## 17. What exists today
+
+### Slice 1: shell and sign-in (20 November 2026)
+
+- **Server.** Device sessions (`apps/web/lib/devices`): the native branch of `/auth/start` and
+  `/auth/callback`, the one-time code, `create_device_session`, `end_device_session`, `get_me`,
+  `list_devices`, `revoke_device`, and `authenticate()` accepting `aqd_` tokens. `surfaces.mobile` and the
+  `mobile` block in the schema, presets, `get_instance`, the console's Phone apps switch and the proxy (the
+  API and the sign-in flow are served to the apps even with the API surface off). A stable `code` on API
+  errors (`signed_out`, `mobile_off`, `account_required`, `sign_in_expired`). Suspending a user ends their
+  device sessions. `DATA_DIR`, the `app-data` volume, and `docs/mobile/dev.instance.config.json`, a mock-only
+  config with the apps switched on. The demo key is gone from both apps.
+- **iOS.** `ASWebAuthenticationSession` with PKCE, the token in the Keychain (this device only, after first
+  unlock), 401 returning to signed out with "You've been signed out.", `mobile_off` and old builds handled by
+  the availability gate. Tabs (Home, Library, Characters), the account button and tray, the sign-in tray,
+  signed-out and empty states, and simple Library and Characters lists. 11 tests pass.
+- **Android.** The same, with an Auth Tab (falling back to a Custom Tab and the app's own scheme), the token
+  encrypted with an Android Keystore key, Material navigation bar and bottom sheets. 12 unit tests pass.
+- **Run on both** against a mock-only instance: guest → sign in → send → the conversation opens; sign out
+  ends the session on the server; a session revoked from another device returns the app to signed out;
+  switching the apps off shows "Not on phones right now". Screenshots in dark and light:
+  `docs/screenshots/mobile/{ios,android}-{home-guest,home-signed-in,sign-in,account,account-guest,library,library-guest,characters,not-offered}-{dark,light}.jpg`.
+- **Checked at the largest text size on iOS**: Home's headline now scales, and trays scroll when taller than
+  the screen. Android follows the font scale through `sp` sizes; not yet checked at 200%.
+- **Found while running it.** The sign-in callback was built from the server's idea of its own address, so
+  the Android emulator (which reaches the host at `10.0.2.2`) was sent to `localhost`. Sign-in addresses now
+  come from the configured domain, or the address the request came in on.
+
+Not done in slice 1, and why:
+
+- **Settings ▸ Devices screens** on mobile and web: the API exists; the screens are slice 6 with the rest of
+  settings.
+- **Universal Links and App Links**: the custom scheme ships first, as decided.
+- **A screen reader pass** on both platforms, and Android at the largest font scale: labels and traits are
+  set, but neither has been walked through end to end.
+
+### The design sample
 
 Built and run on 19 November 2026 against a mock-only instance:
 

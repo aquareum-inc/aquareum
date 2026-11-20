@@ -4,6 +4,15 @@ import SwiftUI
 /// Shown from the last copy at once, then refreshed, so the theme never flashes.
 @Observable
 final class InstanceStore {
+    /// Whether this build can be used with the instance right now.
+    enum Availability: Equatable {
+        case available
+        /// The instance doesn't serve phones, or doesn't list this app.
+        case notOffered
+        /// The instance needs a newer build than this one.
+        case updateRequired
+    }
+
     private(set) var description: InstanceDescription?
     private(set) var symbol: VectorMark?
     private let api: API
@@ -23,6 +32,18 @@ final class InstanceStore {
     /// The instance's name; before the first answer, the name the app was built with.
     var name: String {
         description?.name ?? (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String) ?? ""
+    }
+
+    /// Before the first answer the app is usable: it can't know otherwise, and the first request will tell.
+    var availability: Availability {
+        guard let description else { return .available }
+        return Self.availability(of: description, bundleID: Bundle.main.bundleIdentifier ?? "", version: BuildConfig.version)
+    }
+
+    static func availability(of description: InstanceDescription, bundleID: String, version: String) -> Availability {
+        guard description.surfaces.mobile, let app = description.mobile.ios, app.bundleId.lowercased() == bundleID.lowercased() else { return .notOffered }
+        if let minimum = app.minimumVersion, version.compare(minimum, options: .numeric) == .orderedAscending { return .updateRequired }
+        return .available
     }
 
     func palette(for scheme: ColorScheme) -> Palette {

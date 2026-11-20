@@ -21,10 +21,19 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /** What the instance said when it refused or failed a request. */
-class ApiError(val status: Int, override val message: String) : Exception(message) {
+class ApiError(val status: Int, override val message: String, val code: String? = null) : Exception(message) {
     /** The session is missing, expired or revoked. */
     val isSignedOut: Boolean get() = status == 401
+    /** The instance has stopped serving its apps. */
+    val isMobileOff: Boolean get() = code == "mobile_off"
 }
+
+/**
+ * A refusal that changes the whole app, not just one screen: a token that stopped working, or an instance
+ * that stopped serving phones. [token] is the one the request carried, so a late answer to an old session
+ * can't sign out a newer one.
+ */
+class Refusal(val error: ApiError, val token: String)
 
 /** Sends requests to one instance's `/api/v1`. The generated `Api` calls this; nothing else does. */
 class ApiTransport(
@@ -32,13 +41,15 @@ class ApiTransport(
     /** The bearer token to send, if the caller has one. Guests send none. */
     private val token: () -> String?,
     private val client: OkHttpClient,
+    /** Told about refusals that end the session or close the app; see [Refusal]. */
+    private val refused: (Refusal) -> Unit = {},
 ) {
     private val root = baseUrl.trimEnd('/') + "/api/v1"
 
     @Serializable
     private data class Envelope(val error: Body) {
         @Serializable
-        data class Body(val status: Int, val message: String)
+        data class Body(val status: Int, val message: String, val code: String? = null)
     }
 
     suspend fun <T> send(output: DeserializationStrategy<T>, method: String, path: String, query: Map<String, JsonElement?>, body: Map<String, JsonElement?>?): T {
@@ -46,15 +57,18 @@ class ApiTransport(
             for ((key, value) in query.toSortedMap()) (value as? JsonPrimitive)?.let { addQueryParameter(key, it.content) }
         }.build()
         val payload = body?.let { fields -> json.encodeToString(JsonObject.serializer(), JsonObject(fields.filterValues { it != null }.mapValues { it.value!! })).toRequestBody(JSON) }
+        val sent = token()
         val request = Request.Builder().url(url).header("Accept", "application/json").method(method, payload).apply {
-            token()?.let { header("Authorization", "Bearer $it") }
+            sent?.let { header("Authorization", "Bearer $it") }
         }.build()
 
         client.newCall(request).await().use { response ->
             val text = response.body.string()
             if (!response.isSuccessful) {
-                val message = runCatching { json.decodeFromString(Envelope.serializer(), text).error.message }.getOrNull()
-                throw ApiError(response.code, message ?: "The request failed.")
+                val body = runCatching { json.decodeFromString(Envelope.serializer(), text).error }.getOrNull()
+                val error = ApiError(response.code, body?.message ?: "The request failed.", body?.code)
+                if (sent != null && (error.isSignedOut || error.isMobileOff)) refused(Refusal(error, sent))
+                throw error
             }
             return json.decodeFromString(output, text)
         }

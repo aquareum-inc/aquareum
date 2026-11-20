@@ -19,18 +19,21 @@ in `apps/web/lib/public-api/operations.ts`.
 | Chat | Follow the agent's steps | `getConversation` | Built (iOS sample) |
 | Chat | Follow a shot rendering | `getGeneration` | Built (iOS sample) |
 | Chat | Open a shot in the studio | Navigation with the shot's prompt; `getGeneration` in the studio from slice (c). | Slice 2 |
-| Sign-in | Choose a method (Google, Apple, Discord, wallet, email, passkey), sign out | Auth provider (`authorizationUrl` with the method, `exchange`); see `apps/web/lib/auth`. | Slice 1 |
+| Sign-in | Choose a method (Google, Apple, Discord, wallet, email, passkey), sign out | Auth provider (`authorizationUrl` with the method, `exchange`); see `apps/web/lib/auth`. On mobile: the same flow in the system auth session, then `create_device_session`; sign out is `end_device_session`. Wallet and Coinbase aren't offered on phones yet (engine question Q12). | Built (slice 1) |
+| Shell (mobile) | Open the account tray: name, email, credits | `get_me` (session identity and `getCreditBalance`) | Built (slice 1) |
+| Shell (mobile) | Choose the theme (system, dark, light) | Kept on the device; no API function | Built (slice 1) |
+| Settings · Devices | List signed-in phones and tablets, sign one out | `list_devices`, `revoke_device` (device sessions, `apps/web/lib/devices`) | API built in slice 1; screens in slice 6 |
 | Shell | Show credit balance | `getCreditBalance` | Slice 2 |
 | Studio (video, image, audio) | Load capabilities for the medium and mode | `listOfferings` | Slice 3 |
 | Studio | Generate (once per variant) | `createGeneration` | Slice 3 |
 | Studio | Follow a render | `getGeneration` | Slice 3 |
 | Studio | Improve prompt, attach frames/references, download, open in chat | Not wired in the sample; `enhancePrompt`, `uploadMedia`, `getMediaUrl`, `createConversation` in slices (b)–(c). | Slice 3 |
-| Library | List, search by content, filter by type | `listMedia` | Slice 4 |
+| Library | List, search by content, filter by type | `listMedia` | List built (slice 1); search and filters slice 4 |
 | Library | Delete | `deleteMedia` | Slice 4 |
 | Library | Open in studio | Navigation with the item's prompt | Slice 4 |
 | Library | Ask about it | `createConversation` | Slice 4 |
 | Library | Convert or export | Opens the capability's run screen → `runCapability` | Slice 4 |
-| Characters | List mine and shared | `listCharacters` | Slice 5 |
+| Characters | List mine and shared | `listCharacters` | List built (slice 1); the rest slice 5 |
 | Characters | Open one | `getCharacter` | Slice 5 |
 | Characters | Create | `createCharacter` | Slice 5 |
 | Characters | Start chatting | `createConversation` | Slice 5 |
@@ -80,7 +83,7 @@ in `apps/web/lib/public-api/operations.ts`.
 | Operator · Capabilities | See discovery; enable, set markup, override surfaces | `listOfferings`, `getCapabilitySetting`, `updateCapabilitySetting` | Not on mobile |
 | Operator · Compute | See operators that served jobs; allow or block | `listComputeOperators`, `setComputeOperatorBlocked` | Not on mobile |
 | Operator · Grants | List, create, add funding | `provider.budgets.listGrants`, `createGrant`, `fundGrant` | Not on mobile |
-| Operator · Settings | Name, domain, logo and symbol (upload, replace, remove; previewed in both themes; checked and cleaned on save by `lib/operator/logo.ts`), colours, sign-up, privacy, surfaces (app, API, MCP, reviewed before any is switched off; the console is shown on and disabled), content policy | Writes the instance config (`@aquareum/config` `validateConfig`) | Not on mobile |
+| Operator · Settings | Name, domain, logo and symbol (upload, replace, remove; previewed in both themes; checked and cleaned on save by `lib/operator/logo.ts`), colours, sign-up, privacy, surfaces (app, API, MCP, phone apps, reviewed before any is switched off; the console is shown on and disabled), content policy | Writes the instance config (`@aquareum/config` `validateConfig`) | Not on mobile |
 | Operator · Keys | List, issue, revoke | `listAccessKeys`, `issueAccessKey`, `revokeAccessKey` | Not on mobile |
 | Operator · System | Health, versions, doctor, data sources | `getEngineHealth`, doctor checks | Not on mobile |
 | Shell (mobile) | Learn the instance's name, marks, theme, surfaces, sign-in methods and content settings | `get_instance` (the instance config; no engine call) | Built (iOS sample) |

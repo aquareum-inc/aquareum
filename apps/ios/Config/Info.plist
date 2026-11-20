@@ -4,8 +4,6 @@
 <dict>
 	<key>InstanceURL</key>
 	<string>$(INSTANCE_URL)</string>
-	<key>MockOnlyDemoKey</key>
-	<string>$(MOCK_ONLY_DEMO_KEY)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>GeistMono-Regular.ttf</string>

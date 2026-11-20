@@ -29,6 +29,15 @@ export function requestOrigin(request: { headers: Headers; nextUrl: { origin: st
 }
 
 /**
+ * The instance's public address: its configured domain, or else where the request arrived. Sign-in builds
+ * its callback from this, so a phone that reached a development server at another address comes back to it.
+ */
+export function publicOrigin(request: { headers: Headers; nextUrl: { origin: string; protocol: string } }): string {
+  const domain = instance().domain;
+  return domain ? `https://${domain}` : requestOrigin(request);
+}
+
+/**
  * This instance as it describes itself to clients. `origin` is where the request arrived, used to make
  * paths absolute when the config has no public domain.
  */

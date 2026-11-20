@@ -2,6 +2,7 @@ package app.aquareum.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.aquareum.account.Account
 import app.aquareum.api.ApiError
 import app.aquareum.generated.Api
 import app.aquareum.generated.Conversation
@@ -11,6 +12,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,12 +29,14 @@ data class HomeState(
     val sendError: String? = null,
 )
 
-class HomeViewModel(private val api: Api) : ViewModel() {
+class HomeViewModel(private val api: Api, account: Account) : ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state
 
     init {
         load()
+        // Again on signing in or out: what loaded with an old session may have been refused.
+        viewModelScope.launch { account.signedIn.drop(1).collect { refresh() } }
     }
 
     fun load() = viewModelScope.launch { refresh() }
