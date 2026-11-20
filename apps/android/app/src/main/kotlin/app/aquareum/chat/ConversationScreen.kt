@@ -1,12 +1,7 @@
 package app.aquareum.chat
 
+import app.aquareum.design.orb.OrbState
 import app.aquareum.design.orb.ThinkingOrb
-import androidx.compose.animation.togetherWith
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
@@ -81,10 +76,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import app.aquareum.design.Artwork
-import app.aquareum.design.BrandSymbol
 import app.aquareum.design.LoadFailure
 import app.aquareum.design.LocalPalette
-import app.aquareum.design.VectorMark
 import app.aquareum.design.aspectRatio
 import app.aquareum.design.breathing
 import app.aquareum.design.pressable
@@ -118,7 +111,7 @@ import coil3.compose.AsyncImage
 import kotlin.math.roundToInt
 
 @Composable
-fun ConversationScreen(model: ConversationViewModel, support: ComposerSupport, casting: Boolean, symbol: VectorMark?, instanceName: String, composerModifier: Modifier, onBack: () -> Unit) {
+fun ConversationScreen(model: ConversationViewModel, support: ComposerSupport, casting: Boolean, composerModifier: Modifier, onBack: () -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
     val models by support.models.collectAsStateWithLifecycle()
     var tray by rememberSaveable { mutableStateOf<ComposerTray?>(null) }
@@ -154,7 +147,7 @@ fun ConversationScreen(model: ConversationViewModel, support: ComposerSupport, c
                     items(messages, key = { message -> when (message) { is Message.User -> message.value.id; is Message.Agent -> message.value.id } }) { message ->
                         when (message) {
                             is Message.User -> UserBubble(message.value)
-                            is Message.Agent -> AgentTurn(message.value, state.generations, state.labels, state.draft.aspect, symbol, instanceName)
+                            is Message.Agent -> AgentTurn(message.value, state.generations, state.labels, state.draft.aspect)
                         }
                     }
                 }
@@ -207,7 +200,7 @@ private fun UserBubble(message: UserMessage) {
  * to one line that opens again in place. Shots appear under the steps that made them.
  */
 @Composable
-private fun AgentTurn(turn: AgentMessage, generations: Map<String, Generation>, labels: Map<String, String>, aspect: String, symbol: VectorMark?, instanceName: String) {
+private fun AgentTurn(turn: AgentMessage, generations: Map<String, Generation>, labels: Map<String, String>, aspect: String) {
     val palette = LocalPalette.current
     val motion = rememberMotion()
     val working = turn.state == AgentMessageState.Working
@@ -215,12 +208,9 @@ private fun AgentTurn(turn: AgentMessage, generations: Map<String, Generation>, 
     val open = working || expanded
 
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        // While it works, an orb shows what kind of work it is doing; when it's done, the instance's mark comes back.
-        Box(Modifier.size(28.dp).border(1.dp, palette.hairline, CircleShape), contentAlignment = Alignment.Center) {
-            AnimatedContent(working, transitionSpec = { (fadeIn(motion.enter()) + scaleIn(motion.enter(), initialScale = 0.8f)) togetherWith (fadeOut(motion.exit()) + scaleOut(motion.exit(), targetScale = 0.8f)) }, label = "agent mark") { busy ->
-                if (busy) ThinkingOrb(orbState(turn.steps.firstOrNull { it.state == AgentStepState.Running }))
-                else BrandSymbol(symbol, instanceName, palette.foreground, Modifier.size(12.dp))
-            }
+        // The agent's orb: it shows what kind of work is happening, and holds still once the turn is done.
+        Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+            ThinkingOrb(if (working) orbState(turn.steps.firstOrNull { it.state == AgentStepState.Running }) else OrbState.Breathing, paused = !working)
         }
         Column(Modifier.weight(1f).animateContentSize(motion.morph()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (working) {

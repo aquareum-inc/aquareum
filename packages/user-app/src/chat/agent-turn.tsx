@@ -1,7 +1,7 @@
 "use client";
 
 import type { AgentMessage, AgentStep, AppModel, Generation, VideoMoment } from "@aquareum/api-client/types";
-import { BrandSymbol, EASE_OUT_EXPO, cn } from "@aquareum/ui";
+import { EASE_OUT_EXPO, cn } from "@aquareum/ui";
 import { Check, ChevronDown, Clapperboard, Eye, ListTree, Wrench } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -74,19 +74,9 @@ export function AgentTurn({ message, generations, models, onOpenInStudio, onOpen
 
   return (
     <div className="flex gap-3">
-      {/* While it works, an orb shows what kind of work it is doing; when it's done, the instance's mark comes back. */}
-      <span className="relative mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-hairline text-foreground">
-        <AnimatePresence initial={false} mode="popLayout">
-          {working ? (
-            <motion.span key="orb" className="inline-flex" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.24, ease: EASE_OUT_EXPO }}>
-              <ThinkingOrb state={agentOrbState(running)} size={20} aria-hidden />
-            </motion.span>
-          ) : (
-            <motion.span key="mark" className="inline-flex" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.24, ease: EASE_OUT_EXPO }}>
-              <BrandSymbol className="h-3 w-auto" />
-            </motion.span>
-          )}
-        </AnimatePresence>
+      {/* The agent's orb: it shows what kind of work is happening, and holds still once the turn is done. */}
+      <span className="mt-1 inline-flex size-7 shrink-0 items-center justify-center">
+        <ThinkingOrb state={working ? agentOrbState(running) : "breathing"} paused={!working} size={20} aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
         <button

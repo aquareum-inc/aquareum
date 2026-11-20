@@ -134,7 +134,6 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
     val scope = rememberCoroutineScope()
     val account = container.account
     val description by container.instance.description.collectAsStateWithLifecycle()
-    val symbol by container.instance.symbol.collectAsStateWithLifecycle()
     val prompt by account.prompt.collectAsStateWithLifecycle()
     val navigation = rememberNavController()
     val entry by navigation.currentBackStackEntryAsState()
@@ -268,7 +267,7 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
                 composable("conversation/{id}") { entry ->
                     val id = entry.arguments?.getString("id").orEmpty()
                     val model = viewModel<ConversationViewModel>(factory = viewModelFactory { initializer { ConversationViewModel(container.api, id, container.conversations[id]) } })
-                    ConversationScreen(model, container.composer, description?.content?.characters == true, symbol, description?.name ?: appName, Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() })) {
+                    ConversationScreen(model, container.composer, description?.content?.characters == true, Modifier.sharedBounds(rememberSharedContentState("composer"), this, boundsTransform = { _, _ -> motion.layout() })) {
                         navigation.popBackStack()
                     }
                 }

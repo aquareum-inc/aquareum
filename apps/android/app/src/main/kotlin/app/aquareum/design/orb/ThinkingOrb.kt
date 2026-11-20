@@ -23,14 +23,14 @@ import kotlin.math.roundToInt
 
 /**
  * The agent's thinking orb at the library's 20-point design: light ink on the dark theme, dark on the light.
- * It moves only while the app is in front, holds one frame with animations off, and is hidden from TalkBack
+ * It moves only while the app is in front, holds one frame when paused or with animations off, and is hidden from TalkBack
  * because the words beside it say what is happening.
  */
 @Composable
-fun ThinkingOrb(state: OrbState, modifier: Modifier = Modifier) {
+fun ThinkingOrb(state: OrbState, modifier: Modifier = Modifier, paused: Boolean = false) {
     val preset = remember(state) { preset(state) }
     val dark = LocalDarkTheme.current
-    val still = rememberMotion().reduce
+    val still = paused || rememberMotion().reduce
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     // One shared clock, as on the web and iOS, so the orb's phase doesn't jump when its state changes.
     var seconds by remember { mutableDoubleStateOf(System.currentTimeMillis() / 1000.0) }
