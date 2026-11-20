@@ -337,7 +337,7 @@ struct GenerationRequest: Codable, Sendable, Hashable {
     /// Video and audio only.
     var durationSeconds: Double?
     /// Video only.
-    var resolution: GenerationRequestResolution??
+    var resolution: GenerationRequestResolution?
     var negativePrompt: String?
     /// Image-to-video only: the image the shot starts from, such as a character's portrait.
     var firstFrame: String?

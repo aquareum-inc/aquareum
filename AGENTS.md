@@ -93,6 +93,40 @@ MOCK_ONLY=1 corepack pnpm build
 
 Standing rules for changes are in `CLAUDE.md`; plans and research are in `docs/`.
 
+## Working on the native apps
+
+Requirements: macOS with Xcode 27 or later for iOS. Android needs Android Studio's SDK and an emulator, and
+is not buildable yet (see `docs/mobile/plan.md`). Every command is non-interactive.
+
+```bash
+# 1. An instance for the app to talk to (mock-only, port 3100: what Config/Instance.xcconfig points at)
+MOCK_ONLY=1 corepack pnpm dev &
+
+# 2. Regenerate tokens, the OpenAPI document and the Swift client after changing their sources
+corepack pnpm mobile:generate
+
+# 3. Build and test iOS
+xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+
+# 4. Run it and take a screenshot
+xcrun simctl boot 'iPhone 17 Pro'
+xcrun simctl install booted <DerivedData>/Build/Products/Debug-iphonesimulator/Aquareum.app
+xcrun simctl launch booted app.aquareum.dev
+xcrun simctl ui booted appearance dark        # or light
+xcrun simctl io booted screenshot home.png
+```
+
+- New files under `apps/ios/Aquareum` and `apps/ios/AquareumTests` are picked up without editing the Xcode
+  project (the folders are synchronised).
+- Never edit `apps/ios/Aquareum/Generated/*` or `apps/android/**/generated/*`: change the source and run
+  `corepack pnpm mobile:generate`.
+- A debug build signs in to a mock-only instance with its demo key. A real instance refuses that key.
+- Decoding tests read the captured responses in `docs/mobile/fixtures/`; refresh them with `curl` against a
+  mock-only instance when a response shape changes.
+
 ## Using and administering an instance as an agent
 
 Everything the interface can do is in the API, and the same operations are MCP tools.

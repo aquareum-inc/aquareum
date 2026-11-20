@@ -48,6 +48,9 @@ export interface ApiOperation {
   public: boolean;
 }
 
+/** A type that may be absent. Wrapping twice says nothing more, so it never does. */
+const optional = (type: TypeRef): TypeRef => (type.kind === "optional" ? type : { kind: "optional", of: type });
+
 export const pascal = (text: string) => text.replace(/(^|[_\-\s])(\w)/g, (_, __, char: string) => char.toUpperCase());
 export const camel = (text: string) => {
   const name = pascal(text);
@@ -73,16 +76,16 @@ export function readModel(): { declarations: Declaration[]; operations: ApiOpera
     const options = (schema.anyOf as Json[] | undefined) ?? null;
     if (options) {
       const rest = options.filter((option) => option.type !== "null");
-      if (rest.length === 1 && rest.length < options.length) return { kind: "optional", of: typeOf(rest[0] as Json, hint) };
+      if (rest.length === 1 && rest.length < options.length) return optional(typeOf(rest[0] as Json, hint));
       throw new Error(`${hint}: a union inside a property isn't supported; give it a name in types.ts`);
     }
-    if (types.includes("null")) return { kind: "optional", of: typeOf({ ...schema, type: types.filter((type) => type !== "null")[0] }, hint) };
+    if (types.includes("null")) return optional(typeOf({ ...schema, type: types.filter((type) => type !== "null")[0] }, hint));
 
     if (Array.isArray(schema.enum)) {
       const values = (schema.enum as unknown[]).filter((value): value is string => typeof value === "string");
-      const optional = (schema.enum as unknown[]).includes(null);
+      const nullable = (schema.enum as unknown[]).includes(null);
       declarations.push({ kind: "enum", name: hint, doc: doc(schema), values });
-      return optional ? { kind: "optional", of: { kind: "named", name: hint } } : { kind: "named", name: hint };
+      return nullable ? optional({ kind: "named", name: hint }) : { kind: "named", name: hint };
     }
     switch (types[0]) {
       case "string":
@@ -131,7 +134,7 @@ export function readModel(): { declarations: Declaration[]; operations: ApiOpera
     const required = new Set((schema.required as string[] | undefined) ?? []);
     const fields = Object.entries((schema.properties as Record<string, Json> | undefined) ?? {}).map(([key, property]): Field => {
       const type = typeOf(property, `${name}${pascal(key)}`);
-      return { key, type: required.has(key) || type.kind === "optional" ? type : { kind: "optional", of: type }, doc: doc(property) };
+      return { key, type: required.has(key) ? type : optional(type), doc: doc(property) };
     });
     declarations.push({ kind: "object", name, doc: doc(schema), fields });
   }

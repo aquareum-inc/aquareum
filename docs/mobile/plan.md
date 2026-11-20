@@ -5,7 +5,7 @@ user app only. The bar is the Linear mobile app: fast, fluid, idiomatic to each 
 `CLAUDE.md` applies; this plan adds what mobile needs.
 
 Status: **proposed, waiting for review.** Sections marked *Decision* need an answer before the slices
-start. Facts about store rules and tools were checked on 19 November 2026 and change often; each is marked
+start. What exists today is in section 17. Facts about store rules and tools were checked on 19 November 2026 and change often; each is marked
 *verify* where a decision depends on it.
 
 ## 1. Scope
@@ -76,12 +76,13 @@ each calling one existing API client function unless marked **new**.
 
 | Operation | Method and path | API client function | Guest | Slice |
 |-----------|-----------------|---------------------|-------|-------|
-| `get_instance` | `GET /instance` | **new** `describeInstance` (config, no engine call) | yes | 1 |
+| `get_instance` | `GET /instance` | **new** `describeInstance` (config, no engine call) | yes | built |
+| `list_capability_labels` | `GET /offerings/labels` | **new**, derived: `listOfferings`, runner models and the web's naming rules | yes | built |
 | `get_me` | `GET /me` | session identity, plus `getCreditBalance` | | 1 |
 | `list_devices`, `revoke_device` | `GET /devices`, `DELETE /devices/{id}` | **new**, device sessions (section 5) | | 1 |
-| `list_prompt_starters` | `GET /starters` | `listPromptStarters` | yes | 2 |
-| `list_showcase` | `GET /showcase` | `listShowcase` | yes | 2 |
-| `list_agent_models` | `GET /agent-models` | `listAgentModels` | yes | 2 |
+| `list_prompt_starters` | `GET /starters` | `listPromptStarters` | yes | built |
+| `list_showcase` | `GET /showcase` | `listShowcase` | yes | built |
+| `list_agent_models` | `GET /agent-models` | `listAgentModels` | yes | built |
 | `delete_conversation` | `DELETE /conversations/{id}` | `deleteConversation` | | 2 |
 | `get_character` | `GET /characters/{slug}` | `getCharacter` | yes, public ones | 5 |
 | `create_character` | `POST /characters` | `createCharacter` | | 5 |
@@ -98,6 +99,11 @@ Changes to existing operations:
   the web.
 - An operation gets a `public: true` flag. Without a caller it runs as the instance's default account,
   exactly as the web does for a guest. Everything else still answers 401.
+
+**Names come from the instance.** How a capability or a model reads ("Text to image · FLUX.2 klein 4B") is
+decided by rules in `packages/user-app/src/lib/capability-menu.ts`. The apps don't re-implement them in
+Swift and Kotlin: `list_capability_labels` returns the result, and slice 2 adds the same for the agent's
+model menu.
 
 Not added, and why: `uploadMedia` and `getMediaUrl` don't exist in the API client yet (the web marks
 them "not wired"), so attaching from Photos and saving a result to Photos are planned for when the media
@@ -502,3 +508,32 @@ For the engine and provider (added to `docs/engine-requests.md`):
 - Q14: Can the provider delete a user and their data on request, for in-app account deletion?
 - Q15: Which transport will live sessions use, and is there a recommended native client?
 - Q16: Can the provider record a top-up or a plan paid through Apple or Google?
+
+## 17. What exists today (the design sample)
+
+Built and run on 19 November 2026 against a mock-only instance:
+
+- **Server.** `get_instance`, the Home reads and `list_capability_labels`, open to guests; `agent_model`
+  and `character_slug` on conversations; each operation's `output`; `docs/mobile/openapi.json`; the
+  mock-only demo key.
+- **Generation.** `packages/mobile-codegen` writes Swift and Kotlin design tokens (35 colours in both
+  themes, radii, type sizes, motion) from `tokens.css` and `motion.ts`, and the Swift models and client (53
+  types, 22 operations) from the OpenAPI document. CI fails when they are stale.
+- **iOS.** Home and a conversation, in dark and light, with Dynamic Type, VoiceOver labels and Reduce
+  Motion: `docs/screenshots/mobile/ios-*.jpg`. Eight tests pass, decoding the captured responses in
+  `docs/mobile/fixtures/`.
+
+Not done, and why:
+
+- **Android sample: not built.** This Mac has no Android SDK or emulator and 10 GB of free disk
+  (section 2). Only the generated Kotlin tokens exist, and they have not been compiled. The Kotlin client
+  emitter is written when it can be compiled, so nothing unverified piles up.
+- **Type option B (Inter bundled): no sample.** Inter isn't in the repository as a font file the app can
+  bundle (the web loads it as WOFF2). It needs a download of Inter's own TTF, which needs a yes. The
+  sample shows option A: system text with Geist Mono for facts.
+- **The live aurora** on Home is a WebGL shader on the web. The sample shows the instance's still
+  photograph on the dark theme and a plain page on the light theme; a Metal and AGSL port is slice 2 work.
+- **A logo in more than one colour** (`logo.tint: false`) can't be drawn from path data alone, and iOS has
+  no SVG image decoder. Proposed: the instance serves a PNG rendition of each mark for clients that ask.
+  Until then such an instance shows its name in type on mobile.
+- **Tabs, the account tray, sign-in and trays** are slice 1, after the sign-in proposal is approved.

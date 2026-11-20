@@ -6,40 +6,40 @@ Every API client function, whether it is live or mocked, and what blocks the moc
 To switch a function from mock to live: implement it in `packages/api-client/src/live/`, branch on
 `resolveSource()` in `src/index.ts`, set its entry to `"live"` in `data-sources.ts`, and update this table.
 
-| Function | Source | Endpoint (used or planned) | Token | Blocked by |
-|----------|--------|----------------------------|-------|------------|
-| `listOfferings` | live | `GET /v1/offerings` | none (public) | — |
-| `getCreditBalance` | mock | `GET /v1/allowance` → credits via markup rule | builder key | Needs a signed-in builder key (auth lands in slice a) and the markup rule. |
-| `listShowcase` | mock | instance content (config or library) | — | No engine endpoint; instance-owned. |
-| `listPromptStarters` | mock | instance content (config) | — | No engine endpoint; instance-owned. |
-| `createGeneration` | mock | `POST /v1/jobs` with `mode: "async"` | builder key | Engine returns 501 for async jobs; no video generation capability is on the live network today. |
-| `getGeneration` | mock | `GET /v1/jobs/{id}` + `GET /v1/jobs/{id}/result` | builder key | `/result` returns 501. |
-| `listConversations`, `getConversation`, `createConversation`, `sendMessage`, `deleteConversation` | mock | instance-owned store + agent runtime calling `POST /v1/jobs` per tool step | builder key | No agent runtime yet; it depends on async jobs and results (501). The live `chat` capability can answer text turns once paid jobs are approved. A message's `agent_model` names the language model that runs the agent (the mock echoes it on the user message and its planning steps). A message's `character_slug` casts a character: the mock agent starts an `image-to-video` shot with the portrait as `first_frame` and echoes the cast on the user message; the real agent will pass the portrait as the job's image input, as an absolute URL or an upload, since the engine cannot read the app's relative paths. |
+| Function | Source | Endpoint (used or planned) | Token | Blocked by | Mobile |
+|----------|--------|----------------------------|-------|------------|--------|
+| `listOfferings` | live | `GET /v1/offerings` | none (public) | — | Slices 2–3 |
+| `getCreditBalance` | mock | `GET /v1/allowance` → credits via markup rule | builder key | Needs a signed-in builder key (auth lands in slice a) and the markup rule. | Slices 1, 6 |
+| `listShowcase` | mock | instance content (config or library) | — | No engine endpoint; instance-owned. | Built (iOS sample) |
+| `listPromptStarters` | mock | instance content (config) | — | No engine endpoint; instance-owned. | Built (iOS sample) |
+| `createGeneration` | mock | `POST /v1/jobs` with `mode: "async"` | builder key | Engine returns 501 for async jobs; no video generation capability is on the live network today. | Slice 3 |
+| `getGeneration` | mock | `GET /v1/jobs/{id}` + `GET /v1/jobs/{id}/result` | builder key | `/result` returns 501. | Built (iOS sample) |
+| `listConversations`, `getConversation`, `createConversation`, `sendMessage`, `deleteConversation` | mock | instance-owned store + agent runtime calling `POST /v1/jobs` per tool step | builder key | No agent runtime yet; it depends on async jobs and results (501). The live `chat` capability can answer text turns once paid jobs are approved. A message's `agent_model` names the language model that runs the agent (the mock echoes it on the user message and its planning steps). A message's `character_slug` casts a character: the mock agent starts an `image-to-video` shot with the portrait as `first_frame` and echoes the cast on the user message; the real agent will pass the portrait as the job's image input, as an absolute URL or an upload, since the engine cannot read the app's relative paths. | Built (iOS sample); list and delete in slice 2 |
 
 This table covers what is built so far. The full client is specified in `docs/architecture.md`.
 
 ## Added in slice (d)
 
-| Function | Source | Endpoint (used or planned) | Token | Blocked by |
-|----------|--------|----------------------------|-------|------------|
-| `listMedia`, `deleteMedia` | mock | Instance-owned media store; descriptions and tags from a video understanding capability | builder key | No media store or understanding capability on the network yet. |
-| `listAgentModels` | mock | Live: `GET /v1/offerings` plus each language app's runners (`describeApps`, reader token, server-side) | builder key + reader | Mock while the agent is: the model menu picks a model for the mock agent, so it lists the mock agent's models (`mock/agent-models.ts`, real open models with their published context sizes). Switch to live together with `createConversation` and `sendMessage`. The live path is built and tested. |
-| `listCharacters`, `getCharacter`, `createCharacter` | mock | Instance-owned store | session | Needs the instance database (not built). |
-| `getCreditBalance`, `getAccount`, `buyCreditPack`, `buyCredits`, `changePlan`, `getUsage` | mock, through the provider interface | `budgets.getAllocation` → `GET /v1/allowance?actor_id=`; plans and packs from the provider | reader / builder key | Batteries has no plans, packs, top-ups of the user's own amount (`buyCredits`, limits from `plans.getTopUpRange`) or per-user usage; PymtHouse isn't wired into the engine. The Batteries provider is implemented and unit-tested, but its write request bodies are not verified against a live admin key. |
-| `listApiKeys`, `createApiKey`, `revokeApiKey` | mock | `GET/POST /v1/admin/keys`, `…/revoke` | admin token | The `.env` admin token is an actor key (403). |
-| `getPreferences`, `updatePreferences` | mock | Instance-owned store | session | Needs the instance database. |
-| `runCapability` | mock | `POST /v1/jobs` | builder key | Paid; needs a builder key and the owner's go-ahead. |
+| Function | Source | Endpoint (used or planned) | Token | Blocked by | Mobile |
+|----------|--------|----------------------------|-------|------------|--------|
+| `listMedia`, `deleteMedia` | mock | Instance-owned media store; descriptions and tags from a video understanding capability | builder key | No media store or understanding capability on the network yet. | Slice 4 |
+| `listAgentModels` | mock | Live: `GET /v1/offerings` plus each language app's runners (`describeApps`, reader token, server-side) | builder key + reader | Mock while the agent is: the model menu picks a model for the mock agent, so it lists the mock agent's models (`mock/agent-models.ts`, real open models with their published context sizes). Switch to live together with `createConversation` and `sendMessage`. The live path is built and tested. | Slice 2 |
+| `listCharacters`, `getCharacter`, `createCharacter` | mock | Instance-owned store | session | Needs the instance database (not built). | Slice 5 |
+| `getCreditBalance`, `getAccount`, `buyCreditPack`, `buyCredits`, `changePlan`, `getUsage` | mock, through the provider interface | `budgets.getAllocation` → `GET /v1/allowance?actor_id=`; plans and packs from the provider | reader / builder key | Batteries has no plans, packs, top-ups of the user's own amount (`buyCredits`, limits from `plans.getTopUpRange`) or per-user usage; PymtHouse isn't wired into the engine. The Batteries provider is implemented and unit-tested, but its write request bodies are not verified against a live admin key. | Slices 1, 6 |
+| `listApiKeys`, `createApiKey`, `revokeApiKey` | mock | `GET/POST /v1/admin/keys`, `…/revoke` | admin token | The `.env` admin token is an actor key (403). | Not on mobile |
+| `getPreferences`, `updatePreferences` | mock | Instance-owned store | session | Needs the instance database. | Slice 6 |
+| `runCapability` | mock | `POST /v1/jobs` | builder key | Paid; needs a builder key and the owner's go-ahead. | Not on mobile |
 
 ## Added in slice (e)
 
-| Function | Source | Endpoint (used or planned) | Token | Blocked by |
-|----------|--------|----------------------------|-------|------------|
-| `analyseVideo` | mock | `POST /v1/jobs` against a video understanding capability | builder key | No such capability is on the network; paid. |
-| `startLiveSession`, `updateLiveSession`, `stopLiveSession` | mock | `POST /v1/sessions` and its update and close calls | builder key | `POST /v1/sessions` returns 501 (engine request R2). |
-| `getLiveHealth` | mock | `GET /v1/events` for the session | builder key | The events feed returns 501. |
-| `listLiveLooks`, `saveLiveLook`, `listLiveDestinations`, `addLiveDestination`, `removeLiveDestination` | mock | Instance-owned store; stream keys sealed server-side | session | Needs the instance database. |
-| `startCall`, `endCall` | mock | `POST /v1/sessions` against a real-time character capability | builder key | Sessions return 501; no avatar capability on the network. |
-| `listExampleApps` | mock | Instance content | — | Instance-owned. |
+| Function | Source | Endpoint (used or planned) | Token | Blocked by | Mobile |
+|----------|--------|----------------------------|-------|------------|--------|
+| `analyseVideo` | mock | `POST /v1/jobs` against a video understanding capability | builder key | No such capability is on the network; paid. | Slice 2, through the agent |
+| `startLiveSession`, `updateLiveSession`, `stopLiveSession` | mock | `POST /v1/sessions` and its update and close calls | builder key | `POST /v1/sessions` returns 501 (engine request R2). | Planned, after live sessions |
+| `getLiveHealth` | mock | `GET /v1/events` for the session | builder key | The events feed returns 501. | Planned, after live sessions |
+| `listLiveLooks`, `saveLiveLook`, `listLiveDestinations`, `addLiveDestination`, `removeLiveDestination` | mock | Instance-owned store; stream keys sealed server-side | session | Needs the instance database. | Planned, after live sessions |
+| `startCall`, `endCall` | mock | `POST /v1/sessions` against a real-time character capability | builder key | Sessions return 501; no avatar capability on the network. | Planned, after live sessions |
+| `listExampleApps` | mock | Instance content | — | Instance-owned. | Not on mobile |
 
 ## Operator console (slice f)
 
@@ -72,3 +72,21 @@ Reads use `ENGINE_READER_TOKEN`; writes use `ENGINE_ADMIN_TOKEN`.
 `/api/v1/*` and `/api/mcp` call the same API client functions as the interface, so each operation is live or
 mocked exactly as its function is above. `verifyApiKey` is mocked: user API keys are held in memory until
 the instance has a database, and are checked against the engine's keys once sign-up provisions real ones.
+
+## Native apps
+
+The iOS and Android apps have no data-source map and no mock layer of their own. They call the instance's
+`/api/v1`, whose operations call the functions above, so a function that goes live goes live for mobile too.
+Development and tests point a build at an instance started with `MOCK_ONLY=1`. The **Mobile** column above
+says which slice of `docs/mobile/plan.md` uses each function.
+
+Two reads exist for clients that can't run the web's own code. Neither is in the data-source map: one reads
+the instance config, the other is derived.
+
+| Operation | Source | Reads | Token |
+|-----------|--------|-------|-------|
+| `get_instance` | config | `instance.config.json`: name, logo, theme overrides (resolved to sRGB hex), surfaces, sign-in methods, content settings, home backdrop | none |
+| `list_capability_labels` | derived from `listOfferings` and runner models (`describeApps`, reader token, server-side) | The readable name of each capability, by the rules in `packages/user-app/src/lib/capability-menu.ts` | none |
+
+A mock-only instance accepts one documented key, `MOCK_ONLY_DEMO_KEY`, so tests and development builds can
+call signed-in operations before native sign-in exists. `verifyApiKey` refuses it unless `MOCK_ONLY=1`.
