@@ -2,6 +2,8 @@ import { MOCK_ONLY_DEMO_KEY, quoteCredits, createApiClient, createMockProvider, 
 import { describeStudio } from "@aquareum/user-app/studio-mediums";
 import { describe, expect, it, vi } from "vitest";
 
+import { memoryStore } from "../data/store";
+import { moderation, type ModerationContents } from "../moderation/moderation";
 import { ApiError, OPERATIONS, matchOperation, type Account, type DeviceAccess } from "./operations";
 
 const provider = createMockProvider();
@@ -31,7 +33,8 @@ const devices: DeviceAccess = {
 };
 const agentModelMenu = async () => [];
 const studioMediums = async () => describeStudio([]);
-const base = { client, operator: null, account: null, devices, instance, labels, agentModelMenu, studioMediums, quote: quoteCredits };
+const desk = moderation(memoryStore<ModerationContents>({ reports: [], blocks: [], hidden: [] }));
+const base = { client, operator: null, account: null, devices, moderation: desk, instance, labels, agentModelMenu, studioMediums, quote: quoteCredits };
 const adam: Account = { user: { id: "usr_demo_adam", name: "Adam Soffer", email: "adam@example.test" }, deviceId: "dev_1" };
 
 describe("public API operations", () => {
@@ -87,7 +90,7 @@ describe("public API operations", () => {
 
   it("only reads are open to guests, apart from collecting a sign-in, and none of them is the operator's", () => {
     const open = OPERATIONS.filter((operation) => operation.public);
-    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_instance", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_prompt_starters", "list_showcase", "list_studio_mediums", "quote_generation"]);
+    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_character", "get_instance", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_characters", "list_prompt_starters", "list_showcase", "list_studio_mediums", "quote_generation"]);
     for (const operation of open) expect((operation.method === "GET" || operation.name === "create_device_session") && !operation.operator, operation.name).toBe(true);
   });
 
@@ -147,5 +150,36 @@ describe("public API operations", () => {
     expect(studio[0]!.modes.find((mode) => mode.value === "edit")).toMatchObject({ needs_input: true, available: false });
     expect(await run("quote_generation", { kind: "video", app: "text-to-video", duration_seconds: "10", resolution: "1080p" })).toEqual({ credits: 176 });
     expect(await run("quote_generation", { kind: "image", app: "text-to-image" })).toEqual({ credits: 4 });
+  });
+  it("lists characters for guests, keeps adults-only ones off, and lets a person report and block", async () => {
+    const run = (name: string, input: Record<string, unknown>, account: Account | null = adam) => OPERATIONS.find((operation) => operation.name === name)!.run({ ...base, account }, input);
+    const guestList = (await run("list_characters", {}, null)) as Array<{ slug: string; mature: boolean }>;
+    expect(guestList.length).toBeGreaterThan(0);
+    expect(guestList.some((entry) => entry.mature)).toBe(false);
+    await expect(run("get_character", { slug: "vesper" }, null)).rejects.toMatchObject({ status: 404 });
+    expect(await run("get_character", { slug: "lumen" }, null)).toMatchObject({ name: "Lumen" });
+
+    await expect(run("report_character", { slug: "lumen", reason: "spam" }, null)).rejects.toMatchObject({ status: 403, code: "account_required" });
+    await expect(run("report_character", { slug: "lumen", reason: "rude" })).rejects.toMatchObject({ status: 400 });
+    expect(await run("report_character", { slug: "lumen", reason: "impersonation", note: "  Claims to be a real tutor " })).toMatchObject({ character_slug: "lumen", author: "open-lens", note: "Claims to be a real tutor", state: "open" });
+    expect(await run("block_character", { slug: "okon-the-editor" })).toEqual({ character_slug: "okon-the-editor", author: "cutting-room" });
+    const after = (await run("list_characters", {})) as Array<{ slug: string }>;
+    expect(after.map((entry) => entry.slug)).not.toContain("okon-the-editor");
+    await expect(run("get_character", { slug: "okon-the-editor" })).rejects.toMatchObject({ status: 404 });
+    expect(await run("get_character", { slug: "okon-the-editor" }, null)).toMatchObject({ name: "Okon" });
+
+    const reports = OPERATIONS.find((operation) => operation.name === "operator_list_reports")!;
+    await expect(reports.run(base, {})).rejects.toMatchObject({ status: 403 });
+    const [report] = (await reports.run({ ...base, operator }, {})) as Array<{ id: string }>;
+    await OPERATIONS.find((operation) => operation.name === "operator_resolve_report")!.run({ ...base, operator }, { id: report!.id, outcome: "hidden" });
+    await expect(run("get_character", { slug: "lumen" }, null)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it("creates a private character unless it's shared, and never one for adults only", async () => {
+    const create = OPERATIONS.find((operation) => operation.name === "create_character")!;
+    await expect(create.run(base, { name: "  ", description: "x", greeting: "y" })).rejects.toMatchObject({ status: 400 });
+    await expect(create.run(base, { name: "A".repeat(41), description: "x", greeting: "y" })).rejects.toMatchObject({ status: 400 });
+    const made = await create.run(base, { name: "Wren", description: "A sound recordist who hears everything.", greeting: "Quiet on set.", visibility: "public", mature: true });
+    expect(made).toMatchObject({ name: "Wren", visibility: "public", mature: false, mine: true });
   });
 });

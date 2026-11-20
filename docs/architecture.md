@@ -131,6 +131,12 @@ changes. With `surfaces.mobile` off, a device session gets 403 `mobile_off`. Sig
 the configured domain, or else the address the request came in on, so a phone reaching a development server
 at another address comes back to it.
 
+State the instance keeps itself lives in `apps/web/lib/data`: a `StateStore` interface and a JSON file in
+`DATA_DIR` behind it, until the instance has a database. Device sessions use it, and so does
+`apps/web/lib/moderation`: reports of shared characters, what each person blocked, and what the operator took
+down. Every character read (`list_characters`, `get_character`, the web's pages and Home's cast) filters
+through `moderation().visible(userId)`; the console's Reports page decides reports.
+
 ## Self-hosting
 
 `deploy/compose.yaml` references published images by `${REGISTRY}/${ORG}/...` tags read from

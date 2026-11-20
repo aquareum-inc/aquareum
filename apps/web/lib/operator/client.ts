@@ -29,9 +29,14 @@ export function paymentProvider(): PaymentProvider {
  * read and action is guarded here as well as in the proxy and the layout.
  */
 export async function operatorApi(): Promise<OperatorClient> {
+  await requireOperator();
+  return buildOperatorClient();
+}
+
+/** Refuses anyone who isn't a signed-in operator. */
+export async function requireOperator(): Promise<void> {
   const session = await getSession();
   if (session?.role !== "operator") throw new Error("Operator role required");
-  return buildOperatorClient();
 }
 
 /** Builds the operator client. Callers must have checked the operator role first. */

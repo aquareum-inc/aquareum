@@ -31,6 +31,7 @@ import { redirect } from "next/navigation";
 import { api } from "./api";
 import { getSession } from "./auth/session";
 import { adultContent, charactersEnabled } from "./content";
+import { moderation } from "./moderation";
 
 /** Every action is a signed-in user's call to one API client function. A guest is sent to sign in. */
 async function client() {
@@ -116,7 +117,8 @@ export async function listCastableCharactersAction(): Promise<Character[]> {
     api.listCharacters({ scope: "public", includeMature: shown }),
   ]);
   const own = new Set(mine.data.map((entry) => entry.slug));
-  return [...mine.data, ...shared.data.filter((entry) => !own.has(entry.slug))];
+  const visible = moderation().visible((await getSession())?.userId ?? null);
+  return [...mine.data, ...shared.data.filter((entry) => !own.has(entry.slug))].filter(visible);
 }
 
 export async function analyseVideoAction(input: { source: string; question: string }): Promise<VideoAnalysis> {

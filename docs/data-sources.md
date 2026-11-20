@@ -24,7 +24,7 @@ This table covers what is built so far. The full client is specified in `docs/ar
 |----------|--------|----------------------------|-------|------------|--------|
 | `listMedia`, `deleteMedia` | mock | Instance-owned media store; descriptions and tags from a video understanding capability | builder key | No media store or understanding capability on the network yet. | Built (slice 4) |
 | `listAgentModels` | mock | Live: `GET /v1/offerings` plus each language app's runners (`describeApps`, reader token, server-side) | builder key + reader | Mock while the agent is: the model menu picks a model for the mock agent, so it lists the mock agent's models (`mock/agent-models.ts`, real open models with their published context sizes). Switch to live together with `createConversation` and `sendMessage`. The live path is built and tested. | Built (slice 2) |
-| `listCharacters`, `getCharacter`, `createCharacter` | mock | Instance-owned store | session | Needs the instance database (not built). | Slice 5 |
+| `listCharacters`, `getCharacter`, `createCharacter` | mock | Instance-owned store | session | Needs the instance database (not built). | Built (slice 5) |
 | `getCreditBalance`, `getAccount`, `buyCreditPack`, `buyCredits`, `changePlan`, `getUsage` | mock, through the provider interface | `budgets.getAllocation` → `GET /v1/allowance?actor_id=`; plans and packs from the provider | reader / builder key | Batteries has no plans, packs, top-ups of the user's own amount (`buyCredits`, limits from `plans.getTopUpRange`) or per-user usage; PymtHouse isn't wired into the engine. The Batteries provider is implemented and unit-tested, but its write request bodies are not verified against a live admin key. | Slices 1, 6 |
 | `listApiKeys`, `createApiKey`, `revokeApiKey` | mock | `GET/POST /v1/admin/keys`, `…/revoke` | admin token | The `.env` admin token is an actor key (403). | Not on mobile |
 | `getPreferences`, `updatePreferences` | mock | Instance-owned store | session | Needs the instance database. | Slice 6 |
@@ -107,6 +107,18 @@ browser session cookie holds it.
 | `end_device_session` | Signs the calling device out | its device session |
 | `get_me` | The signed-in person and their balance (`getCreditBalance`) | a device or browser session |
 | `list_devices`, `revoke_device` | The person's device sessions; sign one out | a device or browser session |
+
+**Reports, blocks and characters taken down** belong to the instance too: the app stores require them of an
+app where people share characters. `apps/web/lib/moderation` keeps them in `DATA_DIR/moderation.json` behind
+the same `StateStore` interface (`apps/web/lib/data`). Who reported is kept, so a second report from the same
+person updates the first, and is never sent to anyone. `list_characters`, `get_character`, the web's
+characters pages and Home's cast all leave out what the operator took down and what the person blocked.
+
+| Operation | Does | Token |
+|-----------|------|-------|
+| `report_character` | Files a report of a shared character with a reason and a note | a device or browser session |
+| `block_character` | Hides a character and everything by its author from the person | a device or browser session |
+| `operator_list_reports`, `operator_resolve_report` | The console's queue; keep a character up or take it down | the operator role |
 
 A mock-only instance still accepts one documented key, `MOCK_ONLY_DEMO_KEY`, for tests and scripts;
 `verifyApiKey` refuses it unless `MOCK_ONLY=1`. The apps no longer send it: they sign in.

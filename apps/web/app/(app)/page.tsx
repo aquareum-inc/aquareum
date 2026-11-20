@@ -7,6 +7,7 @@ import { composerOfferings } from "@/lib/catalogue";
 import { adultContent, charactersEnabled } from "@/lib/content";
 import { isDev } from "@/lib/env";
 import { instance } from "@/lib/instance";
+import { moderation } from "@/lib/moderation";
 
 type Props = { searchParams: Promise<{ with?: string | string[] }> };
 
@@ -26,7 +27,7 @@ export default async function HomePage({ searchParams }: Props) {
   ]);
   const offered = composerOfferings(offerings.data);
   const found = character?.data ?? null;
-  const cast = found && (!found.mature || (await adultContent(client)).shown) ? { slug: found.slug, name: found.name, image: found.image } : null;
+  const cast = found && (!found.mature || (await adultContent(client)).shown) && moderation().visible(session?.userId ?? null)(found) ? { slug: found.slug, name: found.name, image: found.image } : null;
   return (
     <>
       <Home starters={starters.data} showcase={showcase.data} offerings={offered} agentModels={agentModels.data} signedIn={session !== null} characters={characters} cast={cast} backdrop={{ video: home?.backgroundVideo ?? null, poster: home?.backgroundPoster ?? null, image: home?.backgroundImage ?? null, aurora: home?.aurora ?? false }} />

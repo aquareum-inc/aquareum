@@ -1,4 +1,6 @@
-import type { AgentModelEntry, ApiClient, CapabilityLabel, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorClient } from "@aquareum/api-client";
+import type { AgentModelEntry, ApiClient, CapabilityLabel, Character, ReportReason, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorClient } from "@aquareum/api-client";
+
+import type { Moderation } from "../moderation/moderation";
 
 type Schema = Record<string, unknown>;
 
@@ -25,6 +27,8 @@ interface Context {
   /** Who is signed in. API keys, the operator token and guests have no account. */
   account: Account | null;
   devices: DeviceAccess;
+  /** Reports, blocks and characters taken down. */
+  moderation: Moderation;
   /** This instance, as it describes itself to clients. */
   instance: InstanceDescription;
   /** The readable name of each capability on offer, as the interface shows it. */
@@ -64,6 +68,7 @@ export interface Operation {
 const object = (properties: Schema, required: string[] = []): Schema => ({ type: "object", properties, required, additionalProperties: false });
 const text = (description: string): Schema => ({ type: "string", description });
 const str = (input: Record<string, unknown>, key: string): string => String(input[key] ?? "");
+const REPORT_REASONS: readonly ReportReason[] = ["sexual", "hateful", "violent", "impersonation", "spam", "other"];
 const aspect = { enum: ["16:9", "9:16", "1:1"], default: "16:9" };
 
 const operator = (context: Context): OperatorClient => {
@@ -93,6 +98,20 @@ const found = <T>(value: T | null, what: string): T => {
   if (value === null) throw new ApiError(404, `${what} not found`);
   return value;
 };
+
+/** A character this caller may see: not for adults only, not taken down, not blocked. */
+async function character(context: Context, slug: string): Promise<Character> {
+  const value = (await context.client.getCharacter(slug)).data;
+  if (!value || value.mature || !context.moderation.visible(context.account?.user.id ?? null)(value)) throw new ApiError(404, "Character not found");
+  return value;
+}
+
+/** A character someone else shared, which is what can be reported or blocked. */
+async function shared(context: Context, slug: string): Promise<Character> {
+  const value = await character(context, slug);
+  if (value.mine) throw new ApiError(400, "That character is yours.");
+  return value;
+}
 
 /**
  * Every operation the instance exposes to agents and developers. The REST API and the MCP
@@ -223,7 +242,70 @@ export const OPERATIONS: Operation[] = [
   { name: "search_library", description: "Search the user's media by what is in it: subjects, places, actions, tags.", method: "GET", path: "/library", output: ["MediaItem"], input: object({ query: text("What to look for"), kind: { enum: ["video", "image", "audio"] } }), run: async ({ client }, input) => (await client.listMedia({ ...(input.query ? { query: str(input, "query") } : {}), ...(input.kind ? { kind: input.kind as "video" | "image" | "audio" } : {}) })).data },
   { name: "delete_media", description: "Delete an item from the library. This can't be undone.", method: "DELETE", path: "/library/{id}", output: "Deleted", input: object({ id: text("Library item id") }, ["id"]), run: async ({ client }, input) => ({ deleted: (await client.deleteMedia(str(input, "id"))).data }) },
   { name: "understand_video", description: "Ask about a video: summarise it, find moments, answer a question.", method: "POST", path: "/understand", output: "VideoAnalysis", input: object({ source: text("A URL or a library item id"), question: text("What to find out") }, ["source", "question"]), run: async ({ client }, input) => (await client.analyseVideo({ source: str(input, "source"), question: str(input, "question") })).data },
-  { name: "list_characters", description: "List characters the user can chat with or call.", method: "GET", path: "/characters", output: ["Character"], input: object({ query: text("Filter by name, role or subject") }), run: async ({ client }, input) => (await client.listCharacters(input.query ? { query: str(input, "query") } : {})).data },
+  {
+    name: "list_characters",
+    description: "List characters to cast in a scene: the person's own, then those shared on the instance. Characters for adults only aren't listed.",
+    method: "GET",
+    path: "/characters",
+    output: ["Character"],
+    public: true,
+    input: object({ query: text("Filter by name, role or subject") }),
+    run: async (context, input) => {
+      const visible = context.moderation.visible(context.account?.user.id ?? null);
+      return (await context.client.listCharacters(input.query ? { query: str(input, "query") } : {})).data.filter(visible);
+    },
+  },
+  { name: "get_character", description: "One character: who they are, how they open and who made them.", method: "GET", path: "/characters/{slug}", output: "Character", public: true, input: object({ slug: text("The character's slug") }, ["slug"]), run: async (context, input) => character(context, str(input, "slug")) },
+  {
+    name: "create_character",
+    description: "Create a character to cast in scenes. It is private unless shared with everyone on the instance.",
+    method: "POST",
+    path: "/characters",
+    output: "Character",
+    input: object({
+      name: { type: "string", maxLength: 40, description: "Their name" },
+      tagline: { type: "string", maxLength: 80, description: "One line about them, shown under their name" },
+      description: { type: "string", maxLength: 2000, description: "How they look, move and speak, and what they care about" },
+      greeting: { type: "string", maxLength: 300, description: "The first thing they say in a new conversation" },
+      visibility: { enum: ["private", "public"], default: "private" },
+    }, ["name", "description", "greeting"]),
+    run: async ({ client }, input) => {
+      const field = (key: string, limit: number) => {
+        const value = str(input, key).trim();
+        if (value.length > limit) throw new ApiError(400, `${key} is longer than ${limit} characters.`);
+        return value;
+      };
+      const name = field("name", 40);
+      const description = field("description", 2000);
+      const greeting = field("greeting", 300);
+      if (!name || !description || !greeting) throw new ApiError(400, "A character needs a name, who they are and how they open.");
+      return (await client.createCharacter({ name, tagline: field("tagline", 80), description, greeting, visibility: input.visibility === "public" ? "public" : "private", mature: false })).data;
+    },
+  },
+  {
+    name: "report_character",
+    description: "Report a shared character to the instance's operator, with a reason.",
+    method: "POST",
+    path: "/characters/{slug}/report",
+    output: "CharacterReport",
+    input: object({ slug: text("The character's slug"), reason: { enum: [...REPORT_REASONS] }, note: { type: "string", maxLength: 500, description: "Anything to add, in your own words" } }, ["slug", "reason"]),
+    run: async (context, input) => {
+      const { user } = signedIn(context);
+      const found = await shared(context, str(input, "slug"));
+      const reason = REPORT_REASONS.find((entry) => entry === input.reason);
+      if (!reason) throw new ApiError(400, `reason is one of ${REPORT_REASONS.join(", ")}.`);
+      return context.moderation.report(user.id, found, reason, str(input, "note").trim().slice(0, 500) || null);
+    },
+  },
+  {
+    name: "block_character",
+    description: "Block a shared character: it, and everything else by its author, is hidden from the person from now on.",
+    method: "POST",
+    path: "/characters/{slug}/block",
+    output: "CharacterBlock",
+    input: object({ slug: text("The character's slug") }, ["slug"]),
+    run: async (context, input) => context.moderation.block(signedIn(context).user.id, await shared(context, str(input, "slug"))),
+  },
   { name: "get_balance", description: "The user's credit balance and budget.", method: "GET", path: "/balance", output: "CreditBalance", input: object({}), run: async ({ client }) => (await client.getCreditBalance()).data },
   { name: "get_usage", description: "What the user has spent, by capability, and recent jobs.", method: "GET", path: "/usage", output: "Usage", input: object({}), run: async ({ client }) => (await client.getUsage()).data },
   {
@@ -254,6 +336,19 @@ export const OPERATIONS: Operation[] = [
   { name: "operator_assign_plan", description: "Operator: assign a plan to a user, or remove it with a null plan_id.", method: "POST", path: "/operator/users/{id}/plan", input: object({ id: text("User id"), plan_id: { type: ["string", "null"] } }, ["id"]), operator: true, run: async (context, input) => ({ plan: await operator(context).provider.plans.assignPlan(str(input, "id"), typeof input.plan_id === "string" ? input.plan_id : null) }) },
   { name: "operator_list_jobs", description: "Operator: recent jobs across all users, with attempts and failures.", method: "GET", path: "/operator/jobs", input: object({ limit: { type: "number", default: 50 } }), operator: true, run: async (context, input) => (await operator(context).listJobs(Number(input.limit) || 50)).data },
   { name: "operator_costs", description: "Operator: wholesale network cost by class and capability over a number of days.", method: "GET", path: "/operator/costs", input: object({ days: { type: "number", default: 30 } }), operator: true, run: async (context, input) => (await operator(context).getCostSummary(Number(input.days) || 30)).data },
+  { name: "operator_list_reports", description: "Operator: reports of shared characters, open ones first.", method: "GET", path: "/operator/reports", input: object({}), operator: true, run: async (context) => { operator(context); return context.moderation.reports(); } },
+  {
+    name: "operator_resolve_report",
+    description: "Operator: decide a report. Dismiss leaves the character up; hide takes it off the instance for everyone.",
+    method: "POST",
+    path: "/operator/reports/{id}",
+    input: object({ id: text("Report id"), outcome: { enum: ["dismissed", "hidden"] } }, ["id", "outcome"]),
+    operator: true,
+    run: async (context, input) => {
+      operator(context);
+      return found(context.moderation.resolve(str(input, "id"), input.outcome === "hidden" ? "hidden" : "dismissed"), "Report");
+    },
+  },
   { name: "operator_list_grants", description: "Operator: grants and their funding.", method: "GET", path: "/operator/grants", input: object({}), operator: true, run: async (context) => operator(context).provider.budgets.listGrants() },
   { name: "operator_create_grant", description: "Operator: create a grant with initial funding.", method: "POST", path: "/operator/grants", input: object({ label: text("Grant name"), amount_usd: { type: "number", exclusiveMinimum: 0 } }, ["label", "amount_usd"]), operator: true, run: async (context, input) => operator(context).provider.budgets.createGrant({ label: str(input, "label"), amount: { amount: Number(input.amount_usd).toFixed(2), currency: "USD" } }) },
   { name: "operator_list_plans", description: "Operator: the provider's plans and allowances.", method: "GET", path: "/operator/plans", input: object({}), operator: true, run: async (context) => operator(context).provider.plans.listPlans() },

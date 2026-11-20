@@ -4,6 +4,7 @@ import { EngineError, UnsupportedByProvider, quoteCredits } from "@aquareum/api-
 import { NextResponse, type NextRequest } from "next/server";
 
 import { devices } from "@/lib/devices";
+import { moderation } from "@/lib/moderation";
 import { instance } from "@/lib/instance";
 import { authenticate, carriesDeviceToken, guest, type Caller } from "@/lib/public-api/auth";
 import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
@@ -63,7 +64,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   if (missing.length > 0) return error(400, `Missing: ${missing.join(", ")}`);
 
   try {
-    const value = await match.operation.run({ ...caller, devices: devices(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, quote: quoteCredits }, input);
+    const value = await match.operation.run({ ...caller, devices: devices(), moderation: moderation(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, quote: quoteCredits }, input);
     return request.method === "GET" ? read(request, value) : NextResponse.json(value);
   } catch (cause) {
     if (cause instanceof ApiError) return error(cause.status, cause.message, cause.code);

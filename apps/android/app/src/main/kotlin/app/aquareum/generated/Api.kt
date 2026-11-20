@@ -115,9 +115,25 @@ class Api(private val transport: ApiTransport) {
     suspend fun understandVideo(source: String, question: String): VideoAnalysis =
         transport.send(VideoAnalysis.serializer(), "POST", "/understand", query = emptyMap(), body = mapOf("source" to JsonPrimitive(source), "question" to JsonPrimitive(question)))
 
-    /** List characters the user can chat with or call. */
+    /** List characters to cast in a scene: the person's own, then those shared on the instance. Characters for adults only aren't listed. Open to guests. */
     suspend fun listCharacters(query: String? = null): List<Character> =
         transport.send(ListSerializer(Character.serializer()), "GET", "/characters", query = mapOf("query" to query?.let { JsonPrimitive(it) }), body = null)
+
+    /** Create a character to cast in scenes. It is private unless shared with everyone on the instance. */
+    suspend fun createCharacter(name: String, description: String, greeting: String, tagline: String? = null, visibility: String? = null): Character =
+        transport.send(Character.serializer(), "POST", "/characters", query = emptyMap(), body = mapOf("name" to JsonPrimitive(name), "description" to JsonPrimitive(description), "greeting" to JsonPrimitive(greeting), "tagline" to tagline?.let { JsonPrimitive(it) }, "visibility" to visibility?.let { JsonPrimitive(it) }))
+
+    /** One character: who they are, how they open and who made them. Open to guests. */
+    suspend fun getCharacter(slug: String): Character =
+        transport.send(Character.serializer(), "GET", "/characters/${ApiTransport.escape(slug)}", query = emptyMap(), body = null)
+
+    /** Report a shared character to the instance's operator, with a reason. */
+    suspend fun reportCharacter(slug: String, reason: String, note: String? = null): CharacterReport =
+        transport.send(CharacterReport.serializer(), "POST", "/characters/${ApiTransport.escape(slug)}/report", query = emptyMap(), body = mapOf("reason" to JsonPrimitive(reason), "note" to note?.let { JsonPrimitive(it) }))
+
+    /** Block a shared character: it, and everything else by its author, is hidden from the person from now on. */
+    suspend fun blockCharacter(slug: String): CharacterBlock =
+        transport.send(CharacterBlock.serializer(), "POST", "/characters/${ApiTransport.escape(slug)}/block", query = emptyMap(), body = null)
 
     /** The user's credit balance and budget. */
     suspend fun getBalance(): CreditBalance =

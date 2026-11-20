@@ -142,9 +142,31 @@ struct API: Sendable {
         try await transport.send("POST", "/understand", query: [:], body: ["source": .string(source), "question": .string(question)])
     }
 
-    /// List characters the user can chat with or call.
+    /// List characters to cast in a scene: the person's own, then those shared on the instance. Characters for adults only aren't listed.
+    /// Open to guests.
     func listCharacters(query: String? = nil) async throws -> [Character] {
         try await transport.send("GET", "/characters", query: ["query": query.map { .string($0) }], body: nil)
+    }
+
+    /// Create a character to cast in scenes. It is private unless shared with everyone on the instance.
+    func createCharacter(name: String, description: String, greeting: String, tagline: String? = nil, visibility: String? = nil) async throws -> Character {
+        try await transport.send("POST", "/characters", query: [:], body: ["name": .string(name), "description": .string(description), "greeting": .string(greeting), "tagline": tagline.map { .string($0) }, "visibility": visibility.map { .string($0) }])
+    }
+
+    /// One character: who they are, how they open and who made them.
+    /// Open to guests.
+    func getCharacter(slug: String) async throws -> Character {
+        try await transport.send("GET", "/characters/\(APITransport.escape(slug))", query: [:], body: nil)
+    }
+
+    /// Report a shared character to the instance's operator, with a reason.
+    func reportCharacter(slug: String, reason: String, note: String? = nil) async throws -> CharacterReport {
+        try await transport.send("POST", "/characters/\(APITransport.escape(slug))/report", query: [:], body: ["reason": .string(reason), "note": note.map { .string($0) }])
+    }
+
+    /// Block a shared character: it, and everything else by its author, is hidden from the person from now on.
+    func blockCharacter(slug: String) async throws -> CharacterBlock {
+        try await transport.send("POST", "/characters/\(APITransport.escape(slug))/block", query: [:], body: nil)
     }
 
     /// The user's credit balance and budget.

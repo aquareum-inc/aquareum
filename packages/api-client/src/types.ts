@@ -251,6 +251,29 @@ export interface CharacterInput {
   mature: boolean;
 }
 
+/** Why someone reported a character. */
+export type ReportReason = "sexual" | "hateful" | "violent" | "impersonation" | "spam" | "other";
+
+/** A report of a public character, as the operator reviews it. Who reported it is kept, never shown. */
+export interface CharacterReport {
+  id: string;
+  character_slug: string;
+  character_name: string;
+  author: string;
+  reason: ReportReason;
+  /** What the person added in their own words. */
+  note: string | null;
+  created_at: string;
+  /** Open until the operator acts: dismissed leaves the character up; hidden takes it off the instance. */
+  state: "open" | "dismissed" | "hidden";
+}
+
+/** A character someone blocked: it, and everything else by its author, is hidden from them. */
+export interface CharacterBlock {
+  character_slug: string;
+  author: string;
+}
+
 export interface ApiKey {
   id: string;
   label: string;

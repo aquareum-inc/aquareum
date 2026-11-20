@@ -7,6 +7,7 @@ import {
   Blocks,
   CreditCard,
   Cpu,
+  Flag,
   Gift,
   KeyRound,
   LayoutDashboard,
@@ -35,6 +36,7 @@ const GROUPS: Array<{ label: string; items: Array<{ href: string; label: string;
       { href: "/operator", label: "Overview", icon: LayoutDashboard },
       { href: "/operator/users", label: "Users", icon: Users },
       { href: "/operator/jobs", label: "Jobs", icon: Activity },
+      { href: "/operator/reports", label: "Reports", icon: Flag },
     ],
   },
   {

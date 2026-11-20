@@ -1282,7 +1282,8 @@
     "/characters": {
       "get": {
         "operationId": "list_characters",
-        "summary": "List characters the user can chat with or call.",
+        "summary": "List characters to cast in a scene: the person's own, then those shared on the instance. Characters for adults only aren't listed.",
+        "security": [],
         "parameters": [
           {
             "name": "query",
@@ -1304,6 +1305,246 @@
                   "items": {
                     "$ref": "#/components/schemas/Character"
                   }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_character",
+        "summary": "Create a character to cast in scenes. It is private unless shared with everyone on the instance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "description": "Their name"
+                  },
+                  "tagline": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "description": "One line about them, shown under their name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "How they look, move and speak, and what they care about"
+                  },
+                  "greeting": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "description": "The first thing they say in a new conversation"
+                  },
+                  "visibility": {
+                    "enum": [
+                      "private",
+                      "public"
+                    ],
+                    "default": "private"
+                  }
+                },
+                "required": [
+                  "name",
+                  "description",
+                  "greeting"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Character"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/characters/{slug}": {
+      "get": {
+        "operationId": "get_character",
+        "summary": "One character: who they are, how they open and who made them.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The character's slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Character"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/characters/{slug}/report": {
+      "post": {
+        "operationId": "report_character",
+        "summary": "Report a shared character to the instance's operator, with a reason.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The character's slug"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "enum": [
+                      "sexual",
+                      "hateful",
+                      "violent",
+                      "impersonation",
+                      "spam",
+                      "other"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Anything to add, in your own words"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterReport"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/characters/{slug}/block": {
+      "post": {
+        "operationId": "block_character",
+        "summary": "Block a shared character: it, and everything else by its author, is hidden from the person from now on.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The character's slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterBlock"
                 }
               }
             }
@@ -1826,6 +2067,86 @@
         ],
         "additionalProperties": false,
         "description": "Stand-in artwork for mocked media, until real outputs exist."
+      },
+      "CharacterBlock": {
+        "type": "object",
+        "properties": {
+          "character_slug": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_slug",
+          "author"
+        ],
+        "additionalProperties": false,
+        "description": "A character someone blocked: it, and everything else by its author, is hidden from them."
+      },
+      "CharacterReport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "character_slug": {
+            "type": "string"
+          },
+          "character_name": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReportReason"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the person added in their own words."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "dismissed",
+              "hidden"
+            ],
+            "description": "Open until the operator acts: dismissed leaves the character up; hidden takes it off the instance."
+          }
+        },
+        "required": [
+          "id",
+          "character_slug",
+          "character_name",
+          "author",
+          "reason",
+          "note",
+          "created_at",
+          "state"
+        ],
+        "additionalProperties": false,
+        "description": "A report of a public character, as the operator reviews it. Who reported it is kept, never shown."
+      },
+      "ReportReason": {
+        "type": "string",
+        "enum": [
+          "sexual",
+          "hateful",
+          "violent",
+          "impersonation",
+          "spam",
+          "other"
+        ],
+        "description": "Why someone reported a character."
       },
       "Conversation": {
         "type": "object",

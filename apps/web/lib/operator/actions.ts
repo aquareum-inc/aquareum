@@ -1,12 +1,13 @@
 "use server";
 
-import type { AccessKey, BillingSettings, CapabilitySetting, CreditPack, EngineJob, Grant, Payment, Plan, TopUpRange } from "@aquareum/api-client";
+import type { AccessKey, BillingSettings, CharacterReport, CapabilitySetting, CreditPack, EngineJob, Grant, Payment, Plan, TopUpRange } from "@aquareum/api-client";
 import { EngineError } from "@aquareum/api-client";
 import type { InstanceSettings } from "@aquareum/operator-console";
 import { revalidatePath } from "next/cache";
 
 import { devices } from "../devices";
-import { operatorApi } from "./client";
+import { moderation } from "../moderation";
+import { operatorApi, requireOperator } from "./client";
 import { saveSettings } from "./settings";
 
 const usd = (amount: number) => ({ amount: amount.toFixed(2), currency: "USD" });
@@ -126,4 +127,11 @@ export async function issueKeyAction(input: { actor_id: string; label: string; k
 
 export async function revokeKeyAction(keyId: string): Promise<AccessKey | null> {
   return (await (await operatorApi()).revokeAccessKey(keyId)).data;
+}
+
+/** The operator's decision on a report; answers with every report, as the queue shows them. */
+export async function resolveReportAction(id: string, outcome: "dismissed" | "hidden"): Promise<CharacterReport[]> {
+  await requireOperator();
+  moderation().resolve(id, outcome);
+  return moderation().reports();
 }

@@ -99,6 +99,71 @@ struct MockArtwork: Codable, Sendable, Hashable {
     var seed: Double
 }
 
+/// A character someone blocked: it, and everything else by its author, is hidden from them.
+struct CharacterBlock: Codable, Sendable, Hashable {
+    var characterSlug: String
+    var author: String
+
+    enum CodingKeys: String, CodingKey {
+        case characterSlug = "character_slug"
+        case author
+    }
+}
+
+/// Open until the operator acts: dismissed leaves the character up; hidden takes it off the instance.
+enum CharacterReportState: String, Codable, Sendable, Hashable, CaseIterable {
+    case open = "open"
+    case dismissed = "dismissed"
+    case hidden = "hidden"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+/// A report of a public character, as the operator reviews it. Who reported it is kept, never shown.
+struct CharacterReport: Codable, Sendable, Hashable {
+    var id: String
+    var characterSlug: String
+    var characterName: String
+    var author: String
+    var reason: ReportReason
+    /// What the person added in their own words.
+    var note: String?
+    var createdAt: String
+    /// Open until the operator acts: dismissed leaves the character up; hidden takes it off the instance.
+    var state: CharacterReportState
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case characterSlug = "character_slug"
+        case characterName = "character_name"
+        case author
+        case reason
+        case note
+        case createdAt = "created_at"
+        case state
+    }
+}
+
+/// Why someone reported a character.
+enum ReportReason: String, Codable, Sendable, Hashable, CaseIterable {
+    case sexual = "sexual"
+    case hateful = "hateful"
+    case violent = "violent"
+    case impersonation = "impersonation"
+    case spam = "spam"
+    case other = "other"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
 struct Conversation: Codable, Sendable, Hashable {
     var id: String
     var title: String

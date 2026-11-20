@@ -90,7 +90,8 @@ bundle identifier, instance URL); theme, sign-in methods and features come from 
 Phones are a surface an operator switches on (`surfaces.mobile`, off in both presets), naming the apps built
 for the instance in `mobile.ios.bundleId` and `mobile.android.applicationId`: sign-in hands a session only to
 those. The apps sign in in the system's own browser session and get a revocable device session of their own;
-the instance keeps sessions in `DATA_DIR` (`.data` in development, a volume in Docker).
+the instance keeps sessions, and reports and blocks of shared characters, in `DATA_DIR` (`.data` in
+development, a volume in Docker).
 
 ```bash
 # an instance with the apps switched on, for the apps to talk to, on :3100

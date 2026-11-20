@@ -2,6 +2,7 @@ import { quoteCredits } from "@aquareum/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { devices } from "@/lib/devices";
+import { moderation } from "@/lib/moderation";
 import { instance } from "@/lib/instance";
 import { authenticate, type Caller } from "@/lib/public-api/auth";
 import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       const operation = TOOLS.find((entry) => entry.name === rpc.params?.name);
       if (!operation) return NextResponse.json(failure(rpc.id, -32602, `Unknown tool: ${String(rpc.params?.name)}`));
       try {
-        const value = await operation.run({ ...caller, devices: devices(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, quote: quoteCredits }, (rpc.params?.arguments as Record<string, unknown> | undefined) ?? {});
+        const value = await operation.run({ ...caller, devices: devices(), moderation: moderation(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, quote: quoteCredits }, (rpc.params?.arguments as Record<string, unknown> | undefined) ?? {});
         return NextResponse.json(result(rpc.id, { content: [{ type: "text", text: JSON.stringify(value, null, 2) }], structuredContent: Array.isArray(value) ? { items: value } : value }));
       } catch (cause) {
         return NextResponse.json(result(rpc.id, { isError: true, content: [{ type: "text", text: cause instanceof Error ? cause.message : "The tool failed." }] }));

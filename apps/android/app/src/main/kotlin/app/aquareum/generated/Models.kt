@@ -108,6 +108,65 @@ data class MockArtwork(
     @SerialName("seed") val seed: Double,
 )
 
+/** A character someone blocked: it, and everything else by its author, is hidden from them. */
+@Serializable
+data class CharacterBlock(
+    @SerialName("character_slug") val characterSlug: String,
+    @SerialName("author") val author: String,
+)
+
+/** Open until the operator acts: dismissed leaves the character up; hidden takes it off the instance. */
+@Serializable(with = CharacterReportState.Serializer::class)
+enum class CharacterReportState(val value: String) {
+    Open("open"),
+    Dismissed("dismissed"),
+    Hidden("hidden"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<CharacterReportState> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("CharacterReportState", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): CharacterReportState = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: CharacterReportState) = encoder.encodeString(value.value)
+    }
+}
+
+/** A report of a public character, as the operator reviews it. Who reported it is kept, never shown. */
+@Serializable
+data class CharacterReport(
+    @SerialName("id") val id: String,
+    @SerialName("character_slug") val characterSlug: String,
+    @SerialName("character_name") val characterName: String,
+    @SerialName("author") val author: String,
+    @SerialName("reason") val reason: ReportReason,
+    /** What the person added in their own words. */
+    @SerialName("note") val note: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    /** Open until the operator acts: dismissed leaves the character up; hidden takes it off the instance. */
+    @SerialName("state") val state: CharacterReportState,
+)
+
+/** Why someone reported a character. */
+@Serializable(with = ReportReason.Serializer::class)
+enum class ReportReason(val value: String) {
+    Sexual("sexual"),
+    Hateful("hateful"),
+    Violent("violent"),
+    Impersonation("impersonation"),
+    Spam("spam"),
+    Other("other"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<ReportReason> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ReportReason", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): ReportReason = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: ReportReason) = encoder.encodeString(value.value)
+    }
+}
+
 @Serializable
 data class Conversation(
     @SerialName("id") val id: String,

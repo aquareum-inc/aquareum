@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 import { CharacterDetail } from "@/components/character";
 import { api } from "@/lib/api";
 import { adultContent, charactersEnabled } from "@/lib/content";
+import { getSession } from "@/lib/auth/session";
 import { isDev } from "@/lib/env";
+import { moderation } from "@/lib/moderation";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -20,6 +22,7 @@ export default async function CharacterPage({ params }: Props) {
   const character = await client.getCharacter((await params).slug);
   if (!character.data) notFound();
   if (character.data.mature && !(await adultContent(client)).shown) notFound();
+  if (!moderation().visible((await getSession())?.userId ?? null)(character.data)) notFound();
   return (
     <>
       <CharacterDetail character={character.data} />
