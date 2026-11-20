@@ -543,6 +543,8 @@ For the engine and provider (added to `docs/engine-requests.md`):
   cast Wren in a scene; the report showed in the console and taking Mara down removed her for guests too.
   Screenshots:
   `docs/screenshots/mobile/{ios,android}-{characters,characters-yours,character,character-report,character-block,character-new}-{dark,light}.jpg`.
+- **Web.** A character's page has the same Report and Block, in a ⋯ menu beside the name, in sheets; a guest
+  is sent to sign in first.
 - **Found while running it.** Android couldn't send a POST with no inputs: OkHttp refuses a bodiless POST,
   so Block never left the phone. The transport now sends an empty object. On the web, a new server action
   isn't registered until the dev server restarts.
@@ -553,7 +555,6 @@ Not done in slice 5, and why:
   conversation API has no way to answer in character, and `character_slug` means "put them on screen". The
   apps lead with Cast in a scene and leave talking out until conversations can answer in character (calls,
   section 10, are the other half of it).
-- **Report and Block on the web.** The operations exist; the web's character page doesn't offer them yet.
 - **Editing or deleting a character,** and a portrait for a new one: the API client has neither yet.
 
 ### Slice 4: Library (20 November 2026)

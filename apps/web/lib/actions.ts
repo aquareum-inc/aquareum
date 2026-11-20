@@ -4,8 +4,10 @@ import type {
   ApiKey,
   CapabilityRun,
   Character,
+  CharacterBlock,
   CharacterCall,
   CharacterInput,
+  CharacterReport,
   Conversation,
   CreatedApiKey,
   CreditBalance,
@@ -22,6 +24,7 @@ import type {
   Money,
   Plan,
   Preferences,
+  ReportReason,
   SendMessageInput,
   VideoAnalysis,
 } from "@aquareum/api-client";
@@ -73,6 +76,29 @@ export async function createCharacterAction(input: CharacterInput): Promise<Char
   const { data } = await (await client()).createCharacter(input);
   revalidatePath("/characters");
   return data;
+}
+
+/** A shared character someone else made: what can be reported or blocked. */
+async function sharedCharacter(slug: string): Promise<{ userId: string; character: Character }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  const character = (await (await api()).getCharacter(slug)).data;
+  if (!character || character.mine || !moderation().visible(session.userId)(character)) throw new Error("Character not found");
+  return { userId: session.userId, character };
+}
+
+/** Sends a report of a shared character to the instance's operator (`report_character`). */
+export async function reportCharacterAction(slug: string, reason: ReportReason, note: string | null): Promise<CharacterReport> {
+  const { userId, character } = await sharedCharacter(slug);
+  return moderation().report(userId, character, reason, note?.trim().slice(0, 500) || null);
+}
+
+/** Hides a shared character and everything by its author from the person (`block_character`). */
+export async function blockCharacterAction(slug: string): Promise<CharacterBlock> {
+  const { userId, character } = await sharedCharacter(slug);
+  const blocked = moderation().block(userId, character);
+  revalidatePath("/characters");
+  return blocked;
 }
 
 export async function createApiKeyAction(label: string): Promise<CreatedApiKey> {

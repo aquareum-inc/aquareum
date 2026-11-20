@@ -4,13 +4,24 @@ import type { Character, CharacterInput } from "@aquareum/api-client";
 import { CallScreen, CharacterForm, CharacterScreen } from "@aquareum/user-app";
 import { useRouter } from "next/navigation";
 
-import { createCharacterAction, createConversationAction, endCallAction, startCallAction } from "@/lib/actions";
+import { blockCharacterAction, createCharacterAction, createConversationAction, endCallAction, reportCharacterAction, startCallAction } from "@/lib/actions";
 
-export function CharacterDetail({ character }: { character: Character }) {
+export function CharacterDetail({ character, signedIn, instanceName }: { character: Character; signedIn: boolean; instanceName: string }) {
   const router = useRouter();
   return (
     <CharacterScreen
       character={character}
+      moderation={{
+        instanceName,
+        signInHref: signedIn ? undefined : `/sign-in?next=${encodeURIComponent(`/characters/${character.slug}`)}`,
+        report: async (reason, note) => {
+          await reportCharacterAction(character.slug, reason, note);
+        },
+        block: async () => {
+          await blockCharacterAction(character.slug);
+          router.push("/characters");
+        },
+      }}
       callHref={`/characters/${character.slug}/call`}
       videoHref={`/?with=${encodeURIComponent(character.slug)}`}
       onStartChat={async (message) => {

@@ -38,8 +38,8 @@ in `apps/web/lib/public-api/operations.ts`.
 | Characters | Open one | `getCharacter` | Built (slice 5) |
 | Characters | Create | `createCharacter` | Built (slice 5); always private-or-shared, never for adults only, on phones |
 | Characters | Start chatting | `createConversation` | Not on phones: conversations have no in-character mode yet, so the web's button starts an ordinary conversation (plan, slice 5) |
-| Characters | Report a shared character, with a reason | `report_character` (instance-owned, `apps/web/lib/moderation`) | Built (slice 5); not on the web yet |
-| Characters | Block a shared character and its author | `block_character` (instance-owned) | Built (slice 5); not on the web yet |
+| Characters | Report a shared character, with a reason | `report_character` (instance-owned, `apps/web/lib/moderation`); on the web `reportCharacterAction` | Built (slice 5) |
+| Characters | Block a shared character and its author | `block_character` (instance-owned); on the web `blockCharacterAction` | Built (slice 5) |
 | Developers | List capabilities | `listOfferings` | Not on mobile |
 | Developers | Run a capability | `runCapability` | Not on mobile |
 | Developers | List, create, revoke keys | `listApiKeys`, `createApiKey`, `revokeApiKey` | Not on mobile |

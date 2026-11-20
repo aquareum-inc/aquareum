@@ -5,6 +5,7 @@ import { Badge, Button, Textarea } from "@aquareum/ui";
 import { ArrowLeft, Clapperboard, Phone, Star, Video } from "lucide-react";
 import { useState } from "react";
 
+import { CharacterModeration, type CharacterModerationProps } from "./character-moderation";
 import { CharacterPortrait } from "./character-portrait";
 import { useLink } from "../shell/link";
 
@@ -15,9 +16,11 @@ export interface CharacterScreenProps {
   callHref?: string;
   /** Opens the composer with this character cast. */
   videoHref?: string;
+  /** Report and Block, offered on someone else's character. */
+  moderation?: Omit<CharacterModerationProps, "character">;
 }
 
-export function CharacterScreen({ character, onStartChat, callHref, videoHref }: CharacterScreenProps) {
+export function CharacterScreen({ character, onStartChat, callHref, videoHref, moderation }: CharacterScreenProps) {
   const Link = useLink();
   const [message, setMessage] = useState("");
   const [starting, setStarting] = useState(false);
@@ -44,6 +47,7 @@ export function CharacterScreen({ character, onStartChat, callHref, videoHref }:
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-title font-semibold tracking-[-0.01em]">{character.name}</h1>
             {character.mature ? <Badge tone="warn">18+</Badge> : null}
+            {moderation && !character.mine ? <span className="ml-auto"><CharacterModeration character={character} {...moderation} /></span> : null}
           </div>
           <p className="mt-1 text-lead text-muted-foreground">{character.tagline}</p>
           <p className="mt-2 flex flex-wrap items-center gap-x-3 font-mono text-[11px] text-subtle-foreground">

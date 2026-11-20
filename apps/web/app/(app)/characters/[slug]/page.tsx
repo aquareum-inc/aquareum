@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { adultContent, charactersEnabled } from "@/lib/content";
 import { getSession } from "@/lib/auth/session";
 import { isDev } from "@/lib/env";
+import { instance } from "@/lib/instance";
 import { moderation } from "@/lib/moderation";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -22,10 +23,11 @@ export default async function CharacterPage({ params }: Props) {
   const character = await client.getCharacter((await params).slug);
   if (!character.data) notFound();
   if (character.data.mature && !(await adultContent(client)).shown) notFound();
-  if (!moderation().visible((await getSession())?.userId ?? null)(character.data)) notFound();
+  const session = await getSession();
+  if (!moderation().visible(session?.userId ?? null)(character.data)) notFound();
   return (
     <>
-      <CharacterDetail character={character.data} />
+      <CharacterDetail character={character.data} signedIn={session !== null} instanceName={instance().name} />
       {isDev ? <DataSourceBadge sources={[{ name: "getCharacter", source: character.source }]} /> : null}
     </>
   );
