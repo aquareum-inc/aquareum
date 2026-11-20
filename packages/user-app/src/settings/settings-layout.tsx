@@ -11,6 +11,7 @@ const TABS = [
   { href: "/settings/privacy", label: "Privacy" },
   { href: "/settings/plan", label: "Plan and credits" },
   { href: "/settings/usage", label: "Usage" },
+  { href: "/settings/devices", label: "Devices" },
 ];
 
 export function SettingsLayout({ current, children }: { current: string; children: ReactNode }) {

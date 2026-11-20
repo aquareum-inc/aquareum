@@ -715,6 +715,166 @@ data class RatePoint(
 )
 
 @Serializable
+data class PlanAndCreditsTopUp(
+    @SerialName("min") val min: Money,
+    @SerialName("max") val max: Money,
+    @SerialName("credits_per_usd") val creditsPerUsd: Double,
+)
+
+@Serializable
+data class PlanAndCreditsProvider(
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("features") val features: ProviderFeatures,
+)
+
+/** The signed-in user's plan, what they could change to, and what the provider supports. */
+@Serializable
+data class PlanAndCredits(
+    @SerialName("plan") val plan: Plan? = null,
+    @SerialName("plans") val plans: List<Plan>,
+    @SerialName("packs") val packs: List<CreditPack>,
+    /** Top-ups of the user's own amount, or null when the provider can't take them or the operator turned them off. */
+    @SerialName("top_up") val topUp: PlanAndCreditsTopUp? = null,
+    @SerialName("provider") val provider: PlanAndCreditsProvider,
+)
+
+@Serializable(with = PlanInterval.Serializer::class)
+enum class PlanInterval(val value: String) {
+    Month("month"),
+    Year("year"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<PlanInterval> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("PlanInterval", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): PlanInterval = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: PlanInterval) = encoder.encodeString(value.value)
+    }
+}
+
+@Serializable
+data class Plan(
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("description") val description: String,
+    @SerialName("price") val price: Money,
+    @SerialName("interval") val interval: PlanInterval,
+    @SerialName("allowance") val allowance: PlanAllowance,
+    @SerialName("features") val features: List<String>,
+    /** Multiplier on wholesale cost for subscribers; null uses the instance default. */
+    @SerialName("markup") val markup: Double? = null,
+    @SerialName("active") val active: Boolean,
+)
+
+/** The payment and identity provider behind the engine, in the engine's terms: grants fund allocations, an allocation is a user's budget, usage is what was spent, a plan is the provider's plan. Nothing here is a second ledger: every amount is read from the provider. */
+@Serializable
+data class Money(
+    /** Decimal string, as the engine and providers report amounts. */
+    @SerialName("amount") val amount: String,
+    @SerialName("currency") val currency: String,
+)
+
+@Serializable(with = PlanAllowancePeriod.Serializer::class)
+enum class PlanAllowancePeriod(val value: String) {
+    Month("month"),
+    Year("year"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<PlanAllowancePeriod> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("PlanAllowancePeriod", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): PlanAllowancePeriod = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: PlanAllowancePeriod) = encoder.encodeString(value.value)
+    }
+}
+
+@Serializable
+data class PlanAllowance(
+    /** Credits included each period. */
+    @SerialName("credits") val credits: Double,
+    @SerialName("period") val period: PlanAllowancePeriod,
+    /** Months unused credits carry forward; 0 means they expire. */
+    @SerialName("rollover_months") val rolloverMonths: Double,
+)
+
+/** A one-off top-up the provider sells at a fixed price. Buying one adds to the user's allocation. */
+@Serializable
+data class CreditPack(
+    @SerialName("id") val id: String,
+    @SerialName("credits") val credits: Double,
+    @SerialName("price") val price: Money,
+    /** Shown first and marked to users. At most one pack is. */
+    @SerialName("popular") val popular: Boolean,
+    /** Offered to users. Packs are withdrawn rather than deleted, so past purchases still name them. */
+    @SerialName("active") val active: Boolean,
+)
+
+/** What the connected provider can do, so the UI can say so instead of failing. */
+@Serializable
+data class ProviderFeatures(
+    @SerialName("users") val users: Boolean,
+    @SerialName("grants") val grants: Boolean,
+    @SerialName("plans") val plans: Boolean,
+    @SerialName("allowances") val allowances: Boolean,
+    @SerialName("credit_packs") val creditPacks: Boolean,
+    /** Top-ups of an amount the user chooses. */
+    @SerialName("custom_top_up") val customTopUp: Boolean,
+    @SerialName("invoices") val invoices: Boolean,
+    @SerialName("oidc") val oidc: Boolean,
+)
+
+@Serializable(with = PreferencesDefaultAspect.Serializer::class)
+enum class PreferencesDefaultAspect(val value: String) {
+    V16x9("16:9"),
+    V9x16("9:16"),
+    V1x1("1:1"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<PreferencesDefaultAspect> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("PreferencesDefaultAspect", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): PreferencesDefaultAspect = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: PreferencesDefaultAspect) = encoder.encodeString(value.value)
+    }
+}
+
+@Serializable
+data class Preferences(
+    /** Confirmed to be 18 or over. Required before adult content can be switched on. */
+    @SerialName("ageConfirmed") val ageConfirmed: Boolean,
+    @SerialName("adultContent") val adultContent: Boolean,
+    @SerialName("saveChats") val saveChats: Boolean,
+    @SerialName("confirmBeforeSpending") val confirmBeforeSpending: Boolean,
+    @SerialName("enterSends") val enterSends: Boolean,
+    @SerialName("completionNotifications") val completionNotifications: Boolean,
+    @SerialName("defaultAspect") val defaultAspect: PreferencesDefaultAspect,
+    @SerialName("defaultDuration") val defaultDuration: Double,
+)
+
+/** How this instance treats what people make, in plain words. */
+@Serializable
+data class PrivacyDescription(
+    /** Whether the instance keeps prompts and outputs on its servers. */
+    @SerialName("retains_chats") val retainsChats: Boolean,
+    @SerialName("tiers") val tiers: List<PrivacyTier>,
+)
+
+/** Who can see a job, per way of running the instance. The same words on every surface. */
+@Serializable
+data class PrivacyTier(
+    @SerialName("name") val name: String,
+    /** Set when the tier isn't plainly available, such as "Planned, not available". */
+    @SerialName("status") val status: String? = null,
+    @SerialName("summary") val summary: String,
+    @SerialName("instance_sees") val instanceSees: String,
+    @SerialName("compute_sees") val computeSees: String,
+)
+
+@Serializable
 data class PromptStarter(
     @SerialName("id") val id: String,
     @SerialName("label") val label: String,
@@ -849,14 +1009,6 @@ data class UsageSummary(
     @SerialName("wholesale") val wholesale: Money,
     @SerialName("jobs") val jobs: Double,
     @SerialName("by_app") val byApp: List<UsageSummaryByApp>,
-)
-
-/** The payment and identity provider behind the engine, in the engine's terms: grants fund allocations, an allocation is a user's budget, usage is what was spent, a plan is the provider's plan. Nothing here is a second ledger: every amount is read from the provider. */
-@Serializable
-data class Money(
-    /** Decimal string, as the engine and providers report amounts. */
-    @SerialName("amount") val amount: String,
-    @SerialName("currency") val currency: String,
 )
 
 @Serializable(with = UsageEntryStatus.Serializer::class)

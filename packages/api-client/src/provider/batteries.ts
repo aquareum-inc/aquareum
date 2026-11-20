@@ -83,6 +83,7 @@ export function createBatteriesProvider(engine: { url: string; reader?: string; 
       getUser: unsupported("reading a user"),
       setUserStatus: unsupported("changing a user's status"),
       setUserRole: unsupported("roles"),
+      deleteUser: unsupported("deleting a user (engine question Q14)"),
     },
 
     budgets: {

@@ -182,6 +182,42 @@
             }
           }
         }
+      },
+      "delete": {
+        "operationId": "delete_account",
+        "summary": "Delete the signed-in person's account, on their own request: their phones are signed out and their blocks forgotten. This can't be undone.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/devices": {
@@ -1555,6 +1591,196 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account": {
+      "get": {
+        "operationId": "get_account",
+        "summary": "The user's plan, the plans and credit packs on offer, and what the payment provider supports.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanAndCredits"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/preferences": {
+      "get": {
+        "operationId": "get_preferences",
+        "summary": "The user's settings: saving conversations, asking before spending, default shape and length, and adult content.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "update_preferences",
+        "summary": "Change some of the user's settings. Adult content and the age confirmation can only be changed on the web, never from a phone.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "saveChats": {
+                    "type": "boolean",
+                    "description": "Keep conversations"
+                  },
+                  "confirmBeforeSpending": {
+                    "type": "boolean",
+                    "description": "Ask before spending credits in chat"
+                  },
+                  "enterSends": {
+                    "type": "boolean",
+                    "description": "Enter sends a message on the web"
+                  },
+                  "completionNotifications": {
+                    "type": "boolean",
+                    "description": "Say when a render finishes"
+                  },
+                  "defaultAspect": {
+                    "enum": [
+                      "16:9",
+                      "9:16",
+                      "1:1"
+                    ]
+                  },
+                  "defaultDuration": {
+                    "type": "number",
+                    "description": "Default length in seconds: 5, 10 or 15"
+                  },
+                  "ageConfirmed": {
+                    "type": "boolean",
+                    "description": "Confirmed to be 18 or over (web only)"
+                  },
+                  "adultContent": {
+                    "type": "boolean",
+                    "description": "Show adult content (web only)"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/privacy": {
+      "get": {
+        "operationId": "get_privacy",
+        "summary": "Who can see a job on this instance: the instance operator and the compute operator, for each way of running it.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyDescription"
                 }
               }
             }
@@ -3184,6 +3410,362 @@
         ],
         "additionalProperties": false
       },
+      "PlanAndCredits": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Plan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            }
+          },
+          "packs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreditPack"
+            }
+          },
+          "top_up": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "$ref": "#/components/schemas/Money"
+                  },
+                  "max": {
+                    "$ref": "#/components/schemas/Money"
+                  },
+                  "credits_per_usd": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max",
+                  "credits_per_usd"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Top-ups of the user's own amount, or null when the provider can't take them or the operator turned them off."
+          },
+          "provider": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "features": {
+                "$ref": "#/components/schemas/ProviderFeatures"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "features"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "plan",
+          "plans",
+          "packs",
+          "top_up",
+          "provider"
+        ],
+        "additionalProperties": false,
+        "description": "The signed-in user's plan, what they could change to, and what the provider supports."
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ]
+          },
+          "allowance": {
+            "$ref": "#/components/schemas/PlanAllowance"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "markup": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Multiplier on wholesale cost for subscribers; null uses the instance default."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price",
+          "interval",
+          "allowance",
+          "features",
+          "markup",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "Money": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Decimal string, as the engine and providers report amounts."
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "additionalProperties": false,
+        "description": "The payment and identity provider behind the engine, in the engine's terms: grants fund allocations, an allocation is a user's budget, usage is what was spent, a plan is the provider's plan. Nothing here is a second ledger: every amount is read from the provider."
+      },
+      "PlanAllowance": {
+        "type": "object",
+        "properties": {
+          "credits": {
+            "type": "number",
+            "description": "Credits included each period."
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ]
+          },
+          "rollover_months": {
+            "type": "number",
+            "description": "Months unused credits carry forward; 0 means they expire."
+          }
+        },
+        "required": [
+          "credits",
+          "period",
+          "rollover_months"
+        ],
+        "additionalProperties": false
+      },
+      "CreditPack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "number"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "popular": {
+            "type": "boolean",
+            "description": "Shown first and marked to users. At most one pack is."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Offered to users. Packs are withdrawn rather than deleted, so past purchases still name them."
+          }
+        },
+        "required": [
+          "id",
+          "credits",
+          "price",
+          "popular",
+          "active"
+        ],
+        "additionalProperties": false,
+        "description": "A one-off top-up the provider sells at a fixed price. Buying one adds to the user's allocation."
+      },
+      "ProviderFeatures": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "boolean"
+          },
+          "grants": {
+            "type": "boolean"
+          },
+          "plans": {
+            "type": "boolean"
+          },
+          "allowances": {
+            "type": "boolean"
+          },
+          "credit_packs": {
+            "type": "boolean"
+          },
+          "custom_top_up": {
+            "type": "boolean",
+            "description": "Top-ups of an amount the user chooses."
+          },
+          "invoices": {
+            "type": "boolean"
+          },
+          "oidc": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "users",
+          "grants",
+          "plans",
+          "allowances",
+          "credit_packs",
+          "custom_top_up",
+          "invoices",
+          "oidc"
+        ],
+        "additionalProperties": false,
+        "description": "What the connected provider can do, so the UI can say so instead of failing."
+      },
+      "Preferences": {
+        "type": "object",
+        "properties": {
+          "ageConfirmed": {
+            "type": "boolean",
+            "description": "Confirmed to be 18 or over. Required before adult content can be switched on."
+          },
+          "adultContent": {
+            "type": "boolean"
+          },
+          "saveChats": {
+            "type": "boolean"
+          },
+          "confirmBeforeSpending": {
+            "type": "boolean"
+          },
+          "enterSends": {
+            "type": "boolean"
+          },
+          "completionNotifications": {
+            "type": "boolean"
+          },
+          "defaultAspect": {
+            "type": "string",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1"
+            ]
+          },
+          "defaultDuration": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "ageConfirmed",
+          "adultContent",
+          "saveChats",
+          "confirmBeforeSpending",
+          "enterSends",
+          "completionNotifications",
+          "defaultAspect",
+          "defaultDuration"
+        ],
+        "additionalProperties": false
+      },
+      "PrivacyDescription": {
+        "type": "object",
+        "properties": {
+          "retains_chats": {
+            "type": "boolean",
+            "description": "Whether the instance keeps prompts and outputs on its servers."
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrivacyTier"
+            }
+          }
+        },
+        "required": [
+          "retains_chats",
+          "tiers"
+        ],
+        "additionalProperties": false,
+        "description": "How this instance treats what people make, in plain words."
+      },
+      "PrivacyTier": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set when the tier isn't plainly available, such as \"Planned, not available\"."
+          },
+          "summary": {
+            "type": "string"
+          },
+          "instance_sees": {
+            "type": "string"
+          },
+          "compute_sees": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "summary",
+          "instance_sees",
+          "compute_sees"
+        ],
+        "additionalProperties": false,
+        "description": "Who can see a job, per way of running the instance. The same words on every surface."
+      },
       "PromptStarter": {
         "type": "object",
         "properties": {
@@ -3494,24 +4076,6 @@
           "by_app"
         ],
         "additionalProperties": false
-      },
-      "Money": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "string",
-            "description": "Decimal string, as the engine and providers report amounts."
-          },
-          "currency": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "amount",
-          "currency"
-        ],
-        "additionalProperties": false,
-        "description": "The payment and identity provider behind the engine, in the engine's terms: grants fund allocations, an allocation is a user's budget, usage is what was spent, a plan is the provider's plan. Nothing here is a second ledger: every amount is read from the provider."
       },
       "UsageEntry": {
         "type": "object",

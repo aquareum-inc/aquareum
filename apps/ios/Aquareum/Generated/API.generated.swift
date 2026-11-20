@@ -29,6 +29,11 @@ struct API: Sendable {
         try await transport.send("GET", "/me", query: [:], body: nil)
     }
 
+    /// Delete the signed-in person's account, on their own request: their phones are signed out and their blocks forgotten. This can't be undone.
+    func deleteAccount() async throws -> Deleted {
+        try await transport.send("DELETE", "/me", query: [:], body: nil)
+    }
+
     /// List the phones and tablets signed in to the person's account, most recently used first.
     func listDevices() async throws -> [DeviceSession] {
         try await transport.send("GET", "/devices", query: [:], body: nil)
@@ -167,6 +172,27 @@ struct API: Sendable {
     /// Block a shared character: it, and everything else by its author, is hidden from the person from now on.
     func blockCharacter(slug: String) async throws -> CharacterBlock {
         try await transport.send("POST", "/characters/\(APITransport.escape(slug))/block", query: [:], body: nil)
+    }
+
+    /// The user's plan, the plans and credit packs on offer, and what the payment provider supports.
+    func getAccount() async throws -> PlanAndCredits {
+        try await transport.send("GET", "/account", query: [:], body: nil)
+    }
+
+    /// The user's settings: saving conversations, asking before spending, default shape and length, and adult content.
+    func getPreferences() async throws -> Preferences {
+        try await transport.send("GET", "/preferences", query: [:], body: nil)
+    }
+
+    /// Change some of the user's settings. Adult content and the age confirmation can only be changed on the web, never from a phone.
+    func updatePreferences(saveChats: Bool? = nil, confirmBeforeSpending: Bool? = nil, enterSends: Bool? = nil, completionNotifications: Bool? = nil, defaultAspect: String? = nil, defaultDuration: Double? = nil, ageConfirmed: Bool? = nil, adultContent: Bool? = nil) async throws -> Preferences {
+        try await transport.send("PATCH", "/preferences", query: [:], body: ["saveChats": saveChats.map { .bool($0) }, "confirmBeforeSpending": confirmBeforeSpending.map { .bool($0) }, "enterSends": enterSends.map { .bool($0) }, "completionNotifications": completionNotifications.map { .bool($0) }, "defaultAspect": defaultAspect.map { .string($0) }, "defaultDuration": defaultDuration.map { .number($0) }, "ageConfirmed": ageConfirmed.map { .bool($0) }, "adultContent": adultContent.map { .bool($0) }])
+    }
+
+    /// Who can see a job on this instance: the instance operator and the compute operator, for each way of running it.
+    /// Open to guests.
+    func getPrivacy() async throws -> PrivacyDescription {
+        try await transport.send("GET", "/privacy", query: [:], body: nil)
     }
 
     /// The user's credit balance and budget.

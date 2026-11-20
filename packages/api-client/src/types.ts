@@ -251,6 +251,23 @@ export interface CharacterInput {
   mature: boolean;
 }
 
+/** Who can see a job, per way of running the instance. The same words on every surface. */
+export interface PrivacyTier {
+  name: string;
+  /** Set when the tier isn't plainly available, such as "Planned, not available". */
+  status: string | null;
+  summary: string;
+  instance_sees: string;
+  compute_sees: string;
+}
+
+/** How this instance treats what people make, in plain words. */
+export interface PrivacyDescription {
+  /** Whether the instance keeps prompts and outputs on its servers. */
+  retains_chats: boolean;
+  tiers: PrivacyTier[];
+}
+
 /** Why someone reported a character. */
 export type ReportReason = "sexual" | "hateful" | "violent" | "impersonation" | "spam" | "other";
 

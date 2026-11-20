@@ -95,7 +95,7 @@ export interface Sourced<T> {
 }
 
 /** The signed-in user's plan, what they could change to, and what the provider supports. */
-export interface Account {
+export interface PlanAndCredits {
   plan: Plan | null;
   plans: Plan[];
   packs: CreditPack[];
@@ -135,7 +135,7 @@ export interface ApiClient {
   createCharacter(input: CharacterInput): Promise<Sourced<Character>>;
 
   getCreditBalance(): Promise<Sourced<CreditBalance>>;
-  getAccount(): Promise<Sourced<Account>>;
+  getAccount(): Promise<Sourced<PlanAndCredits>>;
   buyCreditPack(packId: string): Promise<Sourced<CreditBalance>>;
   /** A one-off top-up of an amount the user chooses, within the operator's limits. */
   buyCredits(amount: Money): Promise<Sourced<CreditBalance>>;
@@ -149,6 +149,8 @@ export interface ApiClient {
   verifyApiKey(secret: string): Promise<Sourced<ApiKey | null>>;
 
   getPreferences(): Promise<Sourced<Preferences>>;
+  /** Deletes the signed-in user's account with the identity provider, on their own request. */
+  deleteAccount(): Promise<Sourced<boolean>>;
   updatePreferences(patch: Partial<Preferences>): Promise<Sourced<Preferences>>;
 
   analyseVideo(input: { source: string; question: string }): Promise<Sourced<VideoAnalysis>>;
@@ -386,6 +388,11 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       return mock(verifyStoredKey(secret));
     },
 
+    async deleteAccount() {
+      await latency(300, 500);
+      await provider.identity.deleteUser(user.id);
+      return mock(true);
+    },
     async getPreferences() {
       await latency(60, 120);
       return mock(readStoredPreferences(user.id));

@@ -8,7 +8,7 @@ import { moderation } from "@/lib/moderation";
 import { instance } from "@/lib/instance";
 import { authenticate, carriesDeviceToken, guest, type Caller } from "@/lib/public-api/auth";
 import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
-import { agentModelMenu, capabilityLabels, studioMediums } from "@/lib/public-api/labels";
+import { agentModelMenu, capabilityLabels, privacyDescription, studioMediums } from "@/lib/public-api/labels";
 import { ApiError, matchOperation } from "@/lib/public-api/operations";
 
 export const dynamic = "force-dynamic";
@@ -64,7 +64,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   if (missing.length > 0) return error(400, `Missing: ${missing.join(", ")}`);
 
   try {
-    const value = await match.operation.run({ ...caller, devices: devices(), moderation: moderation(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, quote: quoteCredits }, input);
+    const value = await match.operation.run({ ...caller, devices: devices(), moderation: moderation(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, privacy: privacyDescription, quote: quoteCredits }, input);
     return request.method === "GET" ? read(request, value) : NextResponse.json(value);
   } catch (cause) {
     if (cause instanceof ApiError) return error(cause.status, cause.message, cause.code);

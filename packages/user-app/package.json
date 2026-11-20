@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./capability-menu": "./src/lib/capability-menu.ts",
-    "./studio-mediums": "./src/studio/mediums.ts"
+    "./studio-mediums": "./src/studio/mediums.ts",
+    "./privacy": "./src/settings/privacy-tiers.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

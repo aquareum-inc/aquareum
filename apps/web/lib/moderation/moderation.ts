@@ -34,6 +34,8 @@ export interface Moderation {
   reports(): CharacterReport[];
   /** The operator's decision on a report. Hiding takes the character down and closes its other open reports. */
   resolve(id: string, outcome: "dismissed" | "hidden"): CharacterReport | null;
+  /** Forgets a deleted account: its blocks go, and its reports stay without saying who sent them. */
+  forget(userId: string): void;
 }
 
 const publicReport = ({ reporter: _reporter, ...report }: StoredReport): CharacterReport => report;
@@ -73,6 +75,12 @@ export function moderation(store: ModerationStore, now: () => Date = () => new D
         .read()
         .reports.map(publicReport)
         .sort((a, b) => Number(b.state === "open") - Number(a.state === "open") || b.created_at.localeCompare(a.created_at));
+    },
+    forget(userId) {
+      store.update((contents) => {
+        contents.blocks = contents.blocks.filter((entry) => entry.userId !== userId);
+        for (const report of contents.reports) if (report.reporter === userId) report.reporter = "deleted";
+      });
     },
     resolve(id, outcome) {
       return store.update((contents) => {

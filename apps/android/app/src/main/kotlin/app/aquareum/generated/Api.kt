@@ -31,6 +31,10 @@ class Api(private val transport: ApiTransport) {
     suspend fun getMe(): Me =
         transport.send(Me.serializer(), "GET", "/me", query = emptyMap(), body = null)
 
+    /** Delete the signed-in person's account, on their own request: their phones are signed out and their blocks forgotten. This can't be undone. */
+    suspend fun deleteAccount(): Deleted =
+        transport.send(Deleted.serializer(), "DELETE", "/me", query = emptyMap(), body = null)
+
     /** List the phones and tablets signed in to the person's account, most recently used first. */
     suspend fun listDevices(): List<DeviceSession> =
         transport.send(ListSerializer(DeviceSession.serializer()), "GET", "/devices", query = emptyMap(), body = null)
@@ -134,6 +138,22 @@ class Api(private val transport: ApiTransport) {
     /** Block a shared character: it, and everything else by its author, is hidden from the person from now on. */
     suspend fun blockCharacter(slug: String): CharacterBlock =
         transport.send(CharacterBlock.serializer(), "POST", "/characters/${ApiTransport.escape(slug)}/block", query = emptyMap(), body = null)
+
+    /** The user's plan, the plans and credit packs on offer, and what the payment provider supports. */
+    suspend fun getAccount(): PlanAndCredits =
+        transport.send(PlanAndCredits.serializer(), "GET", "/account", query = emptyMap(), body = null)
+
+    /** The user's settings: saving conversations, asking before spending, default shape and length, and adult content. */
+    suspend fun getPreferences(): Preferences =
+        transport.send(Preferences.serializer(), "GET", "/preferences", query = emptyMap(), body = null)
+
+    /** Change some of the user's settings. Adult content and the age confirmation can only be changed on the web, never from a phone. */
+    suspend fun updatePreferences(saveChats: Boolean? = null, confirmBeforeSpending: Boolean? = null, enterSends: Boolean? = null, completionNotifications: Boolean? = null, defaultAspect: String? = null, defaultDuration: Double? = null, ageConfirmed: Boolean? = null, adultContent: Boolean? = null): Preferences =
+        transport.send(Preferences.serializer(), "PATCH", "/preferences", query = emptyMap(), body = mapOf("saveChats" to saveChats?.let { JsonPrimitive(it) }, "confirmBeforeSpending" to confirmBeforeSpending?.let { JsonPrimitive(it) }, "enterSends" to enterSends?.let { JsonPrimitive(it) }, "completionNotifications" to completionNotifications?.let { JsonPrimitive(it) }, "defaultAspect" to defaultAspect?.let { JsonPrimitive(it) }, "defaultDuration" to defaultDuration?.let { JsonPrimitive(it) }, "ageConfirmed" to ageConfirmed?.let { JsonPrimitive(it) }, "adultContent" to adultContent?.let { JsonPrimitive(it) }))
+
+    /** Who can see a job on this instance: the instance operator and the compute operator, for each way of running it. Open to guests. */
+    suspend fun getPrivacy(): PrivacyDescription =
+        transport.send(PrivacyDescription.serializer(), "GET", "/privacy", query = emptyMap(), body = null)
 
     /** The user's credit balance and budget. */
     suspend fun getBalance(): CreditBalance =

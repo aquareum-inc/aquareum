@@ -1,4 +1,5 @@
 import { MOCK_ONLY_DEMO_KEY, quoteCredits, createApiClient, createMockProvider, createOperatorClient, type DeviceSession, type InstanceDescription } from "@aquareum/api-client";
+import { describePrivacy } from "@aquareum/user-app/privacy";
 import { describeStudio } from "@aquareum/user-app/studio-mediums";
 import { describe, expect, it, vi } from "vitest";
 
@@ -34,7 +35,7 @@ const devices: DeviceAccess = {
 const agentModelMenu = async () => [];
 const studioMediums = async () => describeStudio([]);
 const desk = moderation(memoryStore<ModerationContents>({ reports: [], blocks: [], hidden: [] }));
-const base = { client, operator: null, account: null, devices, moderation: desk, instance, labels, agentModelMenu, studioMediums, quote: quoteCredits };
+const base = { client, operator: null, account: null, devices, moderation: desk, privacy: () => describePrivacy(false), instance, labels, agentModelMenu, studioMediums, quote: quoteCredits };
 const adam: Account = { user: { id: "usr_demo_adam", name: "Adam Soffer", email: "adam@example.test" }, deviceId: "dev_1" };
 
 describe("public API operations", () => {
@@ -90,12 +91,12 @@ describe("public API operations", () => {
 
   it("only reads are open to guests, apart from collecting a sign-in, and none of them is the operator's", () => {
     const open = OPERATIONS.filter((operation) => operation.public);
-    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_character", "get_instance", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_characters", "list_prompt_starters", "list_showcase", "list_studio_mediums", "quote_generation"]);
+    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_character", "get_instance", "get_privacy", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_characters", "list_prompt_starters", "list_showcase", "list_studio_mediums", "quote_generation"]);
     for (const operation of open) expect((operation.method === "GET" || operation.name === "create_device_session") && !operation.operator, operation.name).toBe(true);
   });
 
   it("keeps the apps' sign-in plumbing away from agents", () => {
-    expect(OPERATIONS.filter((operation) => operation.mcp === false).map((operation) => operation.name).sort()).toEqual(["create_device_session", "end_device_session"]);
+    expect(OPERATIONS.filter((operation) => operation.mcp === false).map((operation) => operation.name).sort()).toEqual(["create_device_session", "delete_account", "end_device_session"]);
   });
 
   it("collects a sign-in once, with a reason a client can act on when it can't", async () => {
@@ -181,5 +182,21 @@ describe("public API operations", () => {
     await expect(create.run(base, { name: "A".repeat(41), description: "x", greeting: "y" })).rejects.toMatchObject({ status: 400 });
     const made = await create.run(base, { name: "Wren", description: "A sound recordist who hears everything.", greeting: "Quiet on set.", visibility: "public", mature: true });
     expect(made).toMatchObject({ name: "Wren", visibility: "public", mature: false, mine: true });
+  });
+  it("keeps adult content off phones, and deletes an account with everything the instance holds for it", async () => {
+    const run = (name: string, input: Record<string, unknown>, account: Account | null = adam) => OPERATIONS.find((operation) => operation.name === name)!.run({ ...base, account }, input);
+    expect(await run("get_preferences", {})).toMatchObject({ saveChats: true, defaultAspect: "16:9" });
+    expect(await run("update_preferences", { defaultAspect: "9:16", defaultDuration: 10, saveChats: "no" })).toMatchObject({ defaultAspect: "9:16", defaultDuration: 10, saveChats: true });
+    await expect(run("update_preferences", { adultContent: true })).rejects.toMatchObject({ status: 403, code: "web_only" });
+    expect(await run("update_preferences", { ageConfirmed: true, adultContent: true }, { ...adam, deviceId: null })).toMatchObject({ adultContent: true });
+    expect(await run("get_account", {})).toMatchObject({ plans: expect.any(Array), provider: { features: expect.any(Object) } });
+    expect(await run("get_privacy", {}, null)).toMatchObject({ retains_chats: false, tiers: expect.arrayContaining([expect.objectContaining({ name: "Verified compute", status: "Planned, not available" })]) });
+
+    await expect(run("delete_account", {}, null)).rejects.toMatchObject({ status: 403, code: "account_required" });
+    desk.block(adam.user.id, (await run("get_character", { slug: "juno-live" })) as never);
+    expect(await run("delete_account", {})).toEqual({ deleted: true });
+    expect(devices.revokeAll).toHaveBeenCalledWith(adam.user.id);
+    expect(desk.visible(adam.user.id)({ slug: "juno-live", author: "relay-club", mine: false } as never)).toBe(true);
+    expect(await provider.identity.getUser(adam.user.id)).toBeNull();
   });
 });

@@ -129,6 +129,11 @@ export function createMockProvider(): PaymentProvider {
         user.role = role;
         return { ...user };
       },
+      async deleteUser(userId) {
+        state.users = state.users.filter((entry) => entry.id !== userId);
+        state.allocations = state.allocations.filter((entry) => entry.user_id !== userId);
+        state.assignments.delete(userId);
+      },
     },
 
     budgets: {

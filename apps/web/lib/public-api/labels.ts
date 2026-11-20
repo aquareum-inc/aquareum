@@ -1,10 +1,12 @@
 import "server-only";
 
-import type { AgentModelEntry, CapabilityLabel, StudioMedium } from "@aquareum/api-client";
+import type { AgentModelEntry, CapabilityLabel, PrivacyDescription, StudioMedium } from "@aquareum/api-client";
 import { agentModelEntries, appName, modelLabel, workLabel } from "@aquareum/user-app/capability-menu";
+import { describePrivacy } from "@aquareum/user-app/privacy";
 import { describeStudio } from "@aquareum/user-app/studio-mediums";
 
 import { apiFor } from "../api";
+import { instance } from "../instance";
 import { appModels } from "../models";
 
 /**
@@ -31,4 +33,9 @@ export async function agentModelMenu(): Promise<AgentModelEntry[]> {
 /** The studio's mediums and modes, as the web's studio has them, against what the network offers now. */
 export async function studioMediums(): Promise<StudioMedium[]> {
   return describeStudio((await apiFor(null).listOfferings()).data);
+}
+
+/** Who can see a job on this instance, as Settings ▸ Privacy says it. */
+export function privacyDescription(): PrivacyDescription {
+  return describePrivacy(instance().privacy?.retainChats ?? false);
 }

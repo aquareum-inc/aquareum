@@ -1,4 +1,4 @@
-import type { AgentModelEntry, ApiClient, CapabilityLabel, Character, ReportReason, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorClient } from "@aquareum/api-client";
+import type { AgentModelEntry, ApiClient, CapabilityLabel, Character, Preferences, PrivacyDescription, ReportReason, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorClient } from "@aquareum/api-client";
 
 import type { Moderation } from "../moderation/moderation";
 
@@ -37,6 +37,8 @@ interface Context {
   agentModelMenu: () => Promise<AgentModelEntry[]>;
   /** The studio's mediums and modes, as the interface shows them. */
   studioMediums: () => Promise<StudioMedium[]>;
+  /** Who can see a job on this instance, in the words every surface uses. */
+  privacy: () => PrivacyDescription;
   /** What one result of a draft would cost, in credits, as the web's studio quotes it. */
   quote: (request: GenerationRequest) => number;
 }
@@ -98,6 +100,17 @@ const found = <T>(value: T | null, what: string): T => {
   if (value === null) throw new ApiError(404, `${what} not found`);
   return value;
 };
+
+/** The settings a request changes, each only when it is present and of the right type. */
+function preferencesPatch(input: Record<string, unknown>): Partial<Preferences> {
+  const patch: Partial<Preferences> = {};
+  for (const key of ["saveChats", "confirmBeforeSpending", "enterSends", "completionNotifications", "ageConfirmed", "adultContent"] as const) {
+    if (typeof input[key] === "boolean") patch[key] = input[key];
+  }
+  if (input.defaultAspect === "16:9" || input.defaultAspect === "9:16" || input.defaultAspect === "1:1") patch.defaultAspect = input.defaultAspect;
+  if (input.defaultDuration === 5 || input.defaultDuration === 10 || input.defaultDuration === 15) patch.defaultDuration = input.defaultDuration;
+  return patch;
+}
 
 /** A character this caller may see: not for adults only, not taken down, not blocked. */
 async function character(context: Context, slug: string): Promise<Character> {
@@ -306,6 +319,47 @@ export const OPERATIONS: Operation[] = [
     input: object({ slug: text("The character's slug") }, ["slug"]),
     run: async (context, input) => context.moderation.block(signedIn(context).user.id, await shared(context, str(input, "slug"))),
   },
+  { name: "get_account", description: "The user's plan, the plans and credit packs on offer, and what the payment provider supports.", method: "GET", path: "/account", output: "PlanAndCredits", input: object({}), run: async ({ client }) => (await client.getAccount()).data },
+  { name: "get_preferences", description: "The user's settings: saving conversations, asking before spending, default shape and length, and adult content.", method: "GET", path: "/preferences", output: "Preferences", input: object({}), run: async ({ client }) => (await client.getPreferences()).data },
+  {
+    name: "update_preferences",
+    description: "Change some of the user's settings. Adult content and the age confirmation can only be changed on the web, never from a phone.",
+    method: "PATCH",
+    path: "/preferences",
+    output: "Preferences",
+    input: object({
+      saveChats: { type: "boolean", description: "Keep conversations" },
+      confirmBeforeSpending: { type: "boolean", description: "Ask before spending credits in chat" },
+      enterSends: { type: "boolean", description: "Enter sends a message on the web" },
+      completionNotifications: { type: "boolean", description: "Say when a render finishes" },
+      defaultAspect: { enum: ["16:9", "9:16", "1:1"] },
+      defaultDuration: { type: "number", description: "Default length in seconds: 5, 10 or 15" },
+      ageConfirmed: { type: "boolean", description: "Confirmed to be 18 or over (web only)" },
+      adultContent: { type: "boolean", description: "Show adult content (web only)" },
+    }),
+    run: async (context, input) => {
+      // App stores let adult content be switched on only on the website, so a phone can't change it.
+      if (context.account?.deviceId && ("adultContent" in input || "ageConfirmed" in input)) throw new ApiError(403, "Adult content can only be changed on the web.", "web_only");
+      return (await context.client.updatePreferences(preferencesPatch(input))).data;
+    },
+  },
+  {
+    name: "delete_account",
+    description: "Delete the signed-in person's account, on their own request: their phones are signed out and their blocks forgotten. This can't be undone.",
+    method: "DELETE",
+    path: "/me",
+    output: "Deleted",
+    mcp: false,
+    input: object({}),
+    run: async (context) => {
+      const { user } = signedIn(context);
+      await context.client.deleteAccount();
+      context.devices.revokeAll(user.id);
+      context.moderation.forget(user.id);
+      return { deleted: true };
+    },
+  },
+  { name: "get_privacy", description: "Who can see a job on this instance: the instance operator and the compute operator, for each way of running it.", method: "GET", path: "/privacy", output: "PrivacyDescription", public: true, input: object({}), run: async ({ privacy }) => privacy() },
   { name: "get_balance", description: "The user's credit balance and budget.", method: "GET", path: "/balance", output: "CreditBalance", input: object({}), run: async ({ client }) => (await client.getCreditBalance()).data },
   { name: "get_usage", description: "What the user has spent, by capability, and recent jobs.", method: "GET", path: "/usage", output: "Usage", input: object({}), run: async ({ client }) => (await client.getUsage()).data },
   {

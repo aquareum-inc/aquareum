@@ -780,6 +780,187 @@ struct RatePoint: Codable, Sendable, Hashable {
     }
 }
 
+struct PlanAndCreditsTopUp: Codable, Sendable, Hashable {
+    var min: Money
+    var max: Money
+    var creditsPerUsd: Double
+
+    enum CodingKeys: String, CodingKey {
+        case min
+        case max
+        case creditsPerUsd = "credits_per_usd"
+    }
+}
+
+struct PlanAndCreditsProvider: Codable, Sendable, Hashable {
+    var id: String
+    var name: String
+    var features: ProviderFeatures
+}
+
+/// The signed-in user's plan, what they could change to, and what the provider supports.
+struct PlanAndCredits: Codable, Sendable, Hashable {
+    var plan: Plan?
+    var plans: [Plan]
+    var packs: [CreditPack]
+    /// Top-ups of the user's own amount, or null when the provider can't take them or the operator turned them off.
+    var topUp: PlanAndCreditsTopUp?
+    var provider: PlanAndCreditsProvider
+
+    enum CodingKeys: String, CodingKey {
+        case plan
+        case plans
+        case packs
+        case topUp = "top_up"
+        case provider
+    }
+}
+
+enum PlanInterval: String, Codable, Sendable, Hashable, CaseIterable {
+    case month = "month"
+    case year = "year"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+struct Plan: Codable, Sendable, Hashable {
+    var id: String
+    var name: String
+    var description: String
+    var price: Money
+    var interval: PlanInterval
+    var allowance: PlanAllowance
+    var features: [String]
+    /// Multiplier on wholesale cost for subscribers; null uses the instance default.
+    var markup: Double?
+    var active: Bool
+}
+
+/// The payment and identity provider behind the engine, in the engine's terms: grants fund allocations, an allocation is a user's budget, usage is what was spent, a plan is the provider's plan. Nothing here is a second ledger: every amount is read from the provider.
+struct Money: Codable, Sendable, Hashable {
+    /// Decimal string, as the engine and providers report amounts.
+    var amount: String
+    var currency: String
+}
+
+enum PlanAllowancePeriod: String, Codable, Sendable, Hashable, CaseIterable {
+    case month = "month"
+    case year = "year"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+struct PlanAllowance: Codable, Sendable, Hashable {
+    /// Credits included each period.
+    var credits: Double
+    var period: PlanAllowancePeriod
+    /// Months unused credits carry forward; 0 means they expire.
+    var rolloverMonths: Double
+
+    enum CodingKeys: String, CodingKey {
+        case credits
+        case period
+        case rolloverMonths = "rollover_months"
+    }
+}
+
+/// A one-off top-up the provider sells at a fixed price. Buying one adds to the user's allocation.
+struct CreditPack: Codable, Sendable, Hashable {
+    var id: String
+    var credits: Double
+    var price: Money
+    /// Shown first and marked to users. At most one pack is.
+    var popular: Bool
+    /// Offered to users. Packs are withdrawn rather than deleted, so past purchases still name them.
+    var active: Bool
+}
+
+/// What the connected provider can do, so the UI can say so instead of failing.
+struct ProviderFeatures: Codable, Sendable, Hashable {
+    var users: Bool
+    var grants: Bool
+    var plans: Bool
+    var allowances: Bool
+    var creditPacks: Bool
+    /// Top-ups of an amount the user chooses.
+    var customTopUp: Bool
+    var invoices: Bool
+    var oidc: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case users
+        case grants
+        case plans
+        case allowances
+        case creditPacks = "credit_packs"
+        case customTopUp = "custom_top_up"
+        case invoices
+        case oidc
+    }
+}
+
+enum PreferencesDefaultAspect: String, Codable, Sendable, Hashable, CaseIterable {
+    case v16x9 = "16:9"
+    case v9x16 = "9:16"
+    case v1x1 = "1:1"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+struct Preferences: Codable, Sendable, Hashable {
+    /// Confirmed to be 18 or over. Required before adult content can be switched on.
+    var ageConfirmed: Bool
+    var adultContent: Bool
+    var saveChats: Bool
+    var confirmBeforeSpending: Bool
+    var enterSends: Bool
+    var completionNotifications: Bool
+    var defaultAspect: PreferencesDefaultAspect
+    var defaultDuration: Double
+}
+
+/// How this instance treats what people make, in plain words.
+struct PrivacyDescription: Codable, Sendable, Hashable {
+    /// Whether the instance keeps prompts and outputs on its servers.
+    var retainsChats: Bool
+    var tiers: [PrivacyTier]
+
+    enum CodingKeys: String, CodingKey {
+        case retainsChats = "retains_chats"
+        case tiers
+    }
+}
+
+/// Who can see a job, per way of running the instance. The same words on every surface.
+struct PrivacyTier: Codable, Sendable, Hashable {
+    var name: String
+    /// Set when the tier isn't plainly available, such as "Planned, not available".
+    var status: String?
+    var summary: String
+    var instanceSees: String
+    var computeSees: String
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case status
+        case summary
+        case instanceSees = "instance_sees"
+        case computeSees = "compute_sees"
+    }
+}
+
 struct PromptStarter: Codable, Sendable, Hashable {
     var id: String
     var label: String
@@ -936,13 +1117,6 @@ struct UsageSummary: Codable, Sendable, Hashable {
         case jobs
         case byApp = "by_app"
     }
-}
-
-/// The payment and identity provider behind the engine, in the engine's terms: grants fund allocations, an allocation is a user's budget, usage is what was spent, a plan is the provider's plan. Nothing here is a second ledger: every amount is read from the provider.
-struct Money: Codable, Sendable, Hashable {
-    /// Decimal string, as the engine and providers report amounts.
-    var amount: String
-    var currency: String
 }
 
 enum UsageEntryStatus: String, Codable, Sendable, Hashable, CaseIterable {

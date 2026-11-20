@@ -1,6 +1,6 @@
 "use client";
 
-import type { Account, CreditBalance, Money, Plan } from "@aquareum/api-client";
+import type { CreditBalance, Money, Plan, PlanAndCredits } from "@aquareum/api-client";
 import { topUpCredits } from "@aquareum/api-client/provider";
 import { Badge, Button, Card, RollingNumber, Section, Sheet, cn } from "@aquareum/ui";
 import { Check, Coins } from "lucide-react";
@@ -10,12 +10,12 @@ import { planLadder } from "../lib/plan-ladder";
 import { useCredits } from "../shell/credits";
 
 export interface PlanSettingsProps {
-  account: Account;
+  account: PlanAndCredits;
   balance: CreditBalance;
   buyPack: (packId: string) => Promise<CreditBalance>;
   /** A top-up of the user's own amount; offered when the account has a top-up range. */
   buyCredits: (amount: Money) => Promise<CreditBalance>;
-  changePlan: (planId: string | null) => Promise<Account["plan"]>;
+  changePlan: (planId: string | null) => Promise<PlanAndCredits["plan"]>;
 }
 
 const money = (amount: string, currency: string) => new Intl.NumberFormat("en", { style: "currency", currency, maximumFractionDigits: Number(amount) % 1 === 0 ? 0 : 2 }).format(Number(amount));

@@ -32,8 +32,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { api } from "./api";
-import { getSession } from "./auth/session";
+import { clearSession, getSession } from "./auth/session";
 import { adultContent, charactersEnabled } from "./content";
+import { devices } from "./devices";
 import { moderation } from "./moderation";
 
 /** Every action is a signed-in user's call to one API client function. A guest is sent to sign in. */
@@ -99,6 +100,24 @@ export async function blockCharacterAction(slug: string): Promise<CharacterBlock
   const blocked = moderation().block(userId, character);
   revalidatePath("/characters");
   return blocked;
+}
+
+/** Deletes the signed-in person's account (`delete_account`): their phones are signed out, their blocks forgotten. */
+export async function deleteAccountAction(): Promise<void> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  await (await api()).deleteAccount();
+  devices().revokeAll(session.userId);
+  moderation().forget(session.userId);
+  await clearSession();
+  redirect("/");
+}
+
+/** Signs one of the person's phones or tablets out (`revoke_device`). */
+export async function revokeDeviceAction(id: string): Promise<boolean> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  return devices().revoke(session.userId, id);
 }
 
 export async function createApiKeyAction(label: string): Promise<CreatedApiKey> {

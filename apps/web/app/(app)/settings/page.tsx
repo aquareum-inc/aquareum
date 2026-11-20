@@ -2,6 +2,7 @@ import { ProfileSettings, SettingsLayout } from "@aquareum/user-app";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { deleteAccountAction } from "@/lib/actions";
 import { getSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -11,7 +12,7 @@ export default async function ProfilePage() {
   if (!session) redirect("/sign-in");
   return (
     <SettingsLayout current="/settings">
-      <ProfileSettings name={session.name} email={session.email} role={session.role} signOutAction="/auth/sign-out" />
+      <ProfileSettings name={session.name} email={session.email} role={session.role} signOutAction="/auth/sign-out" deleteAccount={deleteAccountAction} />
     </SettingsLayout>
   );
 }

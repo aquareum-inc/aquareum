@@ -35,6 +35,7 @@ export const DATA_SOURCES = {
   revokeApiKey: "mock",
   verifyApiKey: "mock",
   getPreferences: "mock",
+  deleteAccount: "mock",
   updatePreferences: "mock",
   analyseVideo: "mock",
   listLiveLooks: "mock",
