@@ -10,7 +10,8 @@ export const metadata: Metadata = { title: "Capabilities" };
 
 export default async function CapabilitiesPage() {
   const client = await operatorApi();
-  const { capabilities } = instance();
+  const { capabilities, surfaces, mobile } = instance();
+  const phones = surfaces.mobile === true && Boolean(mobile?.ios?.bundleId || mobile?.android?.applicationId);
   const offerings = await client.listOfferings();
   const rows = await Promise.all(
     offerings.data.map(async (offering) => {
@@ -29,6 +30,7 @@ export default async function CapabilitiesPage() {
       rows={rows}
       defaultMarkup={pricing().default}
       update={updateCapabilityAction}
+      placing={surfaces.app || phones}
       sources={[{ name: "listOfferings", source: offerings.source }, { name: "updateCapabilitySetting", source: "mock" }]}
     />
   );

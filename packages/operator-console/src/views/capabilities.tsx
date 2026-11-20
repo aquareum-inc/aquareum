@@ -22,6 +22,8 @@ export interface CapabilitiesViewProps {
   defaultMarkup: number;
   update: (app: string, patch: Partial<Omit<CapabilitySetting, "app">>) => Promise<CapabilitySetting>;
   sources: ReadonlyArray<{ name: string; source: DataSource }>;
+  /** False when neither the user app nor the phone apps are on, so nothing shows a capability on a surface. */
+  placing: boolean;
 }
 
 const SURFACES = ["chat", "studio", "characters", "library", "live"];
@@ -34,7 +36,7 @@ function wholesale(offering: Offering): string {
   return `$${amount < 0.01 ? amount.toPrecision(1) : amount.toFixed(2)}${perSecond ? "/hr" : ""}`;
 }
 
-export function CapabilitiesView({ rows: initial, defaultMarkup, update, sources }: CapabilitiesViewProps) {
+export function CapabilitiesView({ rows: initial, defaultMarkup, update, sources, placing }: CapabilitiesViewProps) {
   const [rows, setRows] = useState(initial);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -65,7 +67,7 @@ export function CapabilitiesView({ rows: initial, defaultMarkup, update, sources
             <thead>
               <tr className="border-b border-hairline text-left text-[11px] font-medium uppercase tracking-[0.04em] text-subtle-foreground">
                 <th scope="col" className="h-9 pl-4 pr-3 font-medium">Capability</th>
-                <th scope="col" className="hidden h-9 px-3 font-medium lg:table-cell">Appears in</th>
+                {placing ? <th scope="col" className="hidden h-9 px-3 font-medium lg:table-cell">Appears in</th> : null}
                 <th scope="col" className="hidden h-9 px-3 text-right font-medium md:table-cell">Runners</th>
                 <th scope="col" className="h-9 px-3 text-right font-medium">Wholesale</th>
                 <th scope="col" className="h-9 px-3 text-right font-medium">Markup</th>
@@ -85,7 +87,7 @@ export function CapabilitiesView({ rows: initial, defaultMarkup, update, sources
                       </p>
                       <p className="font-mono text-[11px] text-subtle-foreground">{offering.app} · {kind}</p>
                     </td>
-                    <td className="hidden px-3 lg:table-cell">
+                    {placing ? <td className="hidden px-3 lg:table-cell">
                       <div className="flex flex-wrap gap-1" role="group" aria-label={`Surfaces for ${offering.app}`}>
                         {SURFACES.map((surface) => {
                           const on = shown.includes(surface);
@@ -102,7 +104,7 @@ export function CapabilitiesView({ rows: initial, defaultMarkup, update, sources
                           );
                         })}
                       </div>
-                    </td>
+                    </td> : null}
                     <td className="hidden px-3 text-right font-mono text-[12px] text-muted-foreground md:table-cell">{offering.ready_count}/{offering.runner_count}</td>
                     <td className="px-3 text-right font-mono text-[12px] text-muted-foreground">{wholesale(offering)}</td>
                     <td className="px-3 text-right">
