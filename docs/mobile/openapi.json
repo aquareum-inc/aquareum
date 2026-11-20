@@ -528,6 +528,113 @@
         }
       }
     },
+    "/studio": {
+      "get": {
+        "operationId": "list_studio_mediums",
+        "summary": "List the studio's mediums (video, image, audio) as the interface shows them: each one's modes, with the capability each mode runs and whether it is on offer, and its shapes, lengths and resolutions.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudioMedium"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generations/quote": {
+      "get": {
+        "operationId": "quote_generation",
+        "summary": "What one result of a generation would cost in credits, before starting it.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "video",
+                "image",
+                "audio"
+              ]
+            }
+          },
+          {
+            "name": "app",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Capability to use"
+            }
+          },
+          {
+            "name": "duration_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "720p",
+                "1080p",
+                null
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/generations": {
       "post": {
         "operationId": "create_generation",
@@ -2783,6 +2890,19 @@
         ],
         "additionalProperties": false
       },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "credits": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "credits"
+        ],
+        "additionalProperties": false,
+        "description": "What one result of a draft would cost."
+      },
       "ShowcaseItem": {
         "type": "object",
         "properties": {
@@ -2839,6 +2959,151 @@
         ],
         "additionalProperties": false,
         "description": "An example in the instance's gallery. Instance content; no engine endpoint."
+      },
+      "StudioMedium": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/MediaKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "aspects": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "16:9",
+                    "9:16",
+                    "1:1"
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolutions": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "720p",
+                    "1080p"
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompt_limit": {
+            "type": "number"
+          },
+          "max_variants": {
+            "type": "number",
+            "description": "How many results one Generate can make at once."
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioMode"
+            }
+          },
+          "empty": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "body": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "title",
+              "body"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "aspects",
+          "resolutions",
+          "prompt_limit",
+          "max_variants",
+          "modes",
+          "empty"
+        ],
+        "additionalProperties": false,
+        "description": "A studio medium as the interface shows it: its modes, its settings and what its empty stage says."
+      },
+      "StudioMode": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "placeholder": {
+            "type": "string"
+          },
+          "app": {
+            "type": "string",
+            "description": "The capability a draft in this mode runs: one on offer, or the usual one when none is."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Some compute operator offers it right now; without one, Generate stays off."
+          },
+          "durations": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The inputs the mode takes beside the words, such as \"First frame\"."
+          },
+          "needs_input": {
+            "type": "boolean",
+            "description": "The mode only makes sense with an input (a source to edit, references to follow)."
+          }
+        },
+        "required": [
+          "value",
+          "label",
+          "placeholder",
+          "app",
+          "available",
+          "durations",
+          "inputs",
+          "needs_input"
+        ],
+        "additionalProperties": false,
+        "description": "One way of working in a studio medium, resolved against what the network offers right now."
       },
       "Usage": {
         "type": "object",

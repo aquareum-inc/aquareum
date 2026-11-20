@@ -80,6 +80,18 @@ struct API: Sendable {
         try await transport.send("POST", "/run", query: [:], body: ["app": .string(app), "request": request.map { $0 }])
     }
 
+    /// List the studio's mediums (video, image, audio) as the interface shows them: each one's modes, with the capability each mode runs and whether it is on offer, and its shapes, lengths and resolutions.
+    /// Open to guests.
+    func listStudioMediums() async throws -> [StudioMedium] {
+        try await transport.send("GET", "/studio", query: [:], body: nil)
+    }
+
+    /// What one result of a generation would cost in credits, before starting it.
+    /// Open to guests.
+    func quoteGeneration(kind: String, app: String, durationSeconds: Double? = nil, resolution: String? = nil) async throws -> Quote {
+        try await transport.send("GET", "/generations/quote", query: ["kind": .string(kind), "app": .string(app), "duration_seconds": durationSeconds.map { .number($0) }, "resolution": resolution.map { .string($0) }], body: nil)
+    }
+
     /// Generate a video, image or audio clip. Returns a job to poll with get_generation.
     func createGeneration(kind: String, app: String, prompt: String, aspect: String? = nil, durationSeconds: Double? = nil, resolution: String? = nil, negativePrompt: String? = nil) async throws -> Generation {
         try await transport.send("POST", "/generations", query: [:], body: ["kind": .string(kind), "app": .string(app), "prompt": .string(prompt), "aspect": aspect.map { .string($0) }, "duration_seconds": durationSeconds.map { .number($0) }, "resolution": resolution.map { .string($0) }, "negative_prompt": negativePrompt.map { .string($0) }])

@@ -455,6 +455,40 @@ export interface AgentModelEntry {
   busy: boolean;
 }
 
+/** One way of working in a studio medium, resolved against what the network offers right now. */
+export interface StudioMode {
+  value: string;
+  label: string;
+  placeholder: string;
+  /** The capability a draft in this mode runs: one on offer, or the usual one when none is. */
+  app: string;
+  /** Some compute operator offers it right now; without one, Generate stays off. */
+  available: boolean;
+  durations: number[] | null;
+  /** The inputs the mode takes beside the words, such as "First frame". */
+  inputs: string[];
+  /** The mode only makes sense with an input (a source to edit, references to follow). */
+  needs_input: boolean;
+}
+
+/** A studio medium as the interface shows it: its modes, its settings and what its empty stage says. */
+export interface StudioMedium {
+  kind: MediaKind;
+  label: string;
+  aspects: Array<"16:9" | "9:16" | "1:1"> | null;
+  resolutions: Array<"720p" | "1080p"> | null;
+  prompt_limit: number;
+  /** How many results one Generate can make at once. */
+  max_variants: number;
+  modes: StudioMode[];
+  empty: { title: string; body: string };
+}
+
+/** What one result of a draft would cost. */
+export interface Quote {
+  credits: number;
+}
+
 /** The answer to a delete. */
 export interface Deleted {
   deleted: boolean;

@@ -67,6 +67,14 @@ class Api(private val transport: ApiTransport) {
     suspend fun runCapability(app: String, request: JsonElement? = null): CapabilityRun =
         transport.send(CapabilityRun.serializer(), "POST", "/run", query = emptyMap(), body = mapOf("app" to JsonPrimitive(app), "request" to request?.let { it }))
 
+    /** List the studio's mediums (video, image, audio) as the interface shows them: each one's modes, with the capability each mode runs and whether it is on offer, and its shapes, lengths and resolutions. Open to guests. */
+    suspend fun listStudioMediums(): List<StudioMedium> =
+        transport.send(ListSerializer(StudioMedium.serializer()), "GET", "/studio", query = emptyMap(), body = null)
+
+    /** What one result of a generation would cost in credits, before starting it. Open to guests. */
+    suspend fun quoteGeneration(kind: String, app: String, durationSeconds: Double? = null, resolution: String? = null): Quote =
+        transport.send(Quote.serializer(), "GET", "/generations/quote", query = mapOf("kind" to JsonPrimitive(kind), "app" to JsonPrimitive(app), "duration_seconds" to durationSeconds?.let { JsonPrimitive(it) }, "resolution" to resolution?.let { JsonPrimitive(it) }), body = null)
+
     /** Generate a video, image or audio clip. Returns a job to poll with get_generation. */
     suspend fun createGeneration(kind: String, app: String, prompt: String, aspect: String? = null, durationSeconds: Double? = null, resolution: String? = null, negativePrompt: String? = null): Generation =
         transport.send(Generation.serializer(), "POST", "/generations", query = emptyMap(), body = mapOf("kind" to JsonPrimitive(kind), "app" to JsonPrimitive(app), "prompt" to JsonPrimitive(prompt), "aspect" to aspect?.let { JsonPrimitive(it) }, "duration_seconds" to durationSeconds?.let { JsonPrimitive(it) }, "resolution" to resolution?.let { JsonPrimitive(it) }, "negative_prompt" to negativePrompt?.let { JsonPrimitive(it) }))

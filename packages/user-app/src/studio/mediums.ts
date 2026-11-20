@@ -1,4 +1,4 @@
-import type { MediaKind, Offering } from "@aquareum/api-client/types";
+import type { MediaKind, Offering, StudioMedium } from "@aquareum/api-client/types";
 import { AudioLines, Clapperboard, Film, Image as ImageIcon, ImagePlus, Images, Mic, type LucideIcon } from "lucide-react";
 
 export type Medium = MediaKind;
@@ -20,6 +20,8 @@ export interface ModeSpec {
   /** Used for the request when discovery has no matching app, so the draft can still be written. */
   fallbackApp: string;
   durations?: number[];
+  /** The mode only makes sense with an input: a source to edit, or references to follow. */
+  needsInput?: boolean;
 }
 
 export interface MediumSpec {
@@ -65,6 +67,7 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
         apps: /^(text|image)-to-video$/,
         fallbackApp: "image-to-video",
         durations: [5, 10, 15],
+        needsInput: true,
       },
       {
         value: "edit",
@@ -77,6 +80,7 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
         apps: /^video-to-video$/,
         fallbackApp: "video-to-video",
         durations: [5, 10, 15],
+        needsInput: true,
       },
     ],
     empty: {
@@ -111,6 +115,7 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
         ],
         apps: /^image-edit$/,
         fallbackApp: "image-edit",
+        needsInput: true,
       },
     ],
     empty: {
@@ -160,4 +165,36 @@ export function isMedium(value: string): value is Medium {
 
 export function offeringsFor(mode: ModeSpec, offerings: ReadonlyArray<Offering>): Offering[] {
   return offerings.filter((offering) => offering.modes.includes("single-shot") && mode.apps.test(offering.app));
+}
+
+/**
+ * The studio as clients that can't run this file read it (the native apps): every medium and mode, with
+ * each mode's capability resolved against what the network offers now.
+ */
+export function describeStudio(offerings: ReadonlyArray<Offering>): StudioMedium[] {
+  return MEDIUM_ORDER.map((kind) => {
+    const spec = MEDIUMS[kind];
+    return {
+      kind,
+      label: spec.label,
+      aspects: spec.aspects,
+      resolutions: spec.resolutions,
+      prompt_limit: spec.promptLimit,
+      max_variants: spec.maxVariants,
+      empty: spec.empty,
+      modes: spec.modes.map((mode) => {
+        const offered = offeringsFor(mode, offerings);
+        return {
+          value: mode.value,
+          label: mode.label,
+          placeholder: mode.placeholder,
+          app: offered[0]?.app ?? mode.fallbackApp,
+          available: offered.length > 0,
+          durations: mode.durations ?? null,
+          inputs: mode.slots.map((slot) => slot.label),
+          needs_input: mode.needsInput ?? false,
+        };
+      }),
+    };
+  });
 }

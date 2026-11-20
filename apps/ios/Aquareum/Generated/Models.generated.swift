@@ -722,6 +722,11 @@ struct PromptStarter: Codable, Sendable, Hashable {
     var examples: [String]
 }
 
+/// What one result of a draft would cost.
+struct Quote: Codable, Sendable, Hashable {
+    var credits: Double
+}
+
 enum ShowcaseItemAspect: String, Codable, Sendable, Hashable, CaseIterable {
     case v16x9 = "16:9"
     case v9x16 = "9:16"
@@ -757,6 +762,85 @@ struct ShowcaseItem: Codable, Sendable, Hashable {
         case durationSeconds = "duration_seconds"
         case image
         case artwork
+    }
+}
+
+enum StudioMediumAspects: String, Codable, Sendable, Hashable, CaseIterable {
+    case v16x9 = "16:9"
+    case v9x16 = "9:16"
+    case v1x1 = "1:1"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+enum StudioMediumResolutions: String, Codable, Sendable, Hashable, CaseIterable {
+    case v720p = "720p"
+    case v1080p = "1080p"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+struct StudioMediumEmpty: Codable, Sendable, Hashable {
+    var title: String
+    var body: String
+}
+
+/// A studio medium as the interface shows it: its modes, its settings and what its empty stage says.
+struct StudioMedium: Codable, Sendable, Hashable {
+    var kind: MediaKind
+    var label: String
+    var aspects: [StudioMediumAspects]?
+    var resolutions: [StudioMediumResolutions]?
+    var promptLimit: Double
+    /// How many results one Generate can make at once.
+    var maxVariants: Double
+    var modes: [StudioMode]
+    var empty: StudioMediumEmpty
+
+    enum CodingKeys: String, CodingKey {
+        case kind
+        case label
+        case aspects
+        case resolutions
+        case promptLimit = "prompt_limit"
+        case maxVariants = "max_variants"
+        case modes
+        case empty
+    }
+}
+
+/// One way of working in a studio medium, resolved against what the network offers right now.
+struct StudioMode: Codable, Sendable, Hashable {
+    var value: String
+    var label: String
+    var placeholder: String
+    /// The capability a draft in this mode runs: one on offer, or the usual one when none is.
+    var app: String
+    /// Some compute operator offers it right now; without one, Generate stays off.
+    var available: Bool
+    var durations: [Double]?
+    /// The inputs the mode takes beside the words, such as "First frame".
+    var inputs: [String]
+    /// The mode only makes sense with an input (a source to edit, references to follow).
+    var needsInput: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case value
+        case label
+        case placeholder
+        case app
+        case available
+        case durations
+        case inputs
+        case needsInput = "needs_input"
     }
 }
 

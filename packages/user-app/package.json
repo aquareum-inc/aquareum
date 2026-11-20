@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./capability-menu": "./src/lib/capability-menu.ts"
+    "./capability-menu": "./src/lib/capability-menu.ts",
+    "./studio-mediums": "./src/studio/mediums.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

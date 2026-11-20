@@ -1,4 +1,5 @@
-import { MOCK_ONLY_DEMO_KEY, createApiClient, createMockProvider, createOperatorClient, type DeviceSession, type InstanceDescription } from "@aquareum/api-client";
+import { MOCK_ONLY_DEMO_KEY, quoteCredits, createApiClient, createMockProvider, createOperatorClient, type DeviceSession, type InstanceDescription } from "@aquareum/api-client";
+import { describeStudio } from "@aquareum/user-app/studio-mediums";
 import { describe, expect, it, vi } from "vitest";
 
 import { ApiError, OPERATIONS, matchOperation, type Account, type DeviceAccess } from "./operations";
@@ -29,7 +30,8 @@ const devices: DeviceAccess = {
   revokeAll: vi.fn(() => 1),
 };
 const agentModelMenu = async () => [];
-const base = { client, operator: null, account: null, devices, instance, labels, agentModelMenu };
+const studioMediums = async () => describeStudio([]);
+const base = { client, operator: null, account: null, devices, instance, labels, agentModelMenu, studioMediums, quote: quoteCredits };
 const adam: Account = { user: { id: "usr_demo_adam", name: "Adam Soffer", email: "adam@example.test" }, deviceId: "dev_1" };
 
 describe("public API operations", () => {
@@ -85,7 +87,7 @@ describe("public API operations", () => {
 
   it("only reads are open to guests, apart from collecting a sign-in, and none of them is the operator's", () => {
     const open = OPERATIONS.filter((operation) => operation.public);
-    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_instance", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_prompt_starters", "list_showcase"]);
+    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_instance", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_prompt_starters", "list_showcase", "list_studio_mediums", "quote_generation"]);
     for (const operation of open) expect((operation.method === "GET" || operation.name === "create_device_session") && !operation.operator, operation.name).toBe(true);
   });
 
@@ -136,5 +138,14 @@ describe("public API operations", () => {
     expect(Object.keys((send.input as { properties: object }).properties)).toEqual(expect.arrayContaining(["app", "aspect", "duration_seconds"]));
     const conversation = (await run("create_conversation", { text: "A heron on a still pond" })) as { id: string };
     expect(await run("send_message", { id: conversation.id, text: "Make it vertical", aspect: "9:16", duration_seconds: 10 })).toMatchObject({ id: conversation.id });
+  });
+
+  it("describes the studio and quotes a draft the way the web does", async () => {
+    const run = (name: string, input: Record<string, unknown>) => OPERATIONS.find((operation) => operation.name === name)!.run(base, input);
+    const studio = (await run("list_studio_mediums", {})) as Array<{ kind: string; modes: Array<{ value: string; available: boolean; needs_input: boolean }> }>;
+    expect(studio.map((medium) => medium.kind)).toEqual(["video", "image", "audio"]);
+    expect(studio[0]!.modes.find((mode) => mode.value === "edit")).toMatchObject({ needs_input: true, available: false });
+    expect(await run("quote_generation", { kind: "video", app: "text-to-video", duration_seconds: "10", resolution: "1080p" })).toEqual({ credits: 176 });
+    expect(await run("quote_generation", { kind: "image", app: "text-to-image" })).toEqual({ credits: 4 });
   });
 });

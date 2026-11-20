@@ -663,6 +663,12 @@ data class PromptStarter(
     @SerialName("examples") val examples: List<String>,
 )
 
+/** What one result of a draft would cost. */
+@Serializable
+data class Quote(
+    @SerialName("credits") val credits: Double,
+)
+
 @Serializable(with = ShowcaseItemAspect.Serializer::class)
 enum class ShowcaseItemAspect(val value: String) {
     V16x9("16:9"),
@@ -692,6 +698,74 @@ data class ShowcaseItem(
     /** A still of the result, when there is one. Tiles without one show `artwork`. */
     @SerialName("image") val image: String? = null,
     @SerialName("artwork") val artwork: MockArtwork,
+)
+
+@Serializable(with = StudioMediumAspects.Serializer::class)
+enum class StudioMediumAspects(val value: String) {
+    V16x9("16:9"),
+    V9x16("9:16"),
+    V1x1("1:1"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<StudioMediumAspects> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("StudioMediumAspects", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): StudioMediumAspects = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: StudioMediumAspects) = encoder.encodeString(value.value)
+    }
+}
+
+@Serializable(with = StudioMediumResolutions.Serializer::class)
+enum class StudioMediumResolutions(val value: String) {
+    V720p("720p"),
+    V1080p("1080p"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<StudioMediumResolutions> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("StudioMediumResolutions", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): StudioMediumResolutions = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: StudioMediumResolutions) = encoder.encodeString(value.value)
+    }
+}
+
+@Serializable
+data class StudioMediumEmpty(
+    @SerialName("title") val title: String,
+    @SerialName("body") val body: String,
+)
+
+/** A studio medium as the interface shows it: its modes, its settings and what its empty stage says. */
+@Serializable
+data class StudioMedium(
+    @SerialName("kind") val kind: MediaKind,
+    @SerialName("label") val label: String,
+    @SerialName("aspects") val aspects: List<StudioMediumAspects>? = null,
+    @SerialName("resolutions") val resolutions: List<StudioMediumResolutions>? = null,
+    @SerialName("prompt_limit") val promptLimit: Double,
+    /** How many results one Generate can make at once. */
+    @SerialName("max_variants") val maxVariants: Double,
+    @SerialName("modes") val modes: List<StudioMode>,
+    @SerialName("empty") val empty: StudioMediumEmpty,
+)
+
+/** One way of working in a studio medium, resolved against what the network offers right now. */
+@Serializable
+data class StudioMode(
+    @SerialName("value") val value: String,
+    @SerialName("label") val label: String,
+    @SerialName("placeholder") val placeholder: String,
+    /** The capability a draft in this mode runs: one on offer, or the usual one when none is. */
+    @SerialName("app") val app: String,
+    /** Some compute operator offers it right now; without one, Generate stays off. */
+    @SerialName("available") val available: Boolean,
+    @SerialName("durations") val durations: List<Double>? = null,
+    /** The inputs the mode takes beside the words, such as "First frame". */
+    @SerialName("inputs") val inputs: List<String>,
+    /** The mode only makes sense with an input (a source to edit, references to follow). */
+    @SerialName("needs_input") val needsInput: Boolean,
 )
 
 /** What a user has spent: totals by capability, and their recent jobs. */

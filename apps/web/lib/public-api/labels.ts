@@ -1,7 +1,8 @@
 import "server-only";
 
-import type { AgentModelEntry, CapabilityLabel } from "@aquareum/api-client";
+import type { AgentModelEntry, CapabilityLabel, StudioMedium } from "@aquareum/api-client";
 import { agentModelEntries, appName, modelLabel, workLabel } from "@aquareum/user-app/capability-menu";
+import { describeStudio } from "@aquareum/user-app/studio-mediums";
 
 import { apiFor } from "../api";
 import { appModels } from "../models";
@@ -25,4 +26,9 @@ export async function capabilityLabels(): Promise<CapabilityLabel[]> {
 export async function agentModelMenu(): Promise<AgentModelEntry[]> {
   const models = (await apiFor(null).listAgentModels()).data;
   return agentModelEntries(models).map((entry) => ({ ...entry, also: entry.also ?? [] }));
+}
+
+/** The studio's mediums and modes, as the web's studio has them, against what the network offers now. */
+export async function studioMediums(): Promise<StudioMedium[]> {
+  return describeStudio((await apiFor(null).listOfferings()).data);
 }

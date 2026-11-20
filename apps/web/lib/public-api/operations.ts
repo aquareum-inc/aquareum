@@ -1,4 +1,4 @@
-import type { AgentModelEntry, ApiClient, CapabilityLabel, DeviceSession, DeviceToken, InstanceDescription, OperatorClient } from "@aquareum/api-client";
+import type { AgentModelEntry, ApiClient, CapabilityLabel, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorClient } from "@aquareum/api-client";
 
 type Schema = Record<string, unknown>;
 
@@ -31,6 +31,10 @@ interface Context {
   labels: () => Promise<CapabilityLabel[]>;
   /** The agent's model menu, as the interface shows it. */
   agentModelMenu: () => Promise<AgentModelEntry[]>;
+  /** The studio's mediums and modes, as the interface shows them. */
+  studioMediums: () => Promise<StudioMedium[]>;
+  /** What one result of a draft would cost, in credits, as the web's studio quotes it. */
+  quote: (request: GenerationRequest) => number;
 }
 
 /**
@@ -155,6 +159,27 @@ export const OPERATIONS: Operation[] = [
   { name: "list_capability_labels", description: "List the readable name of each capability on offer and each model the agent can run on, as the interface shows it, with the model that does the work when known.", method: "GET", path: "/offerings/labels", output: ["CapabilityLabel"], public: true, input: object({}), run: async ({ labels }) => labels() },
   { name: "list_capabilities", description: "List the capabilities discovered on the network that this instance offers.", method: "GET", path: "/offerings", output: ["Offering"], public: true, input: object({}), run: async ({ client }) => (await client.listOfferings()).data },
   { name: "run_capability", description: "Run any discovered capability with a request body of your own.", method: "POST", path: "/run", output: "CapabilityRun", input: object({ app: text("Capability name from list_capabilities"), request: { type: "object", description: "The request body for the capability" } }, ["app"]), run: async ({ client }, input) => (await client.runCapability(str(input, "app"), input.request ?? {})).data },
+  { name: "list_studio_mediums", description: "List the studio's mediums (video, image, audio) as the interface shows them: each one's modes, with the capability each mode runs and whether it is on offer, and its shapes, lengths and resolutions.", method: "GET", path: "/studio", output: ["StudioMedium"], public: true, input: object({}), run: async ({ studioMediums }) => studioMediums() },
+  {
+    name: "quote_generation",
+    description: "What one result of a generation would cost in credits, before starting it.",
+    method: "GET",
+    path: "/generations/quote",
+    output: "Quote",
+    public: true,
+    input: object({ kind: { enum: ["video", "image", "audio"] }, app: text("Capability to use"), duration_seconds: { type: ["number", "null"] }, resolution: { enum: ["720p", "1080p", null] } }, ["kind", "app"]),
+    run: async ({ quote }, input) =>
+      ({
+        credits: quote({
+          kind: input.kind as "video" | "image" | "audio",
+          app: str(input, "app"),
+          prompt: "",
+          aspect: "16:9",
+          duration_seconds: input.duration_seconds === undefined || input.duration_seconds === null || input.duration_seconds === "" ? null : Number(input.duration_seconds),
+          resolution: input.resolution === "1080p" ? "1080p" : input.resolution === "720p" ? "720p" : null,
+        }),
+      }),
+  },
   {
     name: "create_generation",
     description: "Generate a video, image or audio clip. Returns a job to poll with get_generation.",

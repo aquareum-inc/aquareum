@@ -1,13 +1,13 @@
 import { createHash } from "node:crypto";
 
-import { EngineError, UnsupportedByProvider } from "@aquareum/api-client";
+import { EngineError, UnsupportedByProvider, quoteCredits } from "@aquareum/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { devices } from "@/lib/devices";
 import { instance } from "@/lib/instance";
 import { authenticate, carriesDeviceToken, guest, type Caller } from "@/lib/public-api/auth";
 import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
-import { agentModelMenu, capabilityLabels } from "@/lib/public-api/labels";
+import { agentModelMenu, capabilityLabels, studioMediums } from "@/lib/public-api/labels";
 import { ApiError, matchOperation } from "@/lib/public-api/operations";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +63,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   if (missing.length > 0) return error(400, `Missing: ${missing.join(", ")}`);
 
   try {
-    const value = await match.operation.run({ ...caller, devices: devices(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu }, input);
+    const value = await match.operation.run({ ...caller, devices: devices(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, quote: quoteCredits }, input);
     return request.method === "GET" ? read(request, value) : NextResponse.json(value);
   } catch (cause) {
     if (cause instanceof ApiError) return error(cause.status, cause.message, cause.code);
