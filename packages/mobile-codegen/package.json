@@ -7,7 +7,7 @@
   "scripts": {
     "tokens": "node src/tokens.ts",
     "openapi": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/openapi.ts",
-    "clients": "node src/swift.ts",
+    "clients": "node src/swift.ts && node src/kotlin.ts",
     "generate": "pnpm tokens && pnpm openapi && pnpm clients",
     "typecheck": "tsc --noEmit"
   },

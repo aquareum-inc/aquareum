@@ -95,8 +95,9 @@ Standing rules for changes are in `CLAUDE.md`; plans and research are in `docs/`
 
 ## Working on the native apps
 
-Requirements: macOS with Xcode 27 or later for iOS. Android needs Android Studio's SDK and an emulator, and
-is not buildable yet (see `docs/mobile/plan.md`). Every command is non-interactive.
+Requirements: macOS with Xcode 27 or later for iOS; for Android, a JDK 17 or later and the Android SDK
+(platform 37, build-tools 36) with `apps/android/local.properties` holding `sdk.dir=<path to the SDK>`, or
+`ANDROID_HOME` set. Every command is non-interactive.
 
 ```bash
 # 1. An instance for the app to talk to (mock-only, port 3100: what Config/Instance.xcconfig points at)
@@ -119,6 +120,22 @@ xcrun simctl ui booted appearance dark        # or light
 xcrun simctl io booted screenshot home.png
 ```
 
+```bash
+# 5. Build and test Android (from apps/android; the wrapper fetches Gradle on first use)
+cd apps/android
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+
+# 6. Run it on an emulator and take a screenshot (10.0.2.2 is the host, where the instance listens)
+$ANDROID_HOME/emulator/emulator -avd <name> -no-snapshot-save &
+adb wait-for-device && adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n app.aquareum.dev/app.aquareum.MainActivity
+adb shell cmd uimode night yes                # or no
+adb exec-out screencap -p > home.png
+```
+
+- The Compose version is pinned to the newest one the installed SDK platform can compile against; the note is
+  in `apps/android/gradle/libs.versions.toml`.
 - New files under `apps/ios/Aquareum` and `apps/ios/AquareumTests` are picked up without editing the Xcode
   project (the folders are synchronised).
 - Never edit `apps/ios/Aquareum/Generated/*` or `apps/android/**/generated/*`: change the source and run

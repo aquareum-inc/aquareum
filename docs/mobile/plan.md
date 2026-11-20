@@ -342,6 +342,7 @@ Third-party dependencies, each justified:
 | kotlinx.serialization, kotlinx.coroutines | Android | JetBrains' own; the standard for Kotlin. |
 | AndroidX (Compose, Navigation, Lifecycle, Browser, DataStore) | Android | Google's own. |
 | Coil | Android | Compose has no image loader of its own; Coil is the one Google's documentation uses. |
+| Material icons (extended) | Android | The platform's own icon set as Compose vectors. Unused icons are stripped from release builds. |
 | None | iOS | Everything is in the SDK. |
 
 ## 9. Slices
@@ -517,17 +518,20 @@ Built and run on 19 November 2026 against a mock-only instance:
   and `character_slug` on conversations; each operation's `output`; `docs/mobile/openapi.json`; the
   mock-only demo key.
 - **Generation.** `packages/mobile-codegen` writes Swift and Kotlin design tokens (35 colours in both
-  themes, radii, type sizes, motion) from `tokens.css` and `motion.ts`, and the Swift models and client (53
-  types, 22 operations) from the OpenAPI document. CI fails when they are stale.
+  themes, radii, type sizes, motion) from `tokens.css` and `motion.ts`, and the Swift and Kotlin models and
+  clients (53 types, 22 operations each) from the OpenAPI document. CI fails when they are stale.
 - **iOS.** Home and a conversation, in dark and light, with Dynamic Type, VoiceOver labels and Reduce
   Motion: `docs/screenshots/mobile/ios-*.jpg`. Eight tests pass, decoding the captured responses in
   `docs/mobile/fixtures/`.
 
 Not done, and why:
 
-- **Android sample: not built.** This Mac has no Android SDK or emulator and 10 GB of free disk
-  (section 2). Only the generated Kotlin tokens exist, and they have not been compiled. The Kotlin client
-  emitter is written when it can be compiled, so nothing unverified piles up.
+- **Android sample: written and compiled, not yet run.** Android Studio's SDK (platform 37.0) and an
+  emulator were installed on 19 November. `apps/android` builds (`./gradlew :app:assembleDebug`) and its 9
+  unit tests pass, decoding the same fixtures as iOS. The emulator has not started: it needs about 7.4 GB
+  of free disk even with a 2 GB data partition, and the Mac has 6.2 GB. So Home and the conversation on
+  Android have not been seen running, and there are no Android screenshots yet. Nothing about how it looks
+  or behaves is claimed until it has run.
 - **Type option B (Inter bundled): no sample.** Inter isn't in the repository as a font file the app can
   bundle (the web loads it as WOFF2). It needs a download of Inter's own TTF, which needs a yes. The
   sample shows option A: system text with Geist Mono for facts.
