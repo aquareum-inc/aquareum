@@ -19,6 +19,26 @@ class Api(private val transport: ApiTransport) {
     suspend fun getInstance(): InstanceDescription =
         transport.send(InstanceDescription.serializer(), "GET", "/instance", query = emptyMap(), body = null)
 
+    /** Native apps: collect a finished sign-in with the one-time code from the sign-in callback and the PKCE verifier. Answers with a device session token, shown once. Open to guests. */
+    suspend fun createDeviceSession(code: String, verifier: String, platform: String, deviceName: String? = null): DeviceToken =
+        transport.send(DeviceToken.serializer(), "POST", "/auth/device", query = emptyMap(), body = mapOf("code" to JsonPrimitive(code), "verifier" to JsonPrimitive(verifier), "platform" to JsonPrimitive(platform), "device_name" to deviceName?.let { JsonPrimitive(it) }))
+
+    /** Native apps: sign this device out by ending the device session making the request. */
+    suspend fun endDeviceSession(): Deleted =
+        transport.send(Deleted.serializer(), "DELETE", "/auth/device", query = emptyMap(), body = null)
+
+    /** The signed-in person: their name, email and credit balance. */
+    suspend fun getMe(): Me =
+        transport.send(Me.serializer(), "GET", "/me", query = emptyMap(), body = null)
+
+    /** List the phones and tablets signed in to the person's account, most recently used first. */
+    suspend fun listDevices(): List<DeviceSession> =
+        transport.send(ListSerializer(DeviceSession.serializer()), "GET", "/devices", query = emptyMap(), body = null)
+
+    /** Sign one of the person's devices out. The app on it returns to signed out on its next request. */
+    suspend fun revokeDevice(id: String): Deleted =
+        transport.send(Deleted.serializer(), "DELETE", "/devices/${ApiTransport.escape(id)}", query = emptyMap(), body = null)
+
     /** List the starting points shown on Home, each with example requests. Open to guests. */
     suspend fun listPromptStarters(): List<PromptStarter> =
         transport.send(ListSerializer(PromptStarter.serializer()), "GET", "/starters", query = emptyMap(), body = null)

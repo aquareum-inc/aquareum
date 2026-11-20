@@ -19,6 +19,7 @@ services:
       INSTANCE_CONFIG: /config/instance.config.json
     volumes:
       - ${INSTANCE_DIR:-..}/instance.config.json:/config/instance.config.json:ro
+      - app-data:/data
     ports: ["127.0.0.1:${APP_PORT:-3000}:3000"]
     restart: unless-stopped
 
@@ -95,5 +96,6 @@ services:
     restart: unless-stopped
 
 volumes:
+  app-data:
   engine-data:
   paid-state:

@@ -27,7 +27,7 @@ export function currentSettings(): { settings: InstanceSettings; file: string | 
       name: config.name,
       domain: config.domain ?? "",
       signUp: config.auth?.signUp ?? "open",
-      surfaces: { app: config.surfaces.app, api: config.surfaces.api, mcp: config.surfaces.mcp },
+      surfaces: { app: config.surfaces.app, api: config.surfaces.api, mcp: config.surfaces.mcp, mobile: config.surfaces.mobile ?? false },
       characters: config.content?.characters ?? true,
       adultContent: config.content?.adultContent ?? false,
       retainChats: config.privacy?.retainChats ?? false,

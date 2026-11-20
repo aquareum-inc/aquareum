@@ -271,6 +271,44 @@ struct Deleted: Codable, Sendable, Hashable {
     var deleted: Bool
 }
 
+enum DeviceSessionPlatform: String, Codable, Sendable, Hashable, CaseIterable {
+    case ios = "ios"
+    case android = "android"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+/// A phone or tablet signed in to the instance with its own revocable session.
+struct DeviceSession: Codable, Sendable, Hashable {
+    var id: String
+    /// The device's own name, as it reported it ("Adam's iPhone").
+    var name: String
+    var platform: DeviceSessionPlatform
+    var createdAt: String
+    var lastUsedAt: String
+    /// The session making this request.
+    var current: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case platform
+        case createdAt = "created_at"
+        case lastUsedAt = "last_used_at"
+        case current
+    }
+}
+
+/// A new device session. The token is shown once; the instance keeps only a keyed hash of it.
+struct DeviceToken: Codable, Sendable, Hashable {
+    var token: String
+    var device: DeviceSession
+}
+
 /// An async generation job. Mocked: the engine's async jobs return 501 today.
 struct Generation: Codable, Sendable, Hashable {
     var id: String
@@ -385,6 +423,33 @@ struct InstanceDescriptionSurfaces: Codable, Sendable, Hashable {
     var app: Bool
     var api: Bool
     var mcp: Bool
+    var mobile: Bool
+}
+
+struct InstanceDescriptionMobileIos: Codable, Sendable, Hashable {
+    var bundleId: String
+    var minimumVersion: String?
+
+    enum CodingKeys: String, CodingKey {
+        case bundleId = "bundle_id"
+        case minimumVersion = "minimum_version"
+    }
+}
+
+struct InstanceDescriptionMobileAndroid: Codable, Sendable, Hashable {
+    var applicationId: String
+    var minimumVersion: String?
+
+    enum CodingKeys: String, CodingKey {
+        case applicationId = "application_id"
+        case minimumVersion = "minimum_version"
+    }
+}
+
+/// The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in.
+struct InstanceDescriptionMobile: Codable, Sendable, Hashable {
+    var ios: InstanceDescriptionMobileIos?
+    var android: InstanceDescriptionMobileAndroid?
 }
 
 enum InstanceDescriptionSignInSignUp: String, Codable, Sendable, Hashable, CaseIterable {
@@ -442,6 +507,8 @@ struct InstanceDescription: Codable, Sendable, Hashable {
     /// Overrides for colour tokens, per theme, keyed by token name ("primary"). Tokens not listed keep their default.
     var theme: InstanceDescriptionTheme
     var surfaces: InstanceDescriptionSurfaces
+    /// The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in.
+    var mobile: InstanceDescriptionMobile
     var signIn: InstanceDescriptionSignIn
     var content: InstanceDescriptionContent
     var home: InstanceDescriptionHome
@@ -452,6 +519,7 @@ struct InstanceDescription: Codable, Sendable, Hashable {
         case logo
         case theme
         case surfaces
+        case mobile
         case signIn = "sign_in"
         case content
         case home
@@ -507,6 +575,14 @@ struct LiveSession: Codable, Sendable, Hashable {
         case startedAt = "started_at"
         case recordingMediaId = "recording_media_id"
     }
+}
+
+/// The signed-in user, as the account menu shows them.
+struct Me: Codable, Sendable, Hashable {
+    var id: String
+    var name: String
+    var email: String?
+    var balance: CreditBalance
 }
 
 enum MediaItemSource: String, Codable, Sendable, Hashable, CaseIterable {

@@ -45,6 +45,235 @@
         }
       }
     },
+    "/auth/device": {
+      "post": {
+        "operationId": "create_device_session",
+        "summary": "Native apps: collect a finished sign-in with the one-time code from the sign-in callback and the PKCE verifier. Answers with a device session token, shown once.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "The code from the sign-in callback"
+                  },
+                  "verifier": {
+                    "type": "string",
+                    "description": "The PKCE verifier whose challenge started the sign-in"
+                  },
+                  "platform": {
+                    "enum": [
+                      "ios",
+                      "android"
+                    ]
+                  },
+                  "device_name": {
+                    "type": "string",
+                    "description": "The device's own name, shown in the list of devices"
+                  }
+                },
+                "required": [
+                  "code",
+                  "verifier",
+                  "platform"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceToken"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "end_device_session",
+        "summary": "Native apps: sign this device out by ending the device session making the request.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "operationId": "get_me",
+        "summary": "The signed-in person: their name, email and credit balance.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices": {
+      "get": {
+        "operationId": "list_devices",
+        "summary": "List the phones and tablets signed in to the person's account, most recently used first.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceSession"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{id}": {
+      "delete": {
+        "operationId": "revoke_device",
+        "summary": "Sign one of the person's devices out. The app on it returns to signed out on its next request.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Device session id, from list_devices"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/starters": {
       "get": {
         "operationId": "list_prompt_starters",
@@ -1702,6 +1931,62 @@
         "additionalProperties": false,
         "description": "The answer to a delete."
       },
+      "DeviceSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The device's own name, as it reported it (\"Adam's iPhone\")."
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "last_used_at": {
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "The session making this request."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "platform",
+          "created_at",
+          "last_used_at",
+          "current"
+        ],
+        "additionalProperties": false,
+        "description": "A phone or tablet signed in to the instance with its own revocable session."
+      },
+      "DeviceToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "device": {
+            "$ref": "#/components/schemas/DeviceSession"
+          }
+        },
+        "required": [
+          "token",
+          "device"
+        ],
+        "additionalProperties": false,
+        "description": "A new device session. The token is shown once; the instance keeps only a keyed hash of it."
+      },
       "Generation": {
         "type": "object",
         "properties": {
@@ -1885,14 +2170,81 @@
               },
               "mcp": {
                 "type": "boolean"
+              },
+              "mobile": {
+                "type": "boolean"
               }
             },
             "required": [
               "app",
               "api",
-              "mcp"
+              "mcp",
+              "mobile"
             ],
             "additionalProperties": false
+          },
+          "mobile": {
+            "type": "object",
+            "properties": {
+              "ios": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "bundle_id": {
+                        "type": "string"
+                      },
+                      "minimum_version": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "bundle_id",
+                      "minimum_version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "android": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "application_id": {
+                        "type": "string"
+                      },
+                      "minimum_version": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "application_id",
+                      "minimum_version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "ios",
+              "android"
+            ],
+            "additionalProperties": false,
+            "description": "The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in."
           },
           "sign_in": {
             "type": "object",
@@ -1975,6 +2327,7 @@
           "logo",
           "theme",
           "surfaces",
+          "mobile",
           "sign_in",
           "content",
           "home"
@@ -2045,6 +2398,34 @@
           "recording_media_id"
         ],
         "additionalProperties": false
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "balance": {
+            "$ref": "#/components/schemas/CreditBalance"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "balance"
+        ],
+        "additionalProperties": false,
+        "description": "The signed-in user, as the account menu shows them."
       },
       "MediaItem": {
         "type": "object",
@@ -2463,6 +2844,10 @@
               },
               "message": {
                 "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "description": "A stable reason a client can act on: signed_out, mobile_off, account_required, sign_in_expired."
               }
             },
             "required": [

@@ -265,6 +265,41 @@ data class Deleted(
     @SerialName("deleted") val deleted: Boolean,
 )
 
+@Serializable(with = DeviceSessionPlatform.Serializer::class)
+enum class DeviceSessionPlatform(val value: String) {
+    Ios("ios"),
+    Android("android"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<DeviceSessionPlatform> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("DeviceSessionPlatform", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): DeviceSessionPlatform = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: DeviceSessionPlatform) = encoder.encodeString(value.value)
+    }
+}
+
+/** A phone or tablet signed in to the instance with its own revocable session. */
+@Serializable
+data class DeviceSession(
+    @SerialName("id") val id: String,
+    /** The device's own name, as it reported it ("Adam's iPhone"). */
+    @SerialName("name") val name: String,
+    @SerialName("platform") val platform: DeviceSessionPlatform,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("last_used_at") val lastUsedAt: String,
+    /** The session making this request. */
+    @SerialName("current") val current: Boolean,
+)
+
+/** A new device session. The token is shown once; the instance keeps only a keyed hash of it. */
+@Serializable
+data class DeviceToken(
+    @SerialName("token") val token: String,
+    @SerialName("device") val device: DeviceSession,
+)
+
 /** An async generation job. Mocked: the engine's async jobs return 501 today. */
 @Serializable
 data class Generation(
@@ -379,6 +414,26 @@ data class InstanceDescriptionSurfaces(
     @SerialName("app") val app: Boolean,
     @SerialName("api") val api: Boolean,
     @SerialName("mcp") val mcp: Boolean,
+    @SerialName("mobile") val mobile: Boolean,
+)
+
+@Serializable
+data class InstanceDescriptionMobileIos(
+    @SerialName("bundle_id") val bundleId: String,
+    @SerialName("minimum_version") val minimumVersion: String? = null,
+)
+
+@Serializable
+data class InstanceDescriptionMobileAndroid(
+    @SerialName("application_id") val applicationId: String,
+    @SerialName("minimum_version") val minimumVersion: String? = null,
+)
+
+/** The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in. */
+@Serializable
+data class InstanceDescriptionMobile(
+    @SerialName("ios") val ios: InstanceDescriptionMobileIos? = null,
+    @SerialName("android") val android: InstanceDescriptionMobileAndroid? = null,
 )
 
 @Serializable(with = InstanceDescriptionSignInSignUp.Serializer::class)
@@ -427,6 +482,8 @@ data class InstanceDescription(
     /** Overrides for colour tokens, per theme, keyed by token name ("primary"). Tokens not listed keep their default. */
     @SerialName("theme") val theme: InstanceDescriptionTheme,
     @SerialName("surfaces") val surfaces: InstanceDescriptionSurfaces,
+    /** The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in. */
+    @SerialName("mobile") val mobile: InstanceDescriptionMobile,
     @SerialName("sign_in") val signIn: InstanceDescriptionSignIn,
     @SerialName("content") val content: InstanceDescriptionContent,
     @SerialName("home") val home: InstanceDescriptionHome,
@@ -479,6 +536,15 @@ data class LiveSession(
     @SerialName("started_at") val startedAt: String,
     /** Set when the session ended and was recorded. */
     @SerialName("recording_media_id") val recordingMediaId: String? = null,
+)
+
+/** The signed-in user, as the account menu shows them. */
+@Serializable
+data class Me(
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("email") val email: String? = null,
+    @SerialName("balance") val balance: CreditBalance,
 )
 
 @Serializable(with = MediaItemSource.Serializer::class)

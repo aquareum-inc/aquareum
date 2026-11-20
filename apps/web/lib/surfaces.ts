@@ -4,9 +4,11 @@ export interface Surfaces {
   console: boolean;
   api: boolean;
   mcp: boolean;
+  /** The native apps. They use the API and the sign-in flow, so either is served while this is on. */
+  mobile?: boolean;
 }
 
-/** Sign-in and the auth flow: needed by the app and by the console, so served while either is. */
+/** Sign-in and the auth flow: needed by the app and by the console, so served while either is. The apps use the flow itself. */
 export function isAuthPath(pathname: string): boolean {
   return pathname === "/sign-in" || pathname === "/auth" || pathname.startsWith("/auth/");
 }
@@ -17,9 +19,11 @@ export function isAuthPath(pathname: string): boolean {
  */
 export function surfacePathServed(pathname: string, surfaces: Surfaces): boolean {
   if (pathname === "/operator" || pathname.startsWith("/operator/")) return surfaces.console;
-  if (pathname.startsWith("/api/v1")) return surfaces.api;
+  // The native apps are clients of the API. With the API off they still reach it, as device sessions only.
+  if (pathname.startsWith("/api/v1")) return surfaces.api || surfaces.mobile === true;
   if (pathname.startsWith("/api/mcp")) return surfaces.mcp;
   if (pathname.startsWith("/api/")) return true;
+  if (pathname === "/auth/start" || pathname === "/auth/callback") return surfaces.app || surfaces.console || surfaces.mobile === true;
   if (isAuthPath(pathname)) return surfaces.app || surfaces.console;
   return surfaces.app;
 }

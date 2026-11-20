@@ -28,4 +28,14 @@ describe("surfaces", () => {
     expect(surfacePathServed("/api/health", apiOnly)).toBe(true);
     expect(homePath(all)).toBe("/");
   });
+
+  it("serves the apps their sign-in and API with only the mobile surface on", () => {
+    const mobileOnly = { app: false, console: false, api: false, mcp: false, mobile: true };
+    expect(surfacePathServed("/auth/start", mobileOnly)).toBe(true);
+    expect(surfacePathServed("/auth/callback", mobileOnly)).toBe(true);
+    expect(surfacePathServed("/api/v1/me", mobileOnly)).toBe(true);
+    expect(surfacePathServed("/sign-in", mobileOnly)).toBe(false);
+    expect(surfacePathServed("/api/mcp", mobileOnly)).toBe(false);
+    expect(surfacePathServed("/api/v1/me", { ...apiOnly, api: false })).toBe(false);
+  });
 });

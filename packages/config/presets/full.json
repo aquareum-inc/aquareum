@@ -9,7 +9,8 @@
     "app": true,
     "console": true,
     "api": true,
-    "mcp": true
+    "mcp": true,
+    "mobile": false
   },
   "capabilities": {
     "allow": [],

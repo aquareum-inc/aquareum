@@ -1,11 +1,30 @@
-import type { ApiClient, CapabilityLabel, InstanceDescription, OperatorClient } from "@aquareum/api-client";
+import type { ApiClient, CapabilityLabel, DeviceSession, DeviceToken, InstanceDescription, OperatorClient } from "@aquareum/api-client";
 
 type Schema = Record<string, unknown>;
+
+/** A signed-in person: through a browser session, or a device session from the native apps. */
+export interface Account {
+  user: { id: string; name: string; email: string | null };
+  /** The device session making the request, when it comes from an app. */
+  deviceId: string | null;
+}
+
+/** The instance's device sessions, as the operations use them. */
+export interface DeviceAccess {
+  redeemCode(input: { code: string; verifier: string; deviceName: string; platform: "ios" | "android" }): DeviceToken | null;
+  list(userId: string, currentId: string | null): DeviceSession[];
+  revoke(userId: string, id: string): boolean;
+  /** Ends every device session a user has. */
+  revokeAll(userId: string): number;
+}
 
 interface Context {
   client: ApiClient;
   /** Present for callers with the operator role. */
   operator: OperatorClient | null;
+  /** Who is signed in. API keys, the operator token and guests have no account. */
+  account: Account | null;
+  devices: DeviceAccess;
   /** This instance, as it describes itself to clients. */
   instance: InstanceDescription;
   /** The readable name of each capability on offer, as the interface shows it. */
@@ -31,6 +50,8 @@ export interface Operation {
   operator?: boolean;
   /** Answers without a caller, as the instance's default account: what a guest can see on the web. */
   public?: boolean;
+  /** Left out of the MCP server: sign-in plumbing for the native apps, which agents have no use for. */
+  mcp?: false;
   run: (context: Context, input: Record<string, unknown>) => Promise<unknown>;
 }
 
@@ -46,13 +67,21 @@ const operator = (context: Context): OperatorClient => {
 
 export class ApiError extends Error {
   readonly status: number;
+  /** A stable reason a client can act on, such as `mobile_off`. */
+  readonly code: string | undefined;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
   }
 }
+
+const signedIn = (context: Context): Account => {
+  if (!context.account) throw new ApiError(403, "This needs a signed-in person, not an API key.", "account_required");
+  return context.account;
+};
 
 const found = <T>(value: T | null, what: string): T => {
   if (value === null) throw new ApiError(404, `${what} not found`);
@@ -66,6 +95,57 @@ const found = <T>(value: T | null, what: string): T => {
  */
 export const OPERATIONS: Operation[] = [
   { name: "get_instance", description: "Describe this instance: its name, logo and theme, what it serves, how to sign in and its content settings.", method: "GET", path: "/instance", output: "InstanceDescription", public: true, input: object({}), run: async ({ instance }) => instance },
+  {
+    name: "create_device_session",
+    description: "Native apps: collect a finished sign-in with the one-time code from the sign-in callback and the PKCE verifier. Answers with a device session token, shown once.",
+    method: "POST",
+    path: "/auth/device",
+    output: "DeviceToken",
+    public: true,
+    mcp: false,
+    input: object({ code: text("The code from the sign-in callback"), verifier: text("The PKCE verifier whose challenge started the sign-in"), platform: { enum: ["ios", "android"] }, device_name: text("The device's own name, shown in the list of devices") }, ["code", "verifier", "platform"]),
+    run: async ({ devices }, input) => {
+      const token = devices.redeemCode({ code: str(input, "code"), verifier: str(input, "verifier"), deviceName: str(input, "device_name"), platform: input.platform === "android" ? "android" : "ios" });
+      if (!token) throw new ApiError(400, "That sign-in expired or was already used. Sign in again.", "sign_in_expired");
+      return token;
+    },
+  },
+  {
+    name: "end_device_session",
+    description: "Native apps: sign this device out by ending the device session making the request.",
+    method: "DELETE",
+    path: "/auth/device",
+    output: "Deleted",
+    mcp: false,
+    input: object({}),
+    run: async (context) => {
+      const { user, deviceId } = signedIn(context);
+      if (!deviceId) throw new ApiError(400, "Only a device session can sign itself out here.");
+      return { deleted: context.devices.revoke(user.id, deviceId) };
+    },
+  },
+  {
+    name: "get_me",
+    description: "The signed-in person: their name, email and credit balance.",
+    method: "GET",
+    path: "/me",
+    output: "Me",
+    input: object({}),
+    run: async (context) => ({ ...signedIn(context).user, balance: (await context.client.getCreditBalance()).data }),
+  },
+  { name: "list_devices", description: "List the phones and tablets signed in to the person's account, most recently used first.", method: "GET", path: "/devices", output: ["DeviceSession"], input: object({}), run: async (context) => { const { user, deviceId } = signedIn(context); return context.devices.list(user.id, deviceId); } },
+  {
+    name: "revoke_device",
+    description: "Sign one of the person's devices out. The app on it returns to signed out on its next request.",
+    method: "DELETE",
+    path: "/devices/{id}",
+    output: "Deleted",
+    input: object({ id: text("Device session id, from list_devices") }, ["id"]),
+    run: async (context, input) => {
+      if (!context.devices.revoke(signedIn(context).user.id, str(input, "id"))) throw new ApiError(404, "Device not found");
+      return { deleted: true };
+    },
+  },
   { name: "list_prompt_starters", description: "List the starting points shown on Home, each with example requests.", method: "GET", path: "/starters", output: ["PromptStarter"], public: true, input: object({}), run: async ({ client }) => (await client.listPromptStarters()).data },
   { name: "list_showcase", description: "List the examples in the instance's gallery, each with the request that made it.", method: "GET", path: "/showcase", output: ["ShowcaseItem"], public: true, input: object({}), run: async ({ client }) => (await client.listShowcase()).data },
   { name: "list_agent_models", description: "List the language models the agent can run on, for the model menu.", method: "GET", path: "/agent-models", output: ["AgentModel"], public: true, input: object({}), run: async ({ client }) => (await client.listAgentModels()).data },
@@ -131,7 +211,13 @@ export const OPERATIONS: Operation[] = [
   { name: "operator_overview", description: "Operator: active users, jobs today, revenue, wholesale cost and margin.", method: "GET", path: "/operator/overview", input: object({}), operator: true, run: async (context) => (await operator(context).getOverview()).data },
   { name: "operator_health", description: "Operator: engine readiness, discovery freshness, cost sync and version.", method: "GET", path: "/operator/health", input: object({}), operator: true, run: async (context) => (await operator(context).getEngineHealth()).data },
   { name: "operator_list_users", description: "Operator: every account the engine knows, with its allocation.", method: "GET", path: "/operator/users", input: object({}), operator: true, run: async (context) => (await operator(context).listActors()).data },
-  { name: "operator_set_user_status", description: "Operator: suspend (pause) or resume a user's allocation.", method: "POST", path: "/operator/users/{id}/status", input: object({ id: text("Actor id"), status: { enum: ["active", "paused"] }, application_id: { type: "string", default: "default" } }, ["id", "status"]), operator: true, run: async (context, input) => ({ ok: (await operator(context).setActorStatus(str(input, "application_id") || "default", str(input, "id"), input.status === "paused" ? "paused" : "active")).data }) },
+  { name: "operator_set_user_status", description: "Operator: suspend (pause) or resume a user's allocation. Suspending also signs out their phones and tablets.", method: "POST", path: "/operator/users/{id}/status", input: object({ id: text("Actor id"), status: { enum: ["active", "paused"] }, application_id: { type: "string", default: "default" } }, ["id", "status"]), operator: true, run: async (context, input) => {
+      const paused = input.status === "paused";
+      const ok = (await operator(context).setActorStatus(str(input, "application_id") || "default", str(input, "id"), paused ? "paused" : "active")).data;
+      // A suspended user's apps sign out on their next request.
+      if (ok && paused) context.devices.revokeAll(str(input, "id"));
+      return { ok };
+    } },
   { name: "operator_top_up_user", description: "Operator: add credit to a user's allocation, as a one-off adjustment.", method: "POST", path: "/operator/users/{id}/top-up", input: object({ id: text("User id"), amount_usd: { type: "number", exclusiveMinimum: 0 } }, ["id", "amount_usd"]), operator: true, run: async (context, input) => operator(context).provider.budgets.topUpAllocation(str(input, "id"), { amount: Number(input.amount_usd).toFixed(2), currency: "USD" }) },
   { name: "operator_assign_plan", description: "Operator: assign a plan to a user, or remove it with a null plan_id.", method: "POST", path: "/operator/users/{id}/plan", input: object({ id: text("User id"), plan_id: { type: ["string", "null"] } }, ["id"]), operator: true, run: async (context, input) => ({ plan: await operator(context).provider.plans.assignPlan(str(input, "id"), typeof input.plan_id === "string" ? input.plan_id : null) }) },
   { name: "operator_list_jobs", description: "Operator: recent jobs across all users, with attempts and failures.", method: "GET", path: "/operator/jobs", input: object({ limit: { type: "number", default: 50 } }), operator: true, run: async (context, input) => (await operator(context).listJobs(Number(input.limit) || 50)).data },

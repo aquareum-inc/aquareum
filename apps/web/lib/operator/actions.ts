@@ -5,6 +5,7 @@ import { EngineError } from "@aquareum/api-client";
 import type { InstanceSettings } from "@aquareum/operator-console";
 import { revalidatePath } from "next/cache";
 
+import { devices } from "../devices";
 import { operatorApi } from "./client";
 import { saveSettings } from "./settings";
 
@@ -28,6 +29,8 @@ export async function setUserStatusAction(applicationId: string, actorId: string
   } catch (error) {
     throw new Error(explain(error));
   }
+  // A suspended user's apps sign out on their next request.
+  if (status === "paused") devices().revokeAll(actorId);
   revalidatePath("/operator/users", "layout");
 }
 

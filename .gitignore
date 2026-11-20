@@ -2,6 +2,9 @@
 .env
 .env.*.local
 
+# the instance's own state in development (device sessions)
+.data/
+
 # dependencies and build output
 node_modules/
 .next/

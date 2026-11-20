@@ -63,6 +63,35 @@ export interface InstanceConfig {
      * The MCP server.
      */
     mcp: boolean;
+    /**
+     * The native iOS and Android apps. Off, the instance issues no device sessions and refuses requests that carry one.
+     */
+    mobile?: boolean;
+  };
+  /**
+   * The native apps built for this instance. Sign-in hands a finished session only to the apps named here.
+   */
+  mobile?: {
+    ios?: {
+      /**
+       * The iOS app's bundle identifier. Sign-in returns to <bundleId>://auth.
+       */
+      bundleId: string;
+      /**
+       * Older builds are asked to update.
+       */
+      minimumVersion?: string;
+    };
+    android?: {
+      /**
+       * The Android app's application id. Sign-in returns to <applicationId>://auth.
+       */
+      applicationId: string;
+      /**
+       * Older builds are asked to update.
+       */
+      minimumVersion?: string;
+    };
   };
   /**
    * Which discovered capabilities the instance offers. Patterns match app names; * matches any run of characters. Block wins over allow. An empty allow list allows everything.

@@ -13,6 +13,32 @@ struct API: Sendable {
         try await transport.send("GET", "/instance", query: [:], body: nil)
     }
 
+    /// Native apps: collect a finished sign-in with the one-time code from the sign-in callback and the PKCE verifier. Answers with a device session token, shown once.
+    /// Open to guests.
+    func createDeviceSession(code: String, verifier: String, platform: String, deviceName: String? = nil) async throws -> DeviceToken {
+        try await transport.send("POST", "/auth/device", query: [:], body: ["code": .string(code), "verifier": .string(verifier), "platform": .string(platform), "device_name": deviceName.map { .string($0) }])
+    }
+
+    /// Native apps: sign this device out by ending the device session making the request.
+    func endDeviceSession() async throws -> Deleted {
+        try await transport.send("DELETE", "/auth/device", query: [:], body: nil)
+    }
+
+    /// The signed-in person: their name, email and credit balance.
+    func getMe() async throws -> Me {
+        try await transport.send("GET", "/me", query: [:], body: nil)
+    }
+
+    /// List the phones and tablets signed in to the person's account, most recently used first.
+    func listDevices() async throws -> [DeviceSession] {
+        try await transport.send("GET", "/devices", query: [:], body: nil)
+    }
+
+    /// Sign one of the person's devices out. The app on it returns to signed out on its next request.
+    func revokeDevice(id: String) async throws -> Deleted {
+        try await transport.send("DELETE", "/devices/\(APITransport.escape(id))", query: [:], body: nil)
+    }
+
     /// List the starting points shown on Home, each with example requests.
     /// Open to guests.
     func listPromptStarters() async throws -> [PromptStarter] {

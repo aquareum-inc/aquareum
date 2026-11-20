@@ -395,7 +395,12 @@ export interface InstanceDescription {
   };
   /** Overrides for colour tokens, per theme, keyed by token name ("primary"). Tokens not listed keep their default. */
   theme: { dark: Record<string, string>; light: Record<string, string> };
-  surfaces: { app: boolean; api: boolean; mcp: boolean };
+  surfaces: { app: boolean; api: boolean; mcp: boolean; mobile: boolean };
+  /** The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in. */
+  mobile: {
+    ios: { bundle_id: string; minimum_version: string | null } | null;
+    android: { application_id: string; minimum_version: string | null } | null;
+  };
   sign_in: { methods: SignInMethodName[]; sign_up: "open" | "invite" | "closed" };
   content: { characters: boolean; adult_content: boolean };
   home: {
@@ -405,6 +410,32 @@ export interface InstanceDescription {
     /** Draw a live aurora over the background image. */
     aurora: boolean;
   };
+}
+
+/** The signed-in user, as the account menu shows them. */
+export interface Me {
+  id: string;
+  name: string;
+  email: string | null;
+  balance: CreditBalance;
+}
+
+/** A phone or tablet signed in to the instance with its own revocable session. */
+export interface DeviceSession {
+  id: string;
+  /** The device's own name, as it reported it ("Adam's iPhone"). */
+  name: string;
+  platform: "ios" | "android";
+  created_at: string;
+  last_used_at: string;
+  /** The session making this request. */
+  current: boolean;
+}
+
+/** A new device session. The token is shown once; the instance keeps only a keyed hash of it. */
+export interface DeviceToken {
+  token: string;
+  device: DeviceSession;
 }
 
 /** The answer to a delete. */

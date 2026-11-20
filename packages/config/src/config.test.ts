@@ -10,12 +10,18 @@ describe("presets", () => {
     expect(() => preset(name)).not.toThrow();
   });
 
-  it("full serves every surface", () => {
-    expect(preset("full").surfaces).toEqual({ app: true, console: true, api: true, mcp: true });
+  it("full serves every surface except the phone apps, which an operator opts into", () => {
+    expect(preset("full").surfaces).toEqual({ app: true, console: true, api: true, mcp: true, mobile: false });
   });
 
   it("headless has no app but keeps the console that runs the business", () => {
-    expect(preset("headless").surfaces).toEqual({ app: false, console: true, api: true, mcp: true });
+    expect(preset("headless").surfaces).toEqual({ app: false, console: true, api: true, mcp: true, mobile: false });
+  });
+
+  it("the mobile development config is valid and names the development apps", () => {
+    const { config } = loadConfig({ cwd: path.resolve(import.meta.dirname, "../../.."), env: { INSTANCE_CONFIG: "docs/mobile/dev.instance.config.json" } });
+    expect(config.surfaces.mobile).toBe(true);
+    expect(config.mobile).toEqual({ ios: { bundleId: "app.aquareum.dev" }, android: { applicationId: "app.aquareum.dev" } });
   });
 
   it("adult content is off by default in both", () => {

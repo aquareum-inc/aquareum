@@ -41,7 +41,11 @@ export function describeInstance(origin: string): InstanceDescription {
     name: config.name,
     logo: { symbol: absolute(config.logo?.symbol), wordmark: absolute(config.logo?.wordmark), tint: config.logo?.tint ?? true },
     theme: { dark: hexTokens(config.theme?.dark), light: hexTokens(config.theme?.light) },
-    surfaces: { app: config.surfaces.app, api: config.surfaces.api, mcp: config.surfaces.mcp },
+    surfaces: { app: config.surfaces.app, api: config.surfaces.api, mcp: config.surfaces.mcp, mobile: config.surfaces.mobile ?? false },
+    mobile: {
+      ios: config.mobile?.ios ? { bundle_id: config.mobile.ios.bundleId, minimum_version: config.mobile.ios.minimumVersion ?? null } : null,
+      android: config.mobile?.android ? { application_id: config.mobile.android.applicationId, minimum_version: config.mobile.android.minimumVersion ?? null } : null,
+    },
     sign_in: { methods: signInMethods().filter((method): method is SignInMethodName => method !== "operator"), sign_up: config.auth?.signUp ?? "open" },
     content: { characters: config.content?.characters ?? false, adult_content: config.content?.adultContent ?? false },
     home: {

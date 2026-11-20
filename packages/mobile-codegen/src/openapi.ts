@@ -100,7 +100,7 @@ const document = {
       ...(rewrite(schemas) as Record<string, Json>),
       Error: {
         type: "object",
-        properties: { error: { type: "object", properties: { status: { type: "number" }, message: { type: "string" } }, required: ["status", "message"], additionalProperties: false } },
+        properties: { error: { type: "object", properties: { status: { type: "number" }, message: { type: "string" }, code: { type: "string", description: "A stable reason a client can act on: signed_out, mobile_off, account_required, sign_in_expired." } }, required: ["status", "message"], additionalProperties: false } },
         required: ["error"],
         additionalProperties: false,
       },
