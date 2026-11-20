@@ -3,7 +3,11 @@ import SwiftUI
 /// One conversation, kept current while the agent works.
 @Observable
 final class ConversationModel {
-    private(set) var conversation: Conversation
+    let id: String
+    /// Nil until the first read when opened from the history.
+    private(set) var conversation: Conversation? {
+        didSet { if oldValue == nil, let conversation { draft = Self.carriedOn(conversation) } }
+    }
     private(set) var generations: [String: Generation] = [:]
     /// How each capability reads where it did a piece of work, keyed by app.
     private(set) var labels: [String: String] = [:]
@@ -14,18 +18,29 @@ final class ConversationModel {
     var draft = Draft()
     private let api: API
 
-    init(api: API, conversation: Conversation) {
+    init(api: API, id: String, conversation: Conversation?) {
         self.api = api
+        self.id = id
         self.conversation = conversation
+        if let conversation { draft = Self.carriedOn(conversation) }
+    }
+
+    var messages: [Message] { conversation?.messages ?? [] }
+
+    /// A conversation carries on as it was: the same model runs the agent, and a cast character stays cast
+    /// so the next message can direct them further.
+    private static func carriedOn(_ conversation: Conversation) -> Draft {
+        guard case .user(let last) = conversation.messages.last(where: { if case .user = $0 { true } else { false } }) else { return Draft() }
+        return Draft(cast: last.cast, model: last.agentModel)
     }
 
     /// True while there is something to wait for: a turn in progress or a shot still rendering.
     var working: Bool {
-        conversation.messages.contains { if case .agent(let turn) = $0 { turn.state == .working } else { false } } || !pendingGenerations.isEmpty
+        messages.contains { if case .agent(let turn) = $0 { turn.state == .working } else { false } } || !pendingGenerations.isEmpty
     }
 
     private var generationIds: [String] {
-        conversation.messages.flatMap { if case .agent(let turn) = $0 { turn.generationIds } else { [String]() } }
+        messages.flatMap { if case .agent(let turn) = $0 { turn.generationIds } else { [String]() } }
     }
 
     private var pendingGenerations: [String] {
@@ -54,7 +69,7 @@ final class ConversationModel {
 
     private func refresh() async {
         do {
-            conversation = try await api.getConversation(id: conversation.id)
+            conversation = try await api.getConversation(id: id)
             loadFailed = false
         } catch let error as APIError where error.status == 404 || error.isSignedOut {
             loadFailed = true
@@ -74,8 +89,8 @@ final class ConversationModel {
         sendError = nil
         defer { sending = false }
         do {
-            conversation = try await api.sendMessage(id: conversation.id, text: draft.prompt.trimmingCharacters(in: .whitespacesAndNewlines))
-            draft = Draft()
+            conversation = try await api.sendMessage(id: id, text: draft.text, app: draft.app, aspect: draft.isVideo ? draft.aspect : nil, durationSeconds: draft.isVideo ? draft.durationSeconds : nil, attachmentIds: draft.attachments.isEmpty ? nil : draft.attachments.map(\.id), agentModel: draft.model, characterSlug: draft.cast?.slug)
+            draft = draft.carriedOn
         } catch {
             sendError = "That message didn’t send. Try again."
         }

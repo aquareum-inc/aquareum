@@ -2,7 +2,9 @@ import SwiftUI
 
 /// Where a pushed screen goes.
 enum Route: Hashable {
-    case conversation(Conversation)
+    /// A conversation, shown at once when it was just sent and read by its id otherwise.
+    case conversation(id: String, preview: Conversation?)
+    case history
 }
 
 /// The app's destinations as the system tab bar, with the account and sign-in trays over all of them.
@@ -13,6 +15,7 @@ struct MainTabs: View {
     @Environment(\.palette) private var palette
     @State private var tab = Destination.home
     @State private var homePath: [Route] = []
+    @State private var support: ComposerSupport
     @State private var accountOpen: AccountTrayItem?
     /// Set when the account tray hands over to sign-in, which opens once it has closed.
     @State private var signInNext = false
@@ -22,21 +25,30 @@ struct MainTabs: View {
 
     private struct AccountTrayItem: Identifiable { let id = 0 }
 
+    init(api: API) {
+        self.api = api
+        _support = State(initialValue: ComposerSupport(api: api))
+    }
+
     var body: some View {
         @Bindable var account = account
         let openAccount = { accountOpen = AccountTrayItem() }
         TabView(selection: $tab) {
             Tab("Home", systemImage: "house", value: Destination.home) {
                 NavigationStack(path: $homePath) {
-                    HomeView(api: api, travel: travel, openAccount: openAccount) { conversation in homePath.append(.conversation(conversation)) }
-                        .navigationDestination(for: Route.self) { route in
-                            switch route {
-                            case .conversation(let conversation):
-                                ConversationView(api: api, conversation: conversation)
-                                    .navigationTransition(.zoom(sourceID: "composer", in: travel))
-                                    .toolbar(.hidden, for: .tabBar)
-                            }
+                    HomeView(api: api, travel: travel, openAccount: openAccount, openHistory: { homePath.append(.history) }) { conversation in
+                        homePath.append(.conversation(id: conversation.id, preview: conversation))
+                    }
+                    .navigationDestination(for: Route.self) { route in
+                        switch route {
+                        case .conversation(let id, let preview):
+                            ConversationView(api: api, id: id, conversation: preview)
+                                .navigationTransition(.zoom(sourceID: "composer", in: travel))
+                                .toolbar(.hidden, for: .tabBar)
+                        case .history:
+                            HistoryView(api: api) { summary in homePath.append(.conversation(id: summary.id, preview: nil)) }
                         }
+                    }
                 }
             }
             Tab("Library", systemImage: "square.grid.2x2", value: Destination.library) {
@@ -62,6 +74,14 @@ struct MainTabs: View {
             SignInTray(reason: prompt.reason)
         }
         .overlay(alignment: .top) { NoticeBanner() }
+        .environment(support)
+        .task { await support.load() }
+        .onChange(of: account.signedIn) { _, signedIn in
+            if !signedIn {
+                support.signedOut()
+                homePath.removeAll()
+            }
+        }
     }
 }
 

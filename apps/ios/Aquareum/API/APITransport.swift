@@ -1,4 +1,26 @@
 import Foundation
+import Synchronization
+
+/// The last answer to each read and its ETag, so a read that hasn't changed comes back as 304 with no body.
+/// Small: it only needs to hold what is being followed right now.
+nonisolated final class ReadCache: Sendable {
+    private struct Entry { let etag: String; let data: Data; let token: String? }
+    private let entries = Mutex<[URL: Entry]>([:])
+    private static let limit = 64
+
+    func validator(for url: URL, token: String?) -> String? {
+        entries.withLock { $0[url].flatMap { $0.token == token ? $0.etag : nil } }
+    }
+
+    func data(for url: URL) -> Data? { entries.withLock { $0[url]?.data } }
+
+    func store(_ data: Data, etag: String, for url: URL, token: String?) {
+        entries.withLock { entries in
+            if entries.count >= Self.limit, entries[url] == nil, let first = entries.keys.first { entries[first] = nil }
+            entries[url] = Entry(etag: etag, data: data, token: token)
+        }
+    }
+}
 
 /// What the instance said when it refused or failed a request.
 nonisolated struct APIError: Error, Equatable, LocalizedError {
@@ -30,6 +52,7 @@ struct APITransport: Sendable {
     /// Told about refusals that end the session or close the app; see `Refusal`.
     var refused: @Sendable (Refusal) -> Void = { _ in }
     var session: URLSession = .shared
+    var cache = ReadCache()
 
     private struct Envelope: Decodable {
         struct Body: Decodable { let status: Int; let message: String; let code: String? }
@@ -41,11 +64,15 @@ struct APITransport: Sendable {
         let items = query.compactMap { key, value in value?.queryText.map { URLQueryItem(name: key, value: $0) } }.sorted { $0.name < $1.name }
         if !items.isEmpty { components.queryItems = items }
 
-        var request = URLRequest(url: components.url!)
+        let url = components.url!
+        var request = URLRequest(url: url)
         request.httpMethod = method
+        // The ETags are handled here, so the system cache doesn't answer for the instance.
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         let sent = token()
         if let sent { request.setValue("Bearer \(sent)", forHTTPHeaderField: "Authorization") }
+        if method == "GET", let etag = cache.validator(for: url, token: sent) { request.setValue(etag, forHTTPHeaderField: "If-None-Match") }
         if let body {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try JSONEncoder().encode(body.compactMapValues { $0 })
@@ -53,6 +80,10 @@ struct APITransport: Sendable {
 
         let (data, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 304, let kept = cache.data(for: url) { return try JSONDecoder().decode(Output.self, from: kept) }
+        if method == "GET", status == 200, let etag = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "ETag") {
+            cache.store(data, etag: etag, for: url, token: sent)
+        }
         guard (200..<300).contains(status) else {
             let envelope = (try? JSONDecoder().decode(Envelope.self, from: data))?.error
             let error = APIError(status: status, message: envelope?.message ?? "The request failed.", code: envelope?.code)

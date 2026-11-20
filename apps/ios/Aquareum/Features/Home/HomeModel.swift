@@ -49,10 +49,13 @@ final class HomeModel {
         defer { sending = false }
         do {
             let conversation = try await api.createConversation(
-                text: draft.prompt.trimmingCharacters(in: .whitespacesAndNewlines),
+                text: draft.text,
                 app: draft.app,
                 aspect: draft.aspect,
-                durationSeconds: draft.durationSeconds
+                durationSeconds: draft.durationSeconds,
+                attachmentIds: draft.attachments.isEmpty ? nil : draft.attachments.map(\.id),
+                agentModel: draft.model,
+                characterSlug: draft.cast?.slug
             )
             draft = Draft()
             return conversation

@@ -3,16 +3,21 @@ import SwiftUI
 struct HomeView: View {
     let travel: Namespace.ID
     let openAccount: () -> Void
+    let openHistory: () -> Void
     let open: (Conversation) -> Void
     @State private var model: HomeModel
+    @State private var tray: ComposerTray?
     @FocusState private var composing: Bool
     @Environment(Account.self) private var account
+    @Environment(ComposerSupport.self) private var support
+    @Environment(InstanceStore.self) private var instance
     @Environment(\.palette) private var palette
     @Environment(\.motion) private var motion
 
-    init(api: API, travel: Namespace.ID, openAccount: @escaping () -> Void, open: @escaping (Conversation) -> Void) {
+    init(api: API, travel: Namespace.ID, openAccount: @escaping () -> Void, openHistory: @escaping () -> Void, open: @escaping (Conversation) -> Void) {
         self.travel = travel
         self.openAccount = openAccount
+        self.openHistory = openHistory
         self.open = open
         _model = State(initialValue: HomeModel(api: api))
     }
@@ -38,13 +43,50 @@ struct HomeView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
-        .overlay(alignment: .topTrailing) { AccountButton(open: openAccount).padding(.trailing, 8) }
+        .overlay(alignment: .top) {
+            HStack {
+                if account.signedIn {
+                    Button(action: openHistory) {
+                        Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(palette.foreground)
+                            .frame(width: 34, height: 34)
+                            .glass(in: Circle())
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressStyle(round: true))
+                    .accessibilityLabel("Your conversations")
+                }
+                Spacer()
+                AccountButton(open: openAccount)
+            }
+            .padding(.horizontal, 8)
+        }
+        .composerTrays(draft: $model.draft, open: $tray)
         .background(alignment: .top) { HomeBackdrop() }
         .background(palette.background)
         .toolbar(.hidden, for: .navigationBar)
         // Again on signing in or out: what loaded with an old session may have been refused.
         .task(id: account.signedIn) { await model.load() }
         .refreshable { await model.load() }
+    }
+
+    /// Attaching and casting need an account, so a guest signs in first and then the tray opens.
+    private var choices: ComposerChoices {
+        ComposerChoices(
+            models: support.models,
+            casting: instance.description?.content.characters == true,
+            attach: { openTray(.attach) },
+            castCharacter: { openTray(.cast) }
+        )
+    }
+
+    private func openTray(_ which: ComposerTray) {
+        Task {
+            guard await account.requireSignIn(which == .attach ? "Sign in to attach from your library." : "Sign in to put a character in it.") else { return }
+            tray = which
+        }
     }
 
     private var hero: some View {
@@ -62,7 +104,7 @@ struct HomeView: View {
                 .padding(.top, 10)
                 .padding(.horizontal, 12)
 
-            Composer(draft: $model.draft, sending: model.sending, focused: $composing) {
+            Composer(draft: $model.draft, choices: choices, sending: model.sending, focused: $composing) {
                 Task {
                     // A guest signs in here and carries on: the request is still in the composer.
                     guard await account.requireSignIn("Sign in to send this. What you wrote stays here.") else { return }
