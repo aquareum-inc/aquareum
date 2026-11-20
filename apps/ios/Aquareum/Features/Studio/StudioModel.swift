@@ -52,6 +52,12 @@ final class StudioModel {
     func load() async {
         do {
             mediums = try await api.listStudioMediums()
+            // A draft opened with words before the studio loaded gets this medium's defaults now.
+            for (kind, draft) in drafts where draft.mode.isEmpty {
+                var fresh = fresh(for: kind)
+                fresh.prompt = draft.prompt
+                drafts[kind] = fresh
+            }
             phase = .loaded
             await requote()
         } catch {

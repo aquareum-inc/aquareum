@@ -29,11 +29,11 @@ in `apps/web/lib/public-api/operations.ts`.
 | Studio | Generate (once per variant) | `createGeneration`, priced first with `quote_generation` | Built (slice 3) |
 | Studio | Follow a render | `getGeneration` | Built (slice 3) |
 | Studio | Improve prompt, attach frames/references, download, open in chat | Not wired in the sample; `enhancePrompt`, `uploadMedia`, `getMediaUrl`, `createConversation` in slices (b)–(c). | Not on mobile until `uploadMedia` exists: modes that need an input (References, Edit) aren't offered on phones |
-| Library | List, search by content, filter by type | `listMedia` | List built (slice 1); search and filters slice 4 |
-| Library | Delete | `deleteMedia` | Slice 4 |
-| Library | Open in studio | Navigation with the item's prompt | Slice 4 |
-| Library | Ask about it | `createConversation` | Slice 4 |
-| Library | Convert or export | Opens the capability's run screen → `runCapability` | Slice 4 |
+| Library | List, search by content, filter by type | `listMedia` | Built (slice 4) |
+| Library | Delete | `deleteMedia` | Built (slice 4) |
+| Library | Open in studio | Navigation with the item's prompt | Built (slice 4) |
+| Library | Ask about it | `createConversation` with the item in `attachment_ids` | Built (slice 4) |
+| Library | Convert or export | Opens the capability's run screen → `runCapability` | Not on phones: it opens the Developers pages, which stay on the web |
 | Characters | List mine and shared | `listCharacters` | List built (slice 1); the rest slice 5 |
 | Characters | Open one | `getCharacter` | Slice 5 |
 | Characters | Create | `createCharacter` | Slice 5 |

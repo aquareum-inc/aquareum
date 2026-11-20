@@ -84,13 +84,13 @@ import app.aquareum.design.glass
 import app.aquareum.design.rememberMotion
 import app.aquareum.design.style
 import app.aquareum.generated.Character
-import app.aquareum.generated.MediaItem
 import app.aquareum.generated.TypeSize
 import app.aquareum.home.HomeScreen
 import app.aquareum.home.HomeViewModel
 import app.aquareum.history.HistoryScreen
 import app.aquareum.history.HistoryViewModel
 import app.aquareum.library.LibraryScreen
+import app.aquareum.library.LibraryViewModel
 import app.aquareum.studio.StudioScreen
 import app.aquareum.chat.LocalOpenInStudio
 import androidx.compose.runtime.CompositionLocalProvider
@@ -199,8 +199,11 @@ private fun MainTabs(container: AppContainer, openBrowser: (android.net.Uri) -> 
                 }
                 composable(Tab.Studio.route) { StudioScreen(container.studio, account, accountButton) }
                 composable(Tab.Library.route) {
-                    val model = viewModel<ListModel<MediaItem>>(factory = viewModelFactory { initializer { ListModel(account) { container.api.searchLibrary() } } })
-                    LibraryScreen(model, signIn, accountButton)
+                    val model = viewModel<LibraryViewModel>(factory = viewModelFactory { initializer { LibraryViewModel(container.api, account) } })
+                    LibraryScreen(model, signIn, accountButton) { conversation ->
+                        container.conversations[conversation.id] = conversation
+                        navigation.navigate("conversation/${conversation.id}")
+                    }
                 }
                 composable(Tab.Characters.route) {
                     val model = viewModel<ListModel<Character>>(factory = viewModelFactory { initializer { ListModel(account) { container.api.listCharacters() } } })

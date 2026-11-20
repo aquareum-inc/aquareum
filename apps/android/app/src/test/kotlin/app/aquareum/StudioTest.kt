@@ -38,5 +38,15 @@ class StudioTest {
     }
 
     @Test
+    fun wordsOpenedBeforeTheStudioLoadsGetItsDefaults() {
+        val early = StudioState().let { it.copy(drafts = mapOf(MediaKind.Video to it.fresh(MediaKind.Video).copy(prompt = "A paper boat"))) }
+        assertEquals("", early.draft.mode)
+        val loaded = early.copy(loading = false, mediums = fixture("list_studio_mediums", ListSerializer(StudioMedium.serializer()))).settled()
+        assertEquals("frames", loaded.draft.mode)
+        assertEquals(5.0, loaded.draft.durationSeconds)
+        assertEquals("A paper boat", loaded.draft.prompt)
+    }
+
+    @Test
     fun aQuoteIsCredits() = assertEquals(55.0, fixture("quote_generation", Quote.serializer()).credits, 0.0)
 }

@@ -522,6 +522,26 @@ For the engine and provider (added to `docs/engine-requests.md`):
 
 ## 17. What exists today
 
+### Slice 4: Library (20 November 2026)
+
+- **Both apps.** The Library tab searches by what is on screen (`search_library` with `query` and `kind`),
+  with a search field that is always visible, All, Video, Image and Audio chips, and a two-column masonry
+  grid with each item's type and length. An item opens a tray: the still, what's in it, its tags, Open in the
+  studio, Ask about it (a conversation with the item attached, asking for a summary and the key moments), and
+  Delete, confirmed. Loading, failure, empty and no-match states. iOS 17 tests, Android 21 unit tests.
+- **Run on both** against a mock-only instance: searched, filtered, opened an item, asked about it (the
+  conversation came back with its moments), opened it in the studio, deleted it with confirmation. Screenshots:
+  `docs/screenshots/mobile/{ios,android}-library{,-search,-item,-no-match}-{dark,light}.jpg`.
+- **Found while running it.** Opening the studio with words before it had loaded left the draft with no
+  mode or length ("0s"), on both apps, from slice 3. A draft made before the studio loads now gets the
+  medium's defaults when it loads, keeping the words.
+
+Not done in slice 4, and why:
+
+- **Convert or export** opens the Developers pages, which stay on the web.
+- **Adding to the library from the phone** (camera roll, files) needs uploads (`uploadMedia`), as the
+  studio's References and Edit do.
+
 ### Slice 3: Studio (20 November 2026)
 
 - **Server.** `list_studio_mediums`, the web's studio (`describeStudio` in `mediums.ts`) resolved against

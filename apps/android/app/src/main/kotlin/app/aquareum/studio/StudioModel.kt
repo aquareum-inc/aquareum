@@ -53,6 +53,9 @@ data class StudioState(
     val cost: Int? get() = quote?.let { it * draft.variants }
     val rendering: Boolean get() = made.values.flatten().any { it.state == GenerationState.Queued || it.state == GenerationState.Running }
 
+    /** Gives a draft opened with words before the studio loaded this medium's defaults, keeping the words. */
+    fun settled(): StudioState = copy(drafts = drafts.mapValues { (kind, draft) -> if (draft.mode.isEmpty()) fresh(kind).copy(prompt = draft.prompt) else draft })
+
     fun fresh(kind: MediaKind): StudioDraft {
         val medium = mediums.firstOrNull { it.kind == kind }
         val mode = medium?.modes?.firstOrNull { !it.needsInput }
@@ -72,7 +75,7 @@ class StudioModel(private val api: Api) {
     suspend fun load() {
         try {
             val mediums = api.listStudioMediums()
-            _state.update { it.copy(loading = false, failed = false, mediums = mediums) }
+            _state.update { it.copy(loading = false, failed = false, mediums = mediums).settled() }
             requote()
         } catch (error: CancellationException) {
             throw error
