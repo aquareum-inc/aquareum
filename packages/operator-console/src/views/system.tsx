@@ -3,7 +3,8 @@ import type { DataSource, EngineHealth, OperatorAuditEntry } from "@livepeer/api
 import { ago } from "../components/format";
 import { ConsolePage, Panel, Status } from "../components/parts";
 import { Table } from "../components/table";
-import { OperatorPhonesPanel, PhoneActivityPanel, type OperatorPhonesProps } from "./operator-phones";
+import { OperatorPhonesPanel, type OperatorPhonesProps } from "./operator-phones";
+import { PhoneActivityPanel } from "./phone-activity";
 
 export interface SystemCheck {
   name: string;

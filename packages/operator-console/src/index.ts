@@ -11,5 +11,6 @@ export { ComputeView, type ComputeViewProps } from "./views/compute";
 export { SettingsView, type InstanceSettings, type SettingsViewProps } from "./views/settings";
 export { KeysView, type KeysViewProps } from "./views/keys";
 export { ReportsView, type ReportsViewProps } from "./views/reports";
-export { NewPhoneNotice, type OperatorPhonesProps } from "./views/operator-phones";
+export { type OperatorPhonesProps } from "./views/operator-phones";
+export { NewPhoneNotice } from "./views/phone-activity";
 export { SystemView, type SystemCheck, type SystemViewProps } from "./views/system";

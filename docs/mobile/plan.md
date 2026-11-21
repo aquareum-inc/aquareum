@@ -1179,7 +1179,9 @@ Decided while building, where 18 left room:
   suspending does. A role removed at the provider itself still waits for revocation or the 30 days (Q13).
 - **The new-phone notice** shows for two days and can't be dismissed.
 
-Not done here, for the sessions that follow: the API fixtures for the new operations
-(`docs/mobile/fixtures/`), which are captured from a running mock-only instance when the iOS decoding tests
-are written; everything in the apps.
+The answers of the new operations, captured over HTTP from a mock-only instance by a script that enrolled a
+key, unlocked and confirmed changes as a phone would, are in `docs/mobile/fixtures/` (`operator_*.json`,
+`create_operator_*.json`, `unlock_operator_device_session.json`) for the native decoding tests.
+
+Not done here, for the sessions that follow: everything in the apps.
 
