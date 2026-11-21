@@ -1,10 +1,31 @@
+# What `docker build` sends to Docker. The Dockerfile copies only apps, packages and a few root files; this keeps
+# everything else, and anything secret, off the build context. Patterns without **/ match at the root only.
+
+# Secrets and the instance's own state, anywhere
+**/.env
+**/.env.*
+!**/.env.example
+.data
+deploy
+instance.config.json
+
+# Dependencies and build output
 **/node_modules
 **/.next
+**/dist
+**/out
+**/coverage
+**/.turbo
+**/*.tsbuildinfo
+**/test-results
+**/playwright-report
+
+# Not part of the image
 .git
+.github
 .reference
 .claude
-.env
-.env.*
 docs
 apps/ios
 apps/android
+**/.DS_Store
