@@ -4,6 +4,33 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@types/node':
+      specifier: ^22.20.5
+      version: 22.20.5
+    '@types/react':
+      specifier: ^19.2.0
+      version: 19.3.0
+    '@types/react-dom':
+      specifier: ^19.2.0
+      version: 19.3.0
+    ajv:
+      specifier: ^8.17.1
+      version: 8.20.0
+    lucide-react:
+      specifier: ^1.74.0
+      version: 1.74.0
+    motion:
+      specifier: ^13.4.3
+      version: 13.5.1
+    typescript:
+      specifier: 5.9.2
+      version: 5.9.2
+    vitest:
+      specifier: ^3.2.4
+      version: 3.2.7
+
 importers:
 
   .: {}
@@ -32,7 +59,7 @@ importers:
         specifier: ^1.7.2
         version: 1.9.2(next@16.4.6(@types/node@22.20.5)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))
       lucide-react:
-        specifier: ^1.74.0
+        specifier: 'catalog:'
         version: 1.74.0(@types/react@19.3.0)(react@19.2.1)
       next:
         specifier: 16.4.6
@@ -48,13 +75,13 @@ importers:
         specifier: ^4.3.3
         version: 4.3.5
       '@types/node':
-        specifier: ^22.10.0
+        specifier: 'catalog:'
         version: 22.20.5
       '@types/react':
-        specifier: ^19.2.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19.2.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       server-only:
         specifier: ^0.0.1
@@ -63,59 +90,59 @@ importers:
         specifier: ^4.3.3
         version: 4.3.5
       typescript:
-        specifier: 5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.7(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)
 
   packages/api-client:
     devDependencies:
       '@types/node':
-        specifier: ^22.10.0
+        specifier: 'catalog:'
         version: 22.20.5
       typescript:
-        specifier: 5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.7(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)
 
   packages/cli:
     dependencies:
       ajv:
-        specifier: ^8.17.1
+        specifier: 'catalog:'
         version: 8.20.0
 
   packages/config:
     dependencies:
       ajv:
-        specifier: ^8.17.1
+        specifier: 'catalog:'
         version: 8.20.0
     devDependencies:
       '@types/node':
-        specifier: ^22.10.0
+        specifier: 'catalog:'
         version: 22.20.5
       json-schema-to-typescript:
         specifier: ^15.0.4
         version: 15.0.4
       typescript:
-        specifier: 5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.7(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)
 
   packages/mobile-codegen:
     devDependencies:
       '@types/node':
-        specifier: ^22.10.0
+        specifier: 'catalog:'
         version: 22.20.5
       ts-json-schema-generator:
         specifier: ^2.10.0
         version: 2.10.0
       typescript:
-        specifier: 5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
 
   packages/operator-console:
@@ -127,10 +154,10 @@ importers:
         specifier: workspace:*
         version: link:../ui
       lucide-react:
-        specifier: ^1.48.0
+        specifier: 'catalog:'
         version: 1.74.0(@types/react@19.3.0)(react@19.2.1)
       motion:
-        specifier: ^13.4.3
+        specifier: 'catalog:'
         version: 13.5.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       react:
         specifier: ^19.2.1
@@ -140,16 +167,16 @@ importers:
         version: 19.2.1(react@19.2.1)
     devDependencies:
       '@types/node':
-        specifier: ^22.20.5
+        specifier: 'catalog:'
         version: 22.20.5
       '@types/react':
-        specifier: ^19.2.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19.2.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       typescript:
-        specifier: 5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
 
   packages/ui:
@@ -161,10 +188,10 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       lucide-react:
-        specifier: ^1.48.0
+        specifier: 'catalog:'
         version: 1.74.0(@types/react@19.3.0)(react@19.2.1)
       motion:
-        specifier: ^13.4.3
+        specifier: 'catalog:'
         version: 13.5.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       radix-ui:
         specifier: ^1.4.3
@@ -180,13 +207,13 @@ importers:
         version: 3.7.0
     devDependencies:
       '@types/react':
-        specifier: ^19.2.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19.2.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       typescript:
-        specifier: 5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
 
   packages/user-app:
@@ -201,10 +228,10 @@ importers:
         specifier: 0.0.7
         version: 0.0.7(react@19.2.1)
       lucide-react:
-        specifier: ^1.48.0
+        specifier: 'catalog:'
         version: 1.74.0(@types/react@19.3.0)(react@19.2.1)
       motion:
-        specifier: ^13.4.3
+        specifier: 'catalog:'
         version: 13.5.1(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       react:
         specifier: ^19.2.1
@@ -217,16 +244,16 @@ importers:
         version: 0.3.2(react@19.2.1)
     devDependencies:
       '@types/react':
-        specifier: ^19.2.0
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19.2.0
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       typescript:
-        specifier: 5.9.2
+        specifier: 'catalog:'
         version: 5.9.2
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.7(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)
 
 packages:

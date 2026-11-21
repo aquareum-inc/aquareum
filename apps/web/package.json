@@ -17,19 +17,19 @@
     "@livepeer/user-app": "workspace:*",
     "@fontsource-variable/inter": "^5.2.5",
     "geist": "^1.7.2",
-    "lucide-react": "^1.74.0",
+    "lucide-react": "catalog:",
     "next": "16.4.6",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^22.10.0",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "server-only": "^0.0.1",
     "tailwindcss": "^4.3.3",
-    "typescript": "5.9.2",
-    "vitest": "^3.2.4"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

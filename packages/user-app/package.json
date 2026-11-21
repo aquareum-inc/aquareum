@@ -17,8 +17,8 @@
     "@livepeer/api-client": "workspace:*",
     "@livepeer/ui": "workspace:*",
     "liveline": "0.0.7",
-    "lucide-react": "^1.48.0",
-    "motion": "^13.4.3",
+    "lucide-react": "catalog:",
+    "motion": "catalog:",
     "thinking-orbs": "0.3.2"
   },
   "peerDependencies": {
@@ -26,9 +26,9 @@
     "react-dom": "^19.2.1"
   },
   "devDependencies": {
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "typescript": "5.9.2",
-    "vitest": "^3.2.4"
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
