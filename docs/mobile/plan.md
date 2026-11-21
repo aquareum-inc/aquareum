@@ -1,11 +1,11 @@
 # Native apps: plan
 
 Native iOS (Swift, SwiftUI) at `apps/ios` and Android (Kotlin, Jetpack Compose) at `apps/android`, for the
-user app only. The bar is the Linear mobile app: fast, fluid, idiomatic to each platform. Everything in
+user app, and for the operator console from section 18 (proposed). The bar is the Linear mobile app: fast, fluid, idiomatic to each platform. Everything in
 `CLAUDE.md` applies; this plan adds what mobile needs.
 
 Status: **proposed, waiting for review.** Sections marked *Decision* need an answer before the slices
-start. What exists today is in section 17. Facts about store rules and tools were checked on 19 November 2026 and change often; each is marked
+start. What exists today is in section 17. Section 18 plans the operator console on phones. Facts about store rules and tools were checked on 19 November 2026 and change often; each is marked
 *verify* where a decision depends on it.
 
 ## 1. Scope
@@ -21,7 +21,8 @@ start. What exists today is in section 17. Facts about store rules and tools wer
 
 | Out | Why |
 |-----|-----|
-| Operator console, Developers section | A desk job; stays on the web. |
+| Operator console | Out of slices 1 to 6. Planned for phones in section 18, which reverses the earlier "stays on the web". |
+| Developers section | A desk job; stays on the web. |
 | Studio Live, character calls | Planned in section 10; built when live sessions are connected (engine request R2). |
 | Buying credits, changing plan | Balance, plan and usage are shown. Purchasing waits on the decision in section 11. |
 | `./livepeer mobile` | Designed in section 13; built once the apps work against the flagship. |
@@ -120,7 +121,8 @@ Operations describe inputs only. Proposed:
    definition and "the real response wins" keeps holding.
 3. `pnpm api:openapi` writes `docs/mobile/openapi.json` (OpenAPI 3.1) from the operations list: paths,
    inputs, outputs, the error envelope, which operations are public and which need the operator role.
-   Operator operations are left out of the mobile clients.
+   Operator operations are left out of the mobile clients, except those section 18.5 marks for phones,
+   which go into a separate generated client.
 4. A test runs every non-operator operation against a mock-only instance and validates the response
    against its schema. The captured responses are saved as `docs/mobile/fixtures/*.json`, and the native
    decoding tests read those same files.
@@ -200,7 +202,8 @@ The starting point holds up. Proposed flow:
 **The token.** 32 random bytes, shown once. The instance stores only its SHA-256, with the user id, name,
 email, device name, platform, created and last-used times, and the user's builder key sealed with
 `SESSION_SECRET`. `authenticate()` accepts it after the operator token and API keys. A device session
-always has the `user` role: operator work stays on the web, so a lost phone can't administer an instance.
+always has the `user` role, so a lost phone can't administer an instance. Section 18 keeps that true of
+this session and adds a separate operator device session (`aqo_`) for the console.
 
 **Lifetime and revocation.**
 
@@ -517,7 +520,9 @@ Decided with the approval of the design sample (the recommended option in each c
 4. **Callback**: custom scheme with PKCE for the first release (5). Built; universal links are the follow-up.
 5. **Type**: system text with Geist Mono (7).
 6. **Minimum OS**: iOS 18 and Android 10 (8).
-9. **Operator role on phones**: device sessions are always `user`. Built.
+9. **Operator role on phones**: device sessions are always `user`. Built. Reversed on 21 November 2026:
+   the console comes to phones behind a separate operator device session (section 18; its open decisions
+   are in 18.7).
 
 Still open:
 
@@ -795,3 +800,334 @@ Not done, and why:
   no SVG image decoder. Proposed: the instance serves a PNG rendition of each mark for clients that ask.
   Until then such an instance shows its name in type on mobile.
 - **Tabs, the account tray, sign-in and trays** are slice 1, after the sign-in proposal is approved.
+
+## 18. The operator console on phones (proposed 21 November 2026)
+
+Status: **proposed, nothing built.** This section reverses two earlier lines: the console "stays on the
+web" (section 1) and device sessions "always have the `user` role" (section 5). Decisions the owner still
+has to make are in 18.7. A builder can start from this section alone, after reading sections 4, 5 and 7.
+
+### 18.1 Why, and for whom
+
+- **Console-only instances.** An instance with `surfaces.app` off (the `headless` preset) serves an API and a
+  console and has no user app. Its operator has nothing to install today, and on a phone's browser 10 of the
+  console's 13 pages scroll sideways and the navigation is one long strip.
+- **Instances with both.** An operator is also a user. They get one app and switch between the user app and
+  the console.
+- **What a phone is for.** Checking that the service is healthy, seeing what failed, deciding a report and
+  stopping an abusive account, away from a desk. Setting prices, keys, billing and instance settings stays a
+  desk job on the web.
+
+The console goes into the same apps (`apps/ios`, `apps/android`), under the same rules: native UI, clients of
+`/api/v1` only, no mock layer, every action an operation defined in `operations.ts` first.
+
+### 18.2 Security
+
+The property to keep: **a phone alone is never enough to administer an instance.** Today that holds because
+phones can't do operator work at all. After this change it holds because operator work on a phone needs
+three things together: an operator device session, a key that never leaves the phone's secure hardware, and
+the operator's face or fingerprint at the moment of use.
+
+**A separate session.** The operator device session is a different record, token and store entry from the
+user device session of section 5. It does not replace it and neither can stand in for the other.
+
+| | User device session (today) | Operator device session (new) |
+|---|---|---|
+| Token prefix | `aqd_` | `aqo_` |
+| Who | Any signed-in user | Only an identity the provider marks `operator`, as on the web |
+| Can run | User operations | Only operator operations marked for phones (below), plus `get_instance` and `get_me` |
+| Holds a builder key | Yes, sealed | No. It can't run a job or spend credit |
+| Idle expiry | 90 days | 7 days |
+| Absolute expiry | None | 30 days, then sign in again |
+| Bound to a device key | No | Yes |
+| Biometric to use | No | Yes, every time the console opens and for every change |
+| Switched on by | `surfaces.mobile` | `surfaces.mobileConsole`, off in both presets |
+
+On an instance with both surfaces an operator's phone holds both sessions. The user app keeps working when
+the operator session expires or is revoked.
+
+**Signing in on a phone.**
+
+1. The person chooses "Open the console" (from the account tray, or the first screen of a console-only
+   instance). If the phone has no enrolled biometrics, the app says the console needs Face ID or a
+   fingerprint and stops.
+2. The app creates a P-256 key pair in the Secure Enclave (iOS, access control `biometryCurrentSet`) or
+   StrongBox/TEE Keystore (Android, `setUserAuthenticationRequired(true)`, biometric class 3,
+   `setInvalidatedByBiometricEnrollment(true)`). The private key can't be exported, and it is destroyed if
+   the phone's enrolled faces or fingerprints change.
+3. The app starts the section 5 flow with `purpose=operator`: PKCE, the system auth session, the instance's
+   own callback. The instance asks the provider for a **fresh** sign-in (`prompt=login`, `max_age=0`), so a
+   browser cookie left on the phone doesn't grant operator access by itself.
+4. At the callback the instance mints the one-time code only if the identity's role is `operator`. Anyone
+   else is returned to the app with "This account doesn't run this service."
+5. The app posts the code, the verifier, the device name and the **public key** to
+   `POST /api/v1/auth/operator-device`. The instance stores the session (keyed hash of the token, user id,
+   name, device name, platform, public key, created, last used, last unlocked) and returns the `aqo_` token.
+6. The token goes in the Keychain or Keystore-encrypted storage, device-only, never in a backup.
+
+Enrolling a phone needs nothing from the web console. The reasoning: the provider sign-in that enrols a
+phone is the same one that opens the web console for 8 hours, so a pairing step would add friction without
+raising the bar. The web console shows a notice when a new phone is added, and lists and revokes them.
+
+**Unlock, and proof for each change.** The token alone does nothing. Two proofs, both signatures made by
+the device key, which the phone only makes after a biometric match:
+
+- **Unlock** (to read). When the console opens, the app asks for a challenge, signs it (the system shows
+  Face ID or the fingerprint prompt), and posts the signature. The instance verifies it against the stored
+  public key and marks the session unlocked for **5 minutes**. Read operations need an unlocked session.
+  The app locks the console itself when it goes to the background for more than a minute, and the server
+  window ends regardless.
+- **Confirm** (to change something). Every operator operation that changes anything needs its own proof: a
+  challenge bound to the operation name and a hash of its input, signed after a new biometric prompt, sent
+  as `X-Operator-Proof: <nonce>.<signature>`. A nonce is used once and lasts 60 seconds. An unlocked
+  session is not enough for a change.
+
+No passcode fallback: if biometrics fail or are unavailable, the console is not available on that phone and
+the person uses the web.
+
+**What the server checks on every operator operation from a phone**, in order, refusing at the first
+failure:
+
+1. `surfaces.mobileConsole` is on (else 403 `mobile_console_off`).
+2. The token matches a stored operator session that is inside both expiries (else 401).
+3. The operation is marked for phones (else 403 `web_only`). This is an allow-list: an operator operation
+   with no mark, including any added later, is refused.
+4. For a read: the session is unlocked (else 401 `locked`, and the app shows the lock screen).
+5. For a change: a valid, unused proof bound to this operation and this input (else 401 `proof_required`).
+6. Rate limits per session. Five failed proofs in a row revoke the session.
+7. Every sign-in, unlock, change, refusal at steps 3 to 6 and revocation is written to an audit log (who,
+   which phone, which operation, which target, when), kept in the instance's data volume and shown on the
+   web console's System page.
+
+**How `authenticate()` and the role guard change.**
+
+- `Caller` gains `via: "operator_token" | "browser" | "api_key" | "device" | "operator_device"`, and for an
+  operator device the session id and `unlockedUntil`.
+- `authenticate()` gets one new branch for `aqo_`, before the `aqd_` branch: flag check, lookup in the
+  operator sessions, then a `Caller` with `operator: buildOperatorClient()` and `via: "operator_device"`.
+  The `aqd_` branch is unchanged and still returns `operator: null`.
+- The checks above run in one place, the API dispatcher that runs an operation, not in each operation:
+  when `via` is `operator_device` it applies steps 3 to 6 before `run`. The existing `operator(context)`
+  guard in `operations.ts` stays as the second line.
+- An `aqo_` token is refused on every non-operator operation except `get_instance` and `get_me`.
+- `checkAccess` (the web role guard) does not change. An `aqo_` token is only read from the
+  `Authorization` header by the API; it never opens `/operator` pages and never becomes a cookie.
+- The engine reader and admin tokens stay inside `buildOperatorClient()` on the server. The phone sends
+  `aqo_` and a proof, and receives JSON. Nothing in an operator response may contain a token or a key; the
+  schema test of 4.2 asserts this for the phone operations.
+
+**Revocation.**
+
+- Web console ▸ System ▸ **Operator phones** lists every operator device session (person, phone, added,
+  last used, last unlocked) with Revoke on each and Revoke all. This page is web-only.
+- The app's console has "Sign out of the console on this phone", which deletes the session and the device
+  key.
+- Suspending the person, or rotating `SESSION_SECRET`, ends their operator sessions as it ends the others.
+- Role removal at the provider: the role is read at sign-in, so a removed operator keeps a phone session
+  until it is revoked or reaches 30 days. Revoke it from the web console when removing an operator. A
+  provider back-channel (Q13 in `docs/engine-requests.md`) would close this gap, for web sessions too.
+
+**Which operations a phone can call.**
+
+| Operation | Phone | Stage |
+|---|---|---|
+| `operator_status` (new), `operator_health`, `operator_overview` | Read, unlocked | 1 |
+| `operator_list_jobs` | Read, unlocked | 1 |
+| `operator_list_reports` | Read, unlocked | 1 |
+| `operator_list_users` | Read, unlocked | 1 |
+| `operator_resolve_report` | Change, proof each time | 1 |
+| `operator_set_user_status` (suspend, resume) | Change, proof each time | 1 |
+| `operator_costs`, `operator_list_grants`, `operator_list_plans`, compute and capability reads | Read, unlocked | 2 |
+| `operator_top_up_user`, `operator_assign_plan` | Web only (decision 6 in 18.7) | 4 at the earliest |
+| `operator_set_capability` (offered, markup, surfaces), pricing | Web only | — |
+| `operator_list_keys` and every key operation | Web only | — |
+| `operator_create_grant`, billing | Web only | — |
+| Instance settings, surfaces, sign-in methods | Web only | — |
+| Operator phones list and revoke | Web only | — |
+
+**Threats.**
+
+| Threat | What stops it |
+|---|---|
+| Lost or stolen phone, locked | Token is device-only storage; the device key needs a biometric match. Nothing is reachable. |
+| Lost or snatched phone, unlocked, console open | Reads for at most 5 minutes (the app also locks on background). No change without a new biometric match. The operator revokes it from the web. |
+| Thief knows the phone's passcode | No passcode fallback. Adding their own face or fingerprint destroys the device key, and the session is dead. |
+| Token stolen (backup, malware, proxy, logs) | Useless without the device key: it can't unlock or sign a proof. Tokens are stored as keyed hashes on the server. |
+| Captured request replayed | A proof is bound to one operation and input, single use, 60 seconds. An unlock challenge is single use. TLS throughout. |
+| A user-role `aqd_` session calls operator routes | `operator: null` → 403, as today. A test calls every operator operation with a user device token. |
+| An `aqo_` session calls a web-only operation | Allow-list at the dispatcher → 403 `web_only`. A test calls every unmarked operator operation. |
+| An `aqo_` session used to run jobs or spend | It holds no builder key and is refused on user operations. |
+| Another app claims the callback scheme | It gets a code it can't redeem without the PKCE verifier, and a session it can't use without the device key. |
+| Someone who knows an operator's provider password | Same exposure as the web console today, no more. A new phone raises a notice in the web console; operators should have a second factor at the provider. |
+| Former operator | Revoke on removal; 30-day absolute expiry as the backstop. |
+| A build pointed at someone else's instance | Callback redirects go only to the identifiers in that instance's config (section 5). |
+| Rooted or jailbroken phone | Not defended beyond hardware-backed keys. Stated, not solved. |
+
+### 18.3 Scope, in stages
+
+| Stage | What it adds | Changes allowed |
+|---|---|---|
+| 1. Away from the desk | Console sign-in, unlock and lock, switching from the user app. **Status** (health and what needs attention). **Jobs** (recent, failures, one job's attempts). **Reports** (the queue, keep up or take down). **Users** (search, one user, suspend and resume). Web: Operator phones page, audit log. | Resolve a report; suspend and resume a user |
+| 2. The numbers | Revenue, wholesale cost and margin over time; costs by capability; grants and their funding; compute operators; what's offered; system version and checks. All read-only. | None |
+| 3. Being told | Push alerts when the engine stops being ready, failures spike or a report is waiting, with a per-operator choice of which. Needs push credentials and device-token operations. | None |
+| 4. Selected changes | Only after the owner decides each: top up a user (capped), assign a plan, switch a capability off, block a compute operator. | As decided |
+| Stays on the web | API and access keys, pricing and markup, billing, credit packs, creating grants, instance settings, surfaces, appearance, operator phones. | — |
+
+### 18.4 Design direction
+
+A redesign for a phone, not the web tables at 375 px. `docs/design-brief.md` holds: same tokens, one ink
+action per view, green never on a control, mono for facts, each view answers one question, a tray's tint
+carries the stakes, almost no delight. The web console's 32 px controls do not carry over: targets stay
+44 pt and 48 dp. Density comes from two-line rows and mono facts, not small controls.
+
+**The first screen is Status, and it answers "is anything wrong?"**
+
+- One sentence in the page-title size: "Everything is running." or "2 things need you." A dot beside it:
+  green when all is well (a state, not a control), the destructive colour when something is down.
+- **Needs you**, shown only when there is something: "Engine isn't ready", "Costs haven't synced for 3 h",
+  "14 jobs failed in the last hour", "3 reports are waiting". Each row opens the place to deal with it.
+  What counts as wrong is decided by the server (`operator_status`), so web and phones agree.
+- **Today**: active users, jobs, failed, revenue and margin, as mono facts. Numbers roll only changed digits.
+- **Service**: engine, discovery, cost sync, version, each one row with its state and "12 s ago" in mono.
+- Pull to refresh. "Checked 12 s ago" under the title. Loading is skeleton rows of the final height, so
+  nothing shifts. If the instance can't be reached, the sentence says so and offers Try again.
+
+**Navigation.** Four tabs: **Status, Jobs, Reports, Users**. Reports carries a count of open reports. From
+stage 2 a fifth tab, **More**, is a grouped list using the web console's groups (Money, Network, Instance)
+with only what the phone offers, and one line at its foot: "Keys, pricing, billing and settings are on the
+web console", which opens it in the browser. Thirteen pages never become thirteen tabs.
+
+**Tables become lists; detail is a pushed screen.**
+
+- A row is two lines: what it is, then its facts in mono (when, cost, attempts, id tail). State is a
+  leading word or dot, never a colour alone.
+- Filters are chips above the list (Jobs: All, Failed, Running). Users has a search field that is always
+  visible. Lists load more as they scroll and pull to refresh.
+- Tapping a row pushes a detail screen: a grouped list of facts. Ids copy on long press; the share sheet
+  sends a job's summary. A failed job shows each attempt, its compute operator and the error as written.
+- Reports is a queue, as on the web (decision 55): the character and author, the reason, the reporter's
+  words, when. Who reported is never shown. Decided reports sit below.
+- Every list has an empty state in real words ("No reports are waiting.", "Nothing has failed today.").
+
+**Changes look like changes.**
+
+- A change starts from a button on a detail screen, never a swipe on a row.
+- It opens a tray (section 7's tray rules) that says what will happen, to whom, and whether it can be
+  undone: "Suspend Dana Okafor? Their work stops and their phones are signed out. You can resume them at
+  any time." One action button, named for the action. Take it down and Suspend are red, in a tray with the
+  destructive tint; Keep it up and Resume are ink.
+- Pressing it shows the system biometric prompt with the same words. Then the tray closes, the row and
+  detail update in place, and there is one haptic. A refusal puts everything back and says why.
+- Nothing is optimistic for operator changes: the screen changes when the server has confirmed.
+
+**Visibly not the user app.**
+
+- **Entry.** On an instance with both, the account tray has an "Operator console" row, shown only when
+  `get_me` says the person is an operator and `get_instance` says the console is offered on phones. It
+  asks for the biometric, then the console covers the whole app with its own tab bar. It is a separate
+  place, not a fifth tab among the user's.
+- **A standing label.** Every console root carries the instance's mark and CONSOLE in small mono capitals
+  where the user app has its title area, and a "Back to the app" button where the avatar sits. No
+  composer, no media, no home background.
+- **Locked.** When the console is locked or the unlock has lapsed, a lock screen covers it: the instance
+  mark, "Unlock the console", one ink button. No data shows behind it. The app-switcher snapshot of the
+  console is blank.
+- **Console-only instances** open straight to the console's sign-in ("Sign in to run <instance name>") and
+  have no user tabs, account tray or guest state at all.
+
+Copy follows the rules: real words, no category labels. Accessibility as section 7: largest text sizes
+reflow (facts move under what they describe), VoiceOver and TalkBack labels on every row and state, both
+themes. Each decision is logged in `docs/design-proposals.md` as it is built, and every screen is
+screenshotted in dark and light into `docs/screenshots/mobile/`.
+
+### 18.5 API and codegen
+
+**Marking operations.** In `operations.ts` an operator operation gains `mobile?: "read" | "confirm"`. No
+mark means web-only. The dispatcher reads the mark (18.2); nothing else decides what a phone may call. A
+test fails if an operation has `mobile` without `operator: true` or without an `output`.
+
+**The OpenAPI document and the generated clients.**
+
+- `pnpm api:openapi` writes marked operator operations with `x-operator: true` and `x-mobile`. Unmarked
+  operator operations stay out of the mobile clients, as today.
+- `packages/mobile-codegen` writes them into a **separate** generated type, `OperatorAPI`, in its own file
+  in each app. It can only be constructed from an operator session, and a `confirm` operation's generated
+  function takes a proof, so calling one without it doesn't compile. The user client gains nothing.
+- The fixtures test of 4.2 runs the marked operator operations against a mock-only instance and saves their
+  responses for the native decoding tests. The stale-output CI check covers the new file.
+
+**New and changed operations**, each added to `operations.ts` first, with its `output`, and to
+`docs/data-sources.md` and `docs/ui-actions.md` with their Mobile columns:
+
+| Operation | Method and path | Notes |
+|---|---|---|
+| `create_operator_device_session` | `POST /auth/operator-device` | Code, verifier, device name, platform, public key → token and session. No authentication, like `create_device_session`. |
+| `delete_operator_device_session` | `DELETE /auth/operator-device` | Signs this phone out of the console. |
+| `create_operator_challenge` | `POST /operator/device/challenge` | `purpose`: `unlock`, or an operation name with an input hash → nonce, 60 s. |
+| `unlock_operator_device_session` | `POST /operator/device/unlock` | Nonce and signature → `unlocked_until`. |
+| `operator_status` | `GET /operator/status` | One call for the Status screen: health, today's figures, and the list of things that need attention with counts. Composed on the server from existing client functions. `mobile: "read"`. The web overview can use it too. |
+| `operator_list_devices`, `operator_revoke_device` | `GET /operator/devices`, `DELETE /operator/devices/{id}` | Web-only. Behind the Operator phones page. |
+| `operator_list_audit` | `GET /operator/audit` | Web-only. Behind the audit log on System. |
+| `operator_list_jobs` (changed) | — | Add `status` and a `before` cursor, so the list filters and pages. |
+| `operator_list_users` (changed) | — | Add `query`, so search runs on the server. |
+| `get_instance` (changed) | — | `surfaces` gains `console` and `mobile_console`. |
+| `get_me` (changed) | — | Gains `role`, so the app knows whether to offer the console. Offering is not access: the server decides. |
+
+Check before adding a per-job or per-user read: if the list responses already carry what the detail screen
+shows, no new operation is needed. Stage 3 adds push-token operations; they are specified with that stage.
+
+**Config.** `surfaces.mobileConsole: boolean` in the instance schema, `false` in both presets, with a
+switch on the web console's Surfaces settings and a check in `./livepeer doctor`. It is independent of
+`surfaces.mobile`: a console-only instance turns on `mobileConsole` alone.
+
+**Storage.** Operator sessions, pending challenges and the audit log go behind the same store interface as
+device sessions (file-backed now, the database later), in separate files from user device sessions.
+
+### 18.6 Build order and review points
+
+1. **Server first.** The flag, operator device sessions, challenges and proofs, the `authenticate()`
+   branch, the dispatcher allow-list, the audit log, the web Operator phones page, the new operations, and
+   the tests in the list below. No app code depends on anything unreviewed.
+   **Review point A (security):** the owner reviews this change by itself, with `/security-review` run on
+   it, before any app work merges.
+2. **iOS design sample.** The Status screen and the Jobs list with one job's detail, against a
+   `MOCK_ONLY=1` instance, in dark and light and at the largest text size.
+   **Review point B (design):** the one stop for the owner. Nothing else is built until it is approved.
+3. **iOS, rest of stage 1.** Console sign-in, unlock, lock screen, the switch from the account tray, the
+   console-only launch, Reports, Users, suspend and resume.
+4. **Android, stage 1**, from the same spec with the iOS build as a behavioural reference.
+5. Stages 2 to 4, each iOS then Android, each committed as a slice with screenshots.
+
+**What needs the most careful review:**
+
+- `authenticate()` and the dispatcher: the allow-list defaults to refusing, and no path reaches `run`
+  around it.
+- Proof verification: single-use nonces, binding to operation and input, expiry, and constant-time
+  comparison.
+- Key creation on each platform: hardware-backed, biometric-only, invalidated when biometrics change. A
+  wrong flag here silently removes the protection, and a simulator can't show it. Test on real phones.
+- The operator sign-in forcing a fresh provider sign-in, and refusing a non-operator identity.
+- Revocation taking effect on the next request.
+- Operator responses carrying no token, key or builder key.
+
+**Tests the server change must include:** every operator operation with a user `aqd_` token → 403; every
+unmarked operator operation with an `aqo_` token → 403 `web_only`; an `aqo_` token on a user operation →
+refused; a read while locked → 401 `locked`; a change with no proof, a reused proof, a proof for another
+operation or other input, an expired proof, and a proof from another key → refused; both expiries; flag
+off; revoke, then the next call fails; five bad proofs revoke the session; each of these writes an audit
+entry.
+
+### 18.7 Open decisions for the owner
+
+| # | Decision | Recommendation |
+|---|---|---|
+| 1 | Session lifetime: idle, absolute, and the unlock window | 7 days idle, 30 days absolute, 5 minutes unlocked. Short enough that a forgotten phone lapses, long enough not to sign in at the provider every week. |
+| 2 | Biometrics only, or allow the phone's passcode as a fallback | Biometrics only. A passcode is what a thief is most likely to have seen. Phones without biometrics use the web. |
+| 3 | Does enrolling a phone need approval from the web console (pairing) | No. Provider sign-in already opens the web console, so pairing adds friction, not safety. Show a notice on the web when a phone is added. |
+| 4 | Suspend and take-down on phones in stage 1 | Yes. They are why an operator reaches for a phone, both can be undone or reviewed, and each needs its own biometric match. |
+| 5 | The flag and its default | `surfaces.mobileConsole`, off in both presets, so no instance gains phone administration by upgrading. |
+| 6 | Top-ups and plan changes on phones | Keep on the web. Revisit at stage 4 with a per-action and daily cap, once the audit log has been in use. |
+| 7 | One app or a separate console app | One app, as agreed. *Verify* at submission how each store treats a console-only instance's app (an admin tool with no public content); it may need review notes and a demo operator account. |
+| 8 | Custom scheme or universal links for the operator callback | Custom scheme with PKCE for the first release, as section 5. The device key makes an intercepted code useless. Move both flows to universal links together. |
+| 9 | Push alerts | Stage 3, not stage 1. Pull to refresh is enough for the sample and avoids push credentials early. |
+| 10 | Should the web console also ask for a fresh sign-in or a passkey before its riskiest changes | Out of scope here, but worth a follow-up: phones will have a stronger check per change than the web does. |
