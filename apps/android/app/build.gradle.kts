@@ -22,6 +22,7 @@ android {
         versionName = "0.1.0"
         resValue("string", "app_name", instanceValue("name"))
         buildConfigField("String", "INSTANCE_URL", "\"${instanceValue("url")}\"")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -63,4 +64,11 @@ dependencies {
     implementation(libs.coil.network)
 
     testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test)
+    androidTestImplementation(libs.test.runner)
+    androidTestImplementation(libs.test.rules)
+    androidTestImplementation(libs.test.ext.junit)
+    androidTestImplementation(libs.espresso.core)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

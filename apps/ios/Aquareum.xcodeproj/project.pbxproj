@@ -14,11 +14,19 @@
 			remoteGlobalIDString = AA0000000000000000000010;
 			remoteInfo = Aquareum;
 		};
+		AA0000000000000000000032 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000010;
+			remoteInfo = Aquareum;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		AA0000000000000000000003 /* Aquareum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Aquareum.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000004 /* AquareumTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AquareumTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA000000000000000000000B /* AquareumUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AquareumUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000005 /* Instance.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Instance.xcconfig; sourceTree = "<group>"; };
 		AA0000000000000000000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -32,6 +40,11 @@
 		AA0000000000000000000008 /* AquareumTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AquareumTests;
+			sourceTree = "<group>";
+		};
+		AA000000000000000000000C /* AquareumUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AquareumUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -51,6 +64,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000072 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -59,6 +79,7 @@
 			children = (
 				AA0000000000000000000007 /* Aquareum */,
 				AA0000000000000000000008 /* AquareumTests */,
+				AA000000000000000000000C /* AquareumUITests */,
 				AA0000000000000000000009 /* Config */,
 				AA000000000000000000000A /* Products */,
 			);
@@ -78,6 +99,7 @@
 			children = (
 				AA0000000000000000000003 /* Aquareum.app */,
 				AA0000000000000000000004 /* AquareumTests.xctest */,
+				AA000000000000000000000B /* AquareumUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -126,6 +148,27 @@
 			productReference = AA0000000000000000000004 /* AquareumTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		AA0000000000000000000070 /* AquareumUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000080 /* Build configuration list for PBXNativeTarget "AquareumUITests" */;
+			buildPhases = (
+				AA0000000000000000000071 /* Sources */,
+				AA0000000000000000000072 /* Frameworks */,
+				AA0000000000000000000073 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA0000000000000000000033 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AA000000000000000000000C /* AquareumUITests */,
+			);
+			name = AquareumUITests;
+			productName = AquareumUITests;
+			productReference = AA000000000000000000000B /* AquareumUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -140,6 +183,10 @@
 						CreatedOnToolsVersion = 27.1;
 					};
 					AA0000000000000000000020 = {
+						CreatedOnToolsVersion = 27.1;
+						TestTargetID = AA0000000000000000000010;
+					};
+					AA0000000000000000000070 = {
 						CreatedOnToolsVersion = 27.1;
 						TestTargetID = AA0000000000000000000010;
 					};
@@ -161,6 +208,7 @@
 			targets = (
 				AA0000000000000000000010 /* Aquareum */,
 				AA0000000000000000000020 /* AquareumTests */,
+				AA0000000000000000000070 /* AquareumUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -174,6 +222,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AA0000000000000000000023 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA0000000000000000000073 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -197,6 +252,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000071 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -205,9 +267,44 @@
 			target = AA0000000000000000000010 /* Aquareum */;
 			targetProxy = AA0000000000000000000030 /* PBXContainerItemProxy */;
 		};
+		AA0000000000000000000033 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000010 /* Aquareum */;
+			targetProxy = AA0000000000000000000032 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		AA0000000000000000000081 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INSTANCE_BUNDLE_ID).uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Aquareum;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000082 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INSTANCE_BUNDLE_ID).uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Aquareum;
+			};
+			name = Release;
+		};
 		AA0000000000000000000041 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -331,6 +428,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AA0000000000000000000080 /* Build configuration list for PBXNativeTarget "AquareumUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000081 /* Debug */,
+				AA0000000000000000000082 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		AA0000000000000000000040 /* Build configuration list for PBXNativeTarget "Aquareum" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

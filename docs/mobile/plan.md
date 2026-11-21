@@ -480,6 +480,14 @@ notifications, their own purchasing and content choices, and time for store revi
   local mock-only instance (the Android emulator reaches the host at `10.0.2.2`).
 - **No mock layer in the apps.** Development, tests and CI use a build pointed at an instance started
   with `MOCK_ONLY=1`.
+- **UI tests** (`apps/ios/AquareumUITests`, `apps/android/app/src/androidTest`) drive the main flows against
+  that instance: a guest browsing Home and the studio and being asked to sign in at Generate; a signed-in
+  person generating in the studio, opening the library, opening a character and reading Settings. Signing in
+  is the real native flow without the browser: the test calls `/auth/start` with its own PKCE challenge,
+  follows the mock provider's redirects to the app's callback, and redeems the code at `create_device_session`
+  for a genuine device session. Android stores it in the app's `TokenVault` from inside the app's process;
+  iOS passes it at launch in `AQUAREUM_UI_TEST_SESSION`, which only a Debug build reads (`signed-out` clears
+  the vault). Tests find things by what a screen reader hears, not by private identifiers.
 - **CI.** Two new jobs, `ios` (macOS runner) and `android` (Linux runner), each started only when its
   paths, `packages/mobile-codegen` or `docs/mobile/openapi.json` change. Each starts a mock-only instance,
   builds and runs its tests. The existing `check` and `install` jobs are unchanged, apart from the

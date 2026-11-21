@@ -8,6 +8,9 @@ struct AquareumApp: App {
 
     init() {
         let vault = TokenVault()
+        #if DEBUG
+        UITestSession.apply(to: vault)
+        #endif
         let relay = RefusalRelay()
         let api = API(transport: APITransport(baseURL: BuildConfig.instanceURL, token: { vault.token }, refused: { relay.send($0) }))
         let instance = InstanceStore(api: api)
