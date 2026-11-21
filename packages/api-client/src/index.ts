@@ -193,9 +193,12 @@ export interface ApiClientOptions {
 
 /** A capability the instance doesn't offer was asked for by name. */
 export class NotOffered extends Error {
-  constructor(readonly app: string) {
+  readonly app: string;
+
+  constructor(app: string) {
     super(`${app} isn't offered here.`);
     this.name = "NotOffered";
+    this.app = app;
   }
 }
 

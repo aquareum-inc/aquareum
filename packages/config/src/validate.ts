@@ -10,9 +10,12 @@ export interface ConfigIssue {
 }
 
 export class ConfigError extends Error {
-  constructor(readonly issues: ConfigIssue[]) {
+  readonly issues: ConfigIssue[];
+
+  constructor(issues: ConfigIssue[]) {
     super(`Invalid instance config:\n${issues.map((issue) => `  ${issue.path || "/"} ${issue.message}`).join("\n")}`);
     this.name = "ConfigError";
+    this.issues = issues;
   }
 }
 
