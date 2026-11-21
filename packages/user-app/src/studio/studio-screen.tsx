@@ -10,13 +10,16 @@ import { useCredits } from "../shell/credits";
 import { useLink } from "../shell/link";
 import { DraftCard, type Draft } from "./draft-card";
 import { GenerationTile } from "./generation-tile";
-import { MEDIUMS, offeringsFor, type Medium, type MediumSpec, type ModeSpec } from "./mediums";
+import { MEDIUMS, MEDIUM_ORDER, offeringsFor, studioModes, type Medium, type MediumSpec, type ModeSpec } from "./mediums";
 import { StudioHeader, type StudioTab } from "./studio-header";
 
 export interface StudioScreenProps {
   medium: Medium;
   onTabChange: (tab: StudioTab) => void;
+  /** What the instance offers in the studio. */
   offerings: ReadonlyArray<Offering>;
+  /** Modes the instance has taken out of the studio (`withdrawnModes`). */
+  withdrawn?: ReadonlyArray<string>;
   /** The models behind the capabilities, from their runners. */
   models: ReadonlyArray<AppModel>;
   initialPrompt?: string;
@@ -41,12 +44,13 @@ function requestFor(medium: Medium, spec: MediumSpec, mode: ModeSpec, offerings:
   };
 }
 
-export function StudioScreen({ medium, onTabChange, offerings, models, initialPrompt = "", quote, createGeneration, getGeneration, signInHref }: StudioScreenProps) {
+export function StudioScreen({ medium, onTabChange, offerings, withdrawn = [], models, initialPrompt = "", quote, createGeneration, getGeneration, signInHref }: StudioScreenProps) {
   const Link = useLink();
   const guest = signInHref !== undefined;
   const spec = MEDIUMS[medium];
   const { credits, charge } = useCredits();
-  const firstMode = spec.modes[0] as ModeSpec;
+  const modes = studioModes(medium, withdrawn);
+  const firstMode = modes[0] as ModeSpec;
   const [draft, setDraft] = useState<Draft>(() => ({
     mode: firstMode.value,
     variants: 1,
@@ -58,7 +62,7 @@ export function StudioScreen({ medium, onTabChange, offerings, models, initialPr
   const getRef = useRef(getGeneration);
   getRef.current = getGeneration;
 
-  const mode = spec.modes.find((entry) => entry.value === draft.mode) ?? firstMode;
+  const mode = modes.find((entry) => entry.value === draft.mode) ?? firstMode;
   const available = offeringsFor(mode, offerings).length > 0;
   const cost = quote(draft.request) * draft.variants;
   const ready = available && draft.request.prompt.trim().length > 0 && !submitting;
@@ -67,7 +71,7 @@ export function StudioScreen({ medium, onTabChange, offerings, models, initialPr
 
   const changeMode = useCallback(
     (value: string) => {
-      const nextMode = spec.modes.find((entry) => entry.value === value);
+      const nextMode = modes.find((entry) => entry.value === value);
       if (!nextMode) return;
       setDraft((current) => {
         const fresh = requestFor(medium, spec, nextMode, offerings, current.request.prompt);
@@ -78,7 +82,7 @@ export function StudioScreen({ medium, onTabChange, offerings, models, initialPr
         };
       });
     },
-    [medium, offerings, spec],
+    [medium, modes, offerings, spec],
   );
 
   useEffect(() => {
@@ -107,11 +111,11 @@ export function StudioScreen({ medium, onTabChange, offerings, models, initialPr
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <StudioHeader current={medium} onChange={onTabChange} />
+      <StudioHeader current={medium} onChange={onTabChange} hidden={MEDIUM_ORDER.filter((entry) => studioModes(entry, withdrawn).length === 0)} />
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pb-6 md:px-6 lg:flex-row lg:gap-6">
         <section aria-label="Composer" className="flex w-full shrink-0 flex-col gap-3 lg:w-[400px] lg:overflow-y-auto lg:pb-2">
-          <DraftCard spec={spec} mode={mode} draft={draft} onChange={setDraft} onModeChange={changeMode} offerings={offerings} models={models} credits={cost} />
+          <DraftCard spec={spec} modes={modes} mode={mode} draft={draft} onChange={setDraft} onModeChange={changeMode} offerings={offerings} models={models} credits={cost} />
           {guest ? (
             <p role="status" className="flex items-start gap-2 rounded-field bg-muted px-3.5 py-3 text-caption text-muted-foreground">
               <Info className="mt-px size-4 shrink-0" aria-hidden />

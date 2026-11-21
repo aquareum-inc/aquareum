@@ -25,7 +25,7 @@ in `apps/web/lib/public-api/operations.ts`.
 | History (mobile) | Delete a conversation (swipe, then confirm) | `deleteConversation` (`delete_conversation`) | Built (slice 2) |
 | Settings · Devices | List signed-in phones and tablets, sign one out | `list_devices`, `revoke_device` (device sessions, `apps/web/lib/devices`); on the web `revokeDeviceAction` | Built (slice 6); this phone signs out from the account tray instead |
 | Shell | Show credit balance | `getCreditBalance` | Built (slice 1): the account tray, through `get_me` |
-| Studio (video, image, audio) | Load capabilities for the medium and mode | `listOfferings` | Built (slice 3): `list_studio_mediums`, the web's mediums resolved against the network |
+| Studio (video, image, audio) | Load capabilities for the medium and mode | `listOfferings` | Built (slice 3): `list_studio_mediums`, the web's mediums resolved against the network, less what the operator withdrew |
 | Studio | Generate (once per variant) | `createGeneration`, priced first with `quote_generation` | Built (slice 3) |
 | Studio | Follow a render | `getGeneration` | Built (slice 3) |
 | Studio | Improve prompt, attach frames/references, download, open in chat | Not wired in the sample; `enhancePrompt`, `uploadMedia`, `getMediaUrl`, `createConversation` in slices (b)–(c). | Not on mobile until `uploadMedia` exists: modes that need an input (References, Edit) aren't offered on phones |

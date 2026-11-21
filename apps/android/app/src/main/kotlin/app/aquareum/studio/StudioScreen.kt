@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.HighQuality
+import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -68,6 +69,7 @@ import app.aquareum.design.style
 import app.aquareum.generated.MediaKind
 import app.aquareum.generated.Radius
 import app.aquareum.generated.TypeSize
+import app.aquareum.shell.EmptyState
 import app.aquareum.shell.TabPage
 import kotlinx.coroutines.launch
 
@@ -97,6 +99,7 @@ fun StudioScreen(studio: StudioModel, account: Account, accountButton: @Composab
         when {
             state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = palette.mutedForeground) }
             state.failed -> LoadFailure("The studio didn't load. Check your connection and try again.", Modifier.fillMaxSize()) { scope.launch { studio.load() } }
+            state.mediums.isEmpty() -> EmptyState(Icons.Rounded.Movie, "The studio isn't offered here", "This service doesn't offer making video, images or audio in the studio right now. You can still ask for them on Home.")
             else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Segmented(state.mediums.map { it.kind to it.label }, state.kind, studio::choose)
                 DraftCard(state, studio)

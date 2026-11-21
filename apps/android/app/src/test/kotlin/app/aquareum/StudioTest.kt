@@ -48,5 +48,14 @@ class StudioTest {
     }
 
     @Test
+    fun aMediumTheInstanceDoesntOfferOpensOneItDoes() {
+        val mediums = fixture("list_studio_mediums", ListSerializer(StudioMedium.serializer())).filter { it.kind != MediaKind.Video }
+        val loaded = StudioState().loaded(mediums)
+        assertEquals(MediaKind.Image, loaded.kind)
+        assertEquals("create", loaded.draft.mode)
+        assertEquals(MediaKind.Audio, StudioState(kind = MediaKind.Audio).loaded(mediums).kind)
+    }
+
+    @Test
     fun aQuoteIsCredits() = assertEquals(55.0, fixture("quote_generation", Quote.serializer()).credits, 0.0)
 }

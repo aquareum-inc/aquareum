@@ -17,6 +17,8 @@ export interface Draft {
 
 export interface DraftCardProps {
   spec: MediumSpec;
+  /** The modes the instance offers for this medium. */
+  modes: ReadonlyArray<ModeSpec>;
   mode: ModeSpec;
   draft: Draft;
   onChange: (draft: Draft) => void;
@@ -31,7 +33,7 @@ function next<T>(options: ReadonlyArray<T>, current: T): T {
 }
 
 /** One draft. Changing mode reshapes this card; it never swaps to another panel. */
-export function DraftCard({ spec, mode, draft, onChange, onModeChange, offerings, models, credits }: DraftCardProps) {
+export function DraftCard({ spec, modes, mode, draft, onChange, onModeChange, offerings, models, credits }: DraftCardProps) {
   const { request } = draft;
   const set = (patch: Partial<GenerationRequest>) => onChange({ ...draft, request: { ...request, ...patch } });
   const available = offeringsFor(mode, offerings);
@@ -46,7 +48,7 @@ export function DraftCard({ spec, mode, draft, onChange, onModeChange, offerings
         <Segmented
           label="Composer mode"
           size="sm"
-          options={spec.modes.map(({ value, label }) => ({ value, label }))}
+          options={modes.map(({ value, label }) => ({ value, label }))}
           value={draft.mode}
           onValueChange={onModeChange}
           className="w-full [&>button]:flex-1"

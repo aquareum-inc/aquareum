@@ -20,7 +20,8 @@ export default async function CapabilitiesPage() {
         offering,
         kind: placement.kind.replace(/-/g, " "),
         surfaces: placement.surfaces,
-        allowed: isCapabilityEnabled(offering.app, capabilities),
+        // Blocked by a rule in the config file; the console's own switch is the exact entry, read as the setting.
+        allowed: isCapabilityEnabled(offering.app, { ...capabilities, block: (capabilities?.block ?? []).filter((rule) => rule !== offering.app) }),
         setting: (await client.getCapabilitySetting(offering.app)).data,
       };
     }),
@@ -31,7 +32,7 @@ export default async function CapabilitiesPage() {
       defaultMarkup={pricing().default}
       update={updateCapabilityAction}
       placing={surfaces.app || phones}
-      sources={[{ name: "listOfferings", source: offerings.source }, { name: "updateCapabilitySetting", source: "mock" }]}
+      sources={[{ name: "listOfferings", source: offerings.source }, { name: "updateCapabilitySetting", source: "live" }]}
     />
   );
 }

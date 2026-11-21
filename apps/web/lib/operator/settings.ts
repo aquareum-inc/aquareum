@@ -3,8 +3,8 @@ import "server-only";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
-import { ConfigError, DEFAULT_CONFIG_FILE, loadConfig, validateConfig, type InstanceConfig } from "@aquareum/config";
-import type { MarkupStore } from "@aquareum/api-client";
+import { ConfigError, DEFAULT_CONFIG_FILE, loadConfig, validateConfig, type InstanceConfig, type Surface } from "@aquareum/config";
+import type { CapabilityStore } from "@aquareum/api-client";
 import type { InstanceSettings } from "@aquareum/operator-console";
 
 import { env } from "../env";
@@ -88,26 +88,53 @@ function writeConfig(next: InstanceConfig): { ok: true } | { ok: false; error: s
 }
 
 /**
- * Per-capability markups, kept in the instance config under pricing.markup.perApp. Users are charged
- * from the same place, so a markup saved here applies on their next request.
+ * Each capability's settings, kept in the instance config, where users are served and charged from:
+ * switched off is an exact entry in capabilities.block, where it appears is capabilities.overrides[app].surfaces,
+ * and its markup is pricing.markup.perApp[app]. A change saved here applies on users' next request.
  */
-export function configMarkupStore(): MarkupStore {
+export function configCapabilityStore(): CapabilityStore {
   return {
-    read: () => ({ ...instance().pricing?.markup?.perApp }),
-    async write(app, markup) {
-      if (markup !== null && !(markup >= 1)) throw new Error("A markup can't be less than 1.");
-      const { engine: _engine, ...current } = instance();
-      const perApp = { ...current.pricing?.markup?.perApp };
-      if (markup === null) delete perApp[app];
-      else perApp[app] = markup;
-      const { perApp: _previous, ...markupRest } = current.pricing?.markup ?? {};
-      const next: InstanceConfig = {
-        ...current,
-        pricing: { ...current.pricing, markup: { ...markupRest, ...(Object.keys(perApp).length > 0 ? { perApp } : {}) } },
+    read(app) {
+      const { capabilities, pricing } = instance();
+      return {
+        enabled: !(capabilities?.block ?? []).includes(app),
+        markup: pricing?.markup?.perApp?.[app] ?? null,
+        surfaces: capabilities?.overrides?.[app]?.surfaces ?? null,
       };
+    },
+    async write(app, patch) {
+      if (patch.markup != null && !(patch.markup >= 1)) throw new Error("A markup can't be less than 1.");
+      const { engine: _engine, ...current } = instance();
+      const next: InstanceConfig = { ...current };
+      if (patch.markup !== undefined) {
+        const perApp = { ...current.pricing?.markup?.perApp };
+        if (patch.markup === null) delete perApp[app];
+        else perApp[app] = patch.markup;
+        const { perApp: _previous, ...markupRest } = current.pricing?.markup ?? {};
+        next.pricing = { ...current.pricing, markup: { ...markupRest, ...(Object.keys(perApp).length > 0 ? { perApp } : {}) } };
+      }
+      if (patch.enabled !== undefined || patch.surfaces !== undefined) {
+        const capabilities = { ...current.capabilities };
+        if (patch.enabled !== undefined) {
+          const block = (capabilities.block ?? []).filter((rule) => rule !== app);
+          capabilities.block = patch.enabled ? block : [...block, app];
+        }
+        if (patch.surfaces !== undefined) {
+          const overrides = { ...capabilities.overrides };
+          const { surfaces: _previous, ...rest } = overrides[app] ?? {};
+          const surfaces = patch.surfaces?.filter(isSurface);
+          const entry = surfaces ? { ...rest, surfaces } : rest;
+          if (Object.keys(entry).length > 0) overrides[app] = entry;
+          else delete overrides[app];
+          capabilities.overrides = overrides;
+        }
+        next.capabilities = capabilities;
+      }
       const result = writeConfig(next);
       if (!result.ok) throw new Error(result.error);
     },
   };
 }
 
+const SURFACES: ReadonlyArray<Surface> = ["chat", "studio", "characters", "library", "live"];
+const isSurface = (value: string): value is Surface => (SURFACES as ReadonlyArray<string>).includes(value);

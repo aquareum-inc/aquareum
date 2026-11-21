@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { createGenerationAction, getGenerationAction } from "@/lib/actions";
 
-export function Studio({ medium, offerings, models, initialPrompt, signedIn }: { medium: Medium; offerings: Offering[]; models: AppModel[]; initialPrompt: string; signedIn: boolean }) {
+export function Studio({ medium, offerings, withdrawn, models, initialPrompt, signedIn }: { medium: Medium; offerings: Offering[]; withdrawn: string[]; models: AppModel[]; initialPrompt: string; signedIn: boolean }) {
   const router = useRouter();
   return (
     <StudioScreen
@@ -15,6 +15,7 @@ export function Studio({ medium, offerings, models, initialPrompt, signedIn }: {
       medium={medium}
       onTabChange={(next) => router.push(`/studio/${next}`)}
       offerings={offerings}
+      withdrawn={withdrawn}
       models={models}
       initialPrompt={initialPrompt}
       quote={quoteCredits}

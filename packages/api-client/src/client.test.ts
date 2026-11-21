@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { DATA_SOURCES, createApiClient, quoteCredits, resolveSource } from "./index";
+import { DATA_SOURCES, NotOffered, createApiClient, quoteCredits, resolveSource } from "./index";
 import { MOCK_OFFERINGS } from "./mock/offerings";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -52,6 +52,22 @@ describe("listOfferings", () => {
     }
     const modes = new Set(MOCK_OFFERINGS.flatMap((offering) => offering.modes));
     expect(modes).toEqual(new Set(["single-shot", "persistent"]));
+  });
+});
+
+describe("what the instance offers", () => {
+  const client = createApiClient({ env: { MOCK_ONLY: "1" }, offers: (app) => app !== "text-to-image" });
+
+  it("leaves what it doesn't offer out of the listings", async () => {
+    const apps = (await client.listOfferings()).data.map((offering) => offering.app);
+    expect(apps).not.toContain("text-to-image");
+    expect(apps.length).toBe(MOCK_OFFERINGS.length - MOCK_OFFERINGS.filter((offering) => offering.app === "text-to-image").length);
+  });
+
+  it("refuses to run it when asked by name", async () => {
+    await expect(client.createGeneration({ kind: "image", app: "text-to-image", prompt: "A lighthouse at dusk", aspect: "1:1", duration_seconds: null, resolution: null })).rejects.toBeInstanceOf(NotOffered);
+    await expect(client.runCapability("text-to-image", {})).rejects.toBeInstanceOf(NotOffered);
+    await expect(client.createGeneration({ kind: "video", app: "text-to-video", prompt: "A paper boat", aspect: "16:9", duration_seconds: 5, resolution: "720p" })).resolves.toBeDefined();
   });
 });
 

@@ -170,14 +170,37 @@ export function offeringsFor(mode: ModeSpec, offerings: ReadonlyArray<Offering>)
   return offerings.filter((offering) => offering.modes.includes("single-shot") && mode.apps.test(offering.app));
 }
 
+/** A mode's key across mediums, as `video:text`. */
+export const modeKey = (medium: Medium, mode: ModeSpec): string => `${medium}:${mode.value}`;
+
 /**
- * The studio as clients that can't run this file read it (the native apps): every medium and mode, with
- * each mode's capability resolved against what the network offers now.
+ * The modes this instance has taken out of the studio: the network offers them, but the instance offers none of
+ * what they run in the studio, because the operator switched it off or placed it elsewhere. A mode the network
+ * doesn't offer at all stays, shown as unavailable until an operator comes online.
  */
-export function describeStudio(offerings: ReadonlyArray<Offering>): StudioMedium[] {
-  return MEDIUM_ORDER.map((kind) => {
+export function withdrawnModes(network: ReadonlyArray<Offering>, offered: ReadonlyArray<Offering>): string[] {
+  return MEDIUM_ORDER.flatMap((medium) =>
+    MEDIUMS[medium].modes.filter((mode) => offeringsFor(mode, network).length > 0 && offeringsFor(mode, offered).length === 0).map((mode) => modeKey(medium, mode)),
+  );
+}
+
+/** A medium's modes, less those withdrawn. A medium left with none isn't offered. */
+export function studioModes(medium: Medium, withdrawn: ReadonlyArray<string>): ModeSpec[] {
+  return MEDIUMS[medium].modes.filter((mode) => !withdrawn.includes(modeKey(medium, mode)));
+}
+
+/**
+ * The studio as clients that can't run this file read it (the native apps): every medium and mode the instance
+ * offers, with each mode's capability resolved against what the network offers now. `offered` is what the
+ * instance offers in the studio; it defaults to everything on the network.
+ */
+export function describeStudio(network: ReadonlyArray<Offering>, offered: ReadonlyArray<Offering> = network): StudioMedium[] {
+  const withdrawn = withdrawnModes(network, offered);
+  return MEDIUM_ORDER.flatMap((kind) => {
     const spec = MEDIUMS[kind];
-    return {
+    const modes = studioModes(kind, withdrawn);
+    if (modes.length === 0) return [];
+    return [{
       kind,
       label: spec.label,
       aspects: spec.aspects,
@@ -185,20 +208,20 @@ export function describeStudio(offerings: ReadonlyArray<Offering>): StudioMedium
       prompt_limit: spec.promptLimit,
       max_variants: spec.maxVariants,
       empty: spec.empty,
-      modes: spec.modes.map((mode) => {
-        const offered = offeringsFor(mode, offerings);
+      modes: modes.map((mode) => {
+        const resolved = offeringsFor(mode, offered);
         return {
           value: mode.value,
           label: mode.label,
           placeholder: mode.placeholder,
           words_placeholder: mode.wordsPlaceholder ?? mode.placeholder,
-          app: offered[0]?.app ?? mode.fallbackApp,
-          available: offered.length > 0,
+          app: resolved[0]?.app ?? mode.fallbackApp,
+          available: resolved.length > 0,
           durations: mode.durations ?? null,
           inputs: mode.slots.map((slot) => slot.label),
           needs_input: mode.needsInput ?? false,
         };
       }),
-    };
+    }];
   });
 }

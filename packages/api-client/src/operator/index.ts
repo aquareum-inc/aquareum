@@ -9,7 +9,6 @@ import { read, write, type OperatorEngine } from "./live";
 import {
   mockActors,
   mockBilling,
-  mockCapabilitySetting,
   mockCostSummary,
   mockHealth,
   mockIsBlocked,
@@ -22,7 +21,6 @@ import {
   mockRunners,
   mockSetBlocked,
   mockUpdateBilling,
-  mockUpdateCapability,
   mockWholesale,
 } from "./mock";
 import type {
@@ -65,8 +63,8 @@ export const OPERATOR_DATA_SOURCES = {
   refundPayment: "mock",
   getBillingSettings: "mock",
   updateBillingSettings: "mock",
-  getCapabilitySetting: "mock",
-  updateCapabilitySetting: "mock",
+  getCapabilitySetting: "live",
+  updateCapabilitySetting: "live",
 } as const;
 
 export interface OperatorClient {
@@ -94,25 +92,24 @@ export interface OperatorClient {
 }
 
 /**
- * Where per-capability markups live. The app keeps them in the instance config's pricing, which is
- * also what users are charged from, so a markup set in the console is the one users pay.
+ * Where a capability's settings live: whether it's offered, where it appears and its markup. The app keeps
+ * them in the instance config, which is what users are served and charged from, so a change made in the
+ * console is what users get.
  */
-export interface MarkupStore {
-  /** Markups by capability; a capability without one uses the default. */
-  read(): Record<string, number>;
-  /** Sets a capability's markup, or removes it with null. Refuses a markup below 1. */
-  write(app: string, markup: number | null): Promise<void>;
+export interface CapabilityStore {
+  read(app: string): Omit<CapabilitySetting, "app">;
+  /** Changes a capability's settings. Refuses a markup below 1. */
+  write(app: string, patch: Partial<Omit<CapabilitySetting, "app">>): Promise<void>;
 }
 
-/** Markups held in memory, for tests and for clients with nowhere to save them. */
-export function memoryMarkupStore(initial: Record<string, number> = {}): MarkupStore {
-  const markups = { ...initial };
+/** Capability settings held in memory, for tests and for clients with nowhere to save them. */
+export function memoryCapabilityStore(initial: Record<string, Partial<Omit<CapabilitySetting, "app">>> = {}): CapabilityStore {
+  const settings = new Map(Object.entries(initial));
   return {
-    read: () => ({ ...markups }),
-    async write(app, markup) {
-      if (markup === null) delete markups[app];
-      else if (!(markup >= 1)) throw new Error("A markup can't be less than 1.");
-      else markups[app] = markup;
+    read: (app) => ({ enabled: true, markup: null, surfaces: null, ...settings.get(app) }),
+    async write(app, patch) {
+      if (patch.markup != null && !(patch.markup >= 1)) throw new Error("A markup can't be less than 1.");
+      settings.set(app, { ...settings.get(app), ...patch });
     },
   };
 }
@@ -123,7 +120,7 @@ export interface OperatorClientOptions {
   env?: Record<string, string | undefined>;
   pricing: { creditsPerUsd: number; default: number };
   /** Defaults to memory. */
-  markups?: MarkupStore;
+  capabilities?: CapabilityStore;
 }
 
 function median(values: number[]): number | null {
@@ -134,7 +131,7 @@ function median(values: number[]): number | null {
 
 export function createOperatorClient(options: OperatorClientOptions): OperatorClient {
   const { provider, pricing } = options;
-  const markups = options.markups ?? memoryMarkupStore();
+  const capabilities = options.capabilities ?? memoryCapabilityStore();
   const engine = options.engine;
   const live = Boolean(engine) && !isMockOnly(options.env ?? process.env);
   const mock = <T>(data: T): Sourced<T> => ({ data, source: "mock" });
@@ -277,12 +274,11 @@ export function createOperatorClient(options: OperatorClientOptions): OperatorCl
       return mock(mockUpdateBilling(patch));
     },
     async getCapabilitySetting(app) {
-      return mock({ app, ...mockCapabilitySetting(app), markup: markups.read()[app] ?? null });
+      return { data: { app, ...capabilities.read(app) }, source: "live" };
     },
-    async updateCapabilitySetting(app, { markup, ...rest }) {
-      await latency(160, 320);
-      if (markup !== undefined) await markups.write(app, markup);
-      return mock({ app, ...mockUpdateCapability(app, rest), markup: markups.read()[app] ?? null });
+    async updateCapabilitySetting(app, patch) {
+      await capabilities.write(app, patch);
+      return { data: { app, ...capabilities.read(app) }, source: "live" };
     },
   };
   return client;

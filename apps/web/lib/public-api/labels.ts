@@ -6,6 +6,7 @@ import { describePrivacy } from "@aquareum/user-app/privacy";
 import { describeStudio } from "@aquareum/user-app/studio-mediums";
 
 import { apiFor } from "../api";
+import { studioOfferings } from "../catalogue";
 import { instance } from "../instance";
 import { appModels } from "../models";
 
@@ -14,13 +15,14 @@ import { appModels } from "../models";
  * (`capability-menu.ts`), so clients that can't run them, such as the native apps, ask for the result.
  */
 export async function capabilityLabels(): Promise<CapabilityLabel[]> {
-  const offerings = (await apiFor(null).listOfferings()).data;
+  // Everything on the network is named, offered or not: a job in someone's history may have run one since switched off.
+  const offerings = (await apiFor(null, "network").listOfferings()).data;
   const models = new Map((await appModels(offerings)).data.map((model) => [model.app, model]));
   const labels = [...new Set(offerings.map((offering) => offering.app))].map((app) => ({ app, name: appName(app, models.get(app)), work: workLabel(app, models.get(app)) }));
   // The language models the agent runs on are named too, as its model menu names them: a step the agent
   // planned names the model it used.
   const known = new Set(labels.map((label) => label.app));
-  const agent = (await apiFor(null).listAgentModels()).data.filter((model) => !known.has(model.app));
+  const agent = (await apiFor(null, "network").listAgentModels()).data.filter((model) => !known.has(model.app));
   return [...labels, ...agent.map((model) => ({ app: model.app, name: modelLabel(model.model), work: modelLabel(model.model) }))];
 }
 
@@ -30,9 +32,10 @@ export async function agentModelMenu(): Promise<AgentModelEntry[]> {
   return agentModelEntries(models).map((entry) => ({ ...entry, also: entry.also ?? [] }));
 }
 
-/** The studio's mediums and modes, as the web's studio has them, against what the network offers now. */
+/** The studio's mediums and modes, as the web's studio has them: what the instance offers there, against what the network offers now. */
 export async function studioMediums(): Promise<StudioMedium[]> {
-  return describeStudio((await apiFor(null).listOfferings()).data);
+  const network = (await apiFor(null, "network").listOfferings()).data;
+  return describeStudio(network, studioOfferings(network));
 }
 
 /** Who can see a job on this instance, as Settings ▸ Privacy says it. */

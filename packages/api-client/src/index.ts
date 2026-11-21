@@ -184,6 +184,19 @@ export interface ApiClientOptions {
   user?: { id: string; name: string };
   provider?: PaymentProvider;
   pricing?: MarkupRule;
+  /**
+   * Whether the instance offers a capability, as its operator has set. What it doesn't offer is left out of every
+   * listing and refused when asked for by name. Defaults to everything on the network.
+   */
+  offers?: (app: string) => boolean;
+}
+
+/** A capability the instance doesn't offer was asked for by name. */
+export class NotOffered extends Error {
+  constructor(readonly app: string) {
+    super(`${app} isn't offered here.`);
+    this.name = "NotOffered";
+  }
 }
 
 const DEFAULT_PRICING: MarkupRule = { creditsPerUsd: 100, default: 1.3 };
@@ -205,6 +218,11 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   const pricing = options.pricing ?? DEFAULT_PRICING;
   const provider = options.provider ?? mockProvider();
   const mock = <T>(data: T): Sourced<T> => ({ data, source: "mock" });
+  const offers = options.offers ?? (() => true);
+  const offered = <T extends { app: string }>(list: Sourced<T[]>): Sourced<T[]> => ({ ...list, data: list.data.filter((entry) => offers(entry.app)) });
+  const mustOffer = (app: string | null | undefined): void => {
+    if (app && !offers(app)) throw new NotOffered(app);
+  };
 
   const balance = async (): Promise<CreditBalance> => {
     const allocation = await provider.budgets.getAllocation(user.id);
@@ -228,20 +246,21 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
         const offerings = await listOfferingsLive(engine);
         const languageApps = [...new Set(offerings.map((offering) => offering.app).filter(isLanguageApp))];
         const models = options.describeApps ? await options.describeApps(languageApps) : [];
-        return { data: agentModelsFrom(offerings, models), source: "live" };
+        return offered({ data: agentModelsFrom(offerings, models), source: "live" });
       }
       await latency(80, 200);
-      return mock(MOCK_AGENT_MODELS.map((model) => ({ ...model })));
+      return offered(mock(MOCK_AGENT_MODELS.map((model) => ({ ...model }))));
     },
 
     async listOfferings() {
       if (resolveSource("listOfferings", env) === "live" && engine) {
-        return { data: await listOfferingsLive(engine), source: "live" };
+        return offered({ data: await listOfferingsLive(engine), source: "live" });
       }
       await latency();
-      return mock(MOCK_OFFERINGS);
+      return offered(mock(MOCK_OFFERINGS));
     },
     async runCapability(app, request) {
+      mustOffer(app);
       await latency(500, 900);
       return mock(runStoredCapability(app, request));
     },
@@ -255,6 +274,7 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     },
 
     async createGeneration(request) {
+      mustOffer(request.app);
       await latency(240, 480);
       return mock(createStoredGeneration(request));
     },
@@ -274,10 +294,14 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       return mock(readStoredConversation(id));
     },
     async createConversation(input) {
+      mustOffer(input.app);
+      mustOffer(input.agent_model);
       await latency(200, 380);
       return mock(createStoredConversation(input));
     },
     async sendMessage(conversationId, input) {
+      mustOffer(input.app);
+      mustOffer(input.agent_model);
       await latency(200, 380);
       return mock(sendStoredMessage(conversationId, input));
     },

@@ -52,6 +52,8 @@ final class StudioModel {
     func load() async {
         do {
             mediums = try await api.listStudioMediums()
+            // The operator may have taken a medium out of the studio: open one that's offered.
+            if !mediums.contains(where: { $0.kind == kind }), let first = mediums.first { kind = first.kind }
             // A draft opened with words before the studio loaded gets this medium's defaults now.
             for (kind, draft) in drafts where draft.mode.isEmpty {
                 var fresh = fresh(for: kind)
@@ -67,7 +69,8 @@ final class StudioModel {
 
     /// Opens a medium with words to start from, as "Open in the studio" does from a conversation.
     func open(_ kind: MediaKind, prompt: String) {
-        self.kind = kind
+        // Once loaded, a medium the instance doesn't offer keeps the studio on the one it's showing.
+        if phase != .loaded || mediums.contains(where: { $0.kind == kind }) { self.kind = kind }
         var draft = self.draft
         draft.prompt = prompt
         self.draft = draft

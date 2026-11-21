@@ -50,7 +50,7 @@ Reads use `ENGINE_READER_TOKEN`; writes use `ENGINE_ADMIN_TOKEN`.
 | Function | Source | Endpoint | Token | Notes |
 |----------|--------|----------|-------|-------|
 | `getEngineHealth` | live | `GET /readyz` | none | Verified against the running engine. |
-| `listOfferings` | live | `GET /v1/offerings` | none | Verified. |
+| `listOfferings` | live | `GET /v1/offerings` | none | Verified. The user client lists only what the instance offers (`offers`, from `capabilities.allow`/`block`) and refuses to run anything else (`NotOffered`, 403 `not_offered` on the API); the same holds for `listAgentModels`. |
 | `listJobs` | live | `GET /v1/jobs?limit=` | reader | Verified. No filter by state, app or actor (engine request R4). |
 | `listActors` | live | `GET /v1/admin/actors` | reader | Verified. |
 | `listAccessKeys` | live | `GET /v1/admin/keys` | reader | Verified. |
@@ -63,7 +63,7 @@ Reads use `ENGINE_READER_TOKEN`; writes use `ENGINE_ADMIN_TOKEN`.
 | `setComputeOperatorBlocked` | mock | — | — | The engine has no allow or block list for routing. |
 | `retryJob` | mock | — | — | No retry route. |
 | `listPayments`, `refundPayment`, `getBillingSettings`, `updateBillingSettings` | mock | provider or card processor | — | Who collects payment is open question Q2. |
-| `getCapabilitySetting`, `updateCapabilitySetting` | mock, except markup | markup: `pricing.markup.perApp` in `instance.config.json` (the `MarkupStore`), which users are priced from; enabled and surfaces: instance-owned store | — | Enabled and surfaces need the instance database. |
+| `getCapabilitySetting`, `updateCapabilitySetting` | live (instance config) | `instance.config.json`, through the `CapabilityStore`: switched off is an exact entry in `capabilities.block`, where it appears is `capabilities.overrides[app].surfaces`, markup is `pricing.markup.perApp[app]` | — | Users are served and priced from the same file, so a change applies on their next request. |
 | Provider: grants, allocations, plans, credit packs (list, create, edit), usage, users | per `payments.provider` | see the provider interface | reader / admin | `mock` by default; `batteries` reads allocations and grants through the engine. |
 | Instance settings | real | writes `instance.config.json`, validated | — | Read-only when the file is mounted read-only (the Compose bundle). |
 | Doctor | real | probes engine and tokens | reader, admin | Same checks as `aquareum doctor`. |
@@ -89,7 +89,7 @@ the instance config, the other is derived.
 | `get_instance` | config | `instance.config.json`: name, logo, theme overrides (resolved to sRGB hex), surfaces, the apps built for it (`mobile`), sign-in methods, content settings, home backdrop | none |
 | `list_capability_labels` | derived from `listOfferings`, runner models (`describeApps`, reader token, server-side) and `listAgentModels` | The readable name of each capability and of each model the agent runs on, by the rules in `packages/user-app/src/lib/capability-menu.ts` | none |
 | `list_agent_model_menu` | derived from `listAgentModels` | The agent's model menu, one row per model, by `agentModelEntries` in the same file | none |
-| `list_studio_mediums` | derived from `listOfferings` | The studio's mediums and modes, by `describeStudio` in `packages/user-app/src/studio/mediums.ts`: each mode's capability, whether it is on offer and whether it needs an input | none |
+| `list_studio_mediums` | derived from `listOfferings` | The studio's mediums and modes, by `describeStudio` in `packages/user-app/src/studio/mediums.ts`: each mode's capability, whether it is on offer and whether it needs an input. Modes the operator withdrew (switched off, or not placed in the studio) are left out, and a medium with none left is too | none |
 | `get_privacy` | derived from the instance config (`privacy.retainChats`) | Who can see a job, by `describePrivacy` in `packages/user-app/src/settings/privacy-tiers.ts`, the words Settings ▸ Privacy uses on the web | none |
 | `quote_generation` | mock (`quoteCredits`, as the web's studio uses) | What one result of a draft costs, in credits. Goes live with pricing from the engine's offerings and the instance's markup (`creditsFor`) when generation does | none |
 

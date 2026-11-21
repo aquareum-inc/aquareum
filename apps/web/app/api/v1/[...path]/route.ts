@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { EngineError, UnsupportedByProvider, quoteCredits } from "@aquareum/api-client";
+import { EngineError, NotOffered, UnsupportedByProvider, quoteCredits } from "@aquareum/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { devices } from "@/lib/devices";
@@ -68,6 +68,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
     return request.method === "GET" ? read(request, value) : NextResponse.json(value);
   } catch (cause) {
     if (cause instanceof ApiError) return error(cause.status, cause.message, cause.code);
+    if (cause instanceof NotOffered) return error(403, cause.message, "not_offered");
     if (cause instanceof UnsupportedByProvider) return error(501, cause.message);
     if (cause instanceof EngineError) return error(cause.status === 401 || cause.status === 403 ? 502 : cause.status, "The engine refused or failed this request.");
     return error(500, cause instanceof Error ? cause.message : "The request failed.");

@@ -1,10 +1,12 @@
 import { DataSourceBadge, isMedium } from "@aquareum/user-app";
+import { MEDIUM_ORDER, studioModes, withdrawnModes } from "@aquareum/user-app/studio-mediums";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { Studio } from "@/components/studio";
-import { api } from "@/lib/api";
+import { apiFor } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
+import { studioOfferings } from "@/lib/catalogue";
 import { isDev } from "@/lib/env";
 import { appModels } from "@/lib/models";
 
@@ -19,11 +21,20 @@ export default async function StudioPage({
 }) {
   const [{ medium }, { prompt }] = await Promise.all([params, searchParams]);
   if (!isMedium(medium)) notFound();
-  const [offerings, session] = await Promise.all([(await api()).listOfferings(), getSession()]);
-  const models = await appModels(offerings.data);
+  const [offerings, session] = await Promise.all([apiFor(null, "network").listOfferings(), getSession()]);
+  // What the network offers, and of that what this instance offers in the studio.
+  const offered = studioOfferings(offerings.data);
+  const withdrawn = withdrawnModes(offerings.data, offered);
+  // A medium the operator has taken every mode out of isn't offered: open the first one that is.
+  if (studioModes(medium, withdrawn).length === 0) {
+    const next = MEDIUM_ORDER.find((entry) => studioModes(entry, withdrawn).length > 0);
+    if (!next) notFound();
+    redirect(`/studio/${next}${prompt ? `?prompt=${encodeURIComponent(prompt)}` : ""}`);
+  }
+  const models = await appModels(offered);
   return (
     <>
-      <Studio medium={medium} offerings={offerings.data} models={models.data} initialPrompt={prompt ?? ""} signedIn={session !== null} />
+      <Studio medium={medium} offerings={offered} withdrawn={withdrawn} models={models.data} initialPrompt={prompt ?? ""} signedIn={session !== null} />
       {isDev ? (
         <DataSourceBadge
           sources={[

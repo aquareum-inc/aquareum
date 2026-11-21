@@ -19,6 +19,9 @@ struct StudioView: View {
             case .failed:
                 LoadFailure(message: "The studio didn't load. Check your connection and try again.") { Task { await studio.load() } }
                     .padding(.top, 80)
+            case .loaded where studio.mediums.isEmpty:
+                EmptyState(symbol: "film.stack", title: "The studio isn't offered here", message: "This service doesn't offer making video, images or audio in the studio right now. You can still ask for them on Home.")
+                    .padding(.top, 80)
             case .loaded:
                 VStack(alignment: .leading, spacing: 16) {
                     Picker("Medium", selection: $studio.kind) {

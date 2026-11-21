@@ -44,3 +44,10 @@ export function mediaActions(offerings: Offering[]): Offering[] {
     (offering) => placeCapability(offering, capabilities?.overrides).mediaAction && offering.modes.includes("single-shot"),
   );
 }
+
+/** Capabilities the studio runs: those offered and placed in the studio. */
+export function studioOfferings(offerings: Offering[]): Offering[] {
+  const { capabilities } = instance();
+  return capabilitiesFor("studio", filterCapabilities(offerings, capabilities), capabilities?.overrides);
+}
+

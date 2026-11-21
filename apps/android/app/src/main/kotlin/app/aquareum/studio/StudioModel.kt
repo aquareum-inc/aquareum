@@ -53,6 +53,12 @@ data class StudioState(
     val cost: Int? get() = quote?.let { it * draft.variants }
     val rendering: Boolean get() = made.values.flatten().any { it.state == GenerationState.Queued || it.state == GenerationState.Running }
 
+    /** The studio as the instance offers it. The operator may have taken a medium out: then it opens one that's offered. */
+    fun loaded(mediums: List<StudioMedium>): StudioState {
+        val open = if (mediums.any { it.kind == kind }) kind else mediums.firstOrNull()?.kind ?: kind
+        return copy(loading = false, failed = false, mediums = mediums, kind = open).settled()
+    }
+
     /** Gives a draft opened with words before the studio loaded this medium's defaults, keeping the words. */
     fun settled(): StudioState = copy(drafts = drafts.mapValues { (kind, draft) -> if (draft.mode.isEmpty()) fresh(kind).copy(prompt = draft.prompt) else draft })
 
@@ -75,7 +81,7 @@ class StudioModel(private val api: Api) {
     suspend fun load() {
         try {
             val mediums = api.listStudioMediums()
-            _state.update { it.copy(loading = false, failed = false, mediums = mediums).settled() }
+            _state.update { it.loaded(mediums) }
             requote()
         } catch (error: CancellationException) {
             throw error
@@ -90,8 +96,10 @@ class StudioModel(private val api: Api) {
 
     /** Opens a medium with words to start from, as "Open in the studio" does from a conversation. */
     fun open(kind: MediaKind, prompt: String) = _state.update { state ->
-        val draft = (state.drafts[kind] ?: state.fresh(kind)).copy(prompt = prompt)
-        state.copy(kind = kind, drafts = state.drafts + (kind to draft))
+        // Once loaded, a medium the instance doesn't offer keeps the studio on the one it's showing.
+        val target = if (state.loading || state.mediums.any { it.kind == kind }) kind else state.kind
+        val draft = (state.drafts[target] ?: state.fresh(target)).copy(prompt = prompt)
+        state.copy(kind = target, drafts = state.drafts + (target to draft))
     }
 
     /** Changes mode, keeping the words and the shape. */
