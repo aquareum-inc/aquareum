@@ -1,4 +1,4 @@
-import type { Character } from "@aquareum/api-client";
+import type { Character } from "@livepeer/api-client";
 import { describe, expect, it } from "vitest";
 
 import { memoryStore } from "../data/store";

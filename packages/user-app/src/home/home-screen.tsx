@@ -1,7 +1,7 @@
 "use client";
 
-import type { AgentModel, Character, CharacterCast, MediaItem, Offering, PromptStarter, ShowcaseItem } from "@aquareum/api-client/types";
-import { Chip, EASE_OUT_EXPO, STAGGER } from "@aquareum/ui";
+import type { AgentModel, Character, CharacterCast, MediaItem, Offering, PromptStarter, ShowcaseItem } from "@livepeer/api-client/types";
+import { Chip, EASE_OUT_EXPO, STAGGER } from "@livepeer/ui";
 import { CornerDownLeft, Film, ImagePlay, Radio, ScanSearch, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";

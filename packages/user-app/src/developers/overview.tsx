@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card } from "@aquareum/ui";
+import { Button, Card } from "@livepeer/ui";
 import { KeyRound } from "lucide-react";
 
 import { useLink } from "../shell/link";

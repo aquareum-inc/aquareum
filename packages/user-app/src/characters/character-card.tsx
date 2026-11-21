@@ -1,7 +1,7 @@
 "use client";
 
-import type { Character } from "@aquareum/api-client/types";
-import { Badge } from "@aquareum/ui";
+import type { Character } from "@livepeer/api-client/types";
+import { Badge } from "@livepeer/ui";
 import { Star } from "lucide-react";
 
 import { CharacterPortrait } from "./character-portrait";

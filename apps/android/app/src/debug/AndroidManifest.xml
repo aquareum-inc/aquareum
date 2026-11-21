@@ -5,7 +5,7 @@
       Development builds only. From Android 17 an app needs this to reach a private address, and a local
       instance is one: the emulator's host is 10.0.2.2. Release builds talk to a public https address and
       never ask for it. Grant it once after installing:
-      adb shell pm grant app.aquareum.dev android.permission.ACCESS_LOCAL_NETWORK
+      adb shell pm grant org.livepeer.app.dev android.permission.ACCESS_LOCAL_NETWORK
     -->
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 

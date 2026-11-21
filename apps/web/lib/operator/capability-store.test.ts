@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { NotOffered } from "@aquareum/api-client";
+import { NotOffered } from "@livepeer/api-client";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -11,7 +11,7 @@ import { apiFor } from "../api";
 import { studioOfferings } from "../catalogue";
 import { configCapabilityStore } from "./settings";
 
-const dir = mkdtempSync(path.join(tmpdir(), "aquareum-capabilities-"));
+const dir = mkdtempSync(path.join(tmpdir(), "livepeer-capabilities-"));
 const file = path.join(dir, "instance.config.json");
 const read = () => JSON.parse(readFileSync(file, "utf8"));
 const offering = (app: string) => ({ app, modes: ["single-shot"] }) as never;

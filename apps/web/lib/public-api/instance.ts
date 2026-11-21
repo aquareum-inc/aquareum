@@ -1,7 +1,7 @@
 import "server-only";
 
-import type { InstanceDescription, SignInMethodName } from "@aquareum/api-client";
-import { colourToHex } from "@aquareum/config";
+import type { InstanceDescription, SignInMethodName } from "@livepeer/api-client";
+import { colourToHex } from "@livepeer/config";
 
 import { signInMethods } from "../auth/methods";
 import { instance } from "../instance";

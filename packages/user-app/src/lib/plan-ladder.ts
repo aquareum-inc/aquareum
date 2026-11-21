@@ -1,4 +1,4 @@
-import type { Plan } from "@aquareum/api-client/provider";
+import type { Plan } from "@livepeer/api-client/provider";
 
 export interface Rung {
   plan: Plan;

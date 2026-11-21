@@ -1,7 +1,7 @@
 "use client";
 
-import type { ShowcaseItem } from "@aquareum/api-client/types";
-import { cn } from "@aquareum/ui";
+import type { ShowcaseItem } from "@livepeer/api-client/types";
+import { cn } from "@livepeer/ui";
 import { AudioLines, Image as ImageIcon, Play, Radio } from "lucide-react";
 
 import { MediaStill } from "../media/media-still";

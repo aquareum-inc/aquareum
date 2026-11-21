@@ -1,4 +1,4 @@
-import { SettingsView } from "@aquareum/operator-console";
+import { SettingsView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { saveInstanceSettingsAction } from "@/lib/operator/actions";

@@ -1,6 +1,6 @@
 "use client";
 
-import { Segmented } from "@aquareum/ui";
+import { Segmented } from "@livepeer/ui";
 import { Radio } from "lucide-react";
 
 import { MEDIUMS, MEDIUM_ORDER, type Medium } from "./mediums";

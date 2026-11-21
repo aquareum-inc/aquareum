@@ -1,7 +1,7 @@
 "use client";
 
-import type { CreditPack, DataSource, Plan, ProviderFeatures, TopUpRange } from "@aquareum/api-client";
-import { Badge, Button, Field, Input, Sheet, Switch, Textarea } from "@aquareum/ui";
+import type { CreditPack, DataSource, Plan, ProviderFeatures, TopUpRange } from "@livepeer/api-client";
+import { Badge, Button, Field, Input, Sheet, Switch, Textarea } from "@livepeer/ui";
 import { Check, ChevronRight, Minus, Plus } from "lucide-react";
 import { useState, type ComponentType, type FormEvent, type ReactNode } from "react";
 

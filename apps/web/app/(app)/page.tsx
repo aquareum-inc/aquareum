@@ -1,4 +1,4 @@
-import { DataSourceBadge } from "@aquareum/user-app";
+import { DataSourceBadge } from "@livepeer/user-app";
 
 import { Home } from "@/components/home";
 import { api } from "@/lib/api";

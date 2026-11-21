@@ -40,7 +40,7 @@ PROJECT SETUP, DATA and RULES, reproduced below so they load every session.
 - Every action in the apps maps to an operation in `apps/web/lib/public-api/operations.ts`. Add the
   operation first, with its `output`, then run `corepack pnpm mobile:generate`. Keep the Mobile columns in
   `docs/ui-actions.md` and `docs/data-sources.md` current.
-- Never edit generated files (`apps/ios/Aquareum/Generated`, `apps/android/**/generated`) or retype a token
+- Never edit generated files (`apps/ios/Livepeer/Generated`, `apps/android/**/generated`) or retype a token
   value by hand.
 - A build belongs to one instance: only name, icon, identifier and instance URL are set at build time.
   Theme, sign-in methods, features and content settings come from `get_instance` at run time.
@@ -53,7 +53,7 @@ PROJECT SETUP, DATA and RULES, reproduced below so they load every session.
 
 ## Project setup
 
-- Start from an empty repo named "aquareum", at ~/Developer/aquareum, with its remote at github.com/aquareum-inc/aquareum (private for now). The GitHub organisation may change to github.com/aquareum later, so don't hardcode the organisation name anywhere in code, docs or image tags; keep it in one config value. Package manager: pnpm. MIT licence, to match the engine.
+- The repo is "livepeer" (renamed from "aquareum" on 21 November 2026; the local folder is still ~/Developer/aquareum), with its remote at github.com/aquareum-inc/livepeer (private for now). The GitHub organisation may move to Livepeer's later, so don't hardcode the organisation name anywhere in code, docs or image tags; keep it in one config value. Package manager: pnpm. MIT licence, to match the engine.
 - Save this brief as docs/brief.md. On your first step, create a CLAUDE.md at the repo root from the RULES, DATA and PROJECT SETUP sections so the standing rules load every session.
 - Secrets live in a root .env file that is never committed. Keep a committed .env.example listing every variable with empty values and a one-line description of each. Ignore .env and .env.*.local in git.
 - This repo is separate from the engine. Don't fork or copy livepeer-builder-core into it. Treat the engine as an external service reached through its REST API, pinned to a specific version or commit and recorded in one place.

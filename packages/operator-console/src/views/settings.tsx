@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Chip, Field, Input, Sheet, Switch } from "@aquareum/ui";
+import { Button, Chip, Field, Input, Sheet, Switch } from "@livepeer/ui";
 import { useState, type FormEvent } from "react";
 
 import { BrandPreview, ColourInput, MarkRow } from "../components/appearance";

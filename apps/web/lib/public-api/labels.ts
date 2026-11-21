@@ -1,9 +1,9 @@
 import "server-only";
 
-import type { AgentModelEntry, CapabilityLabel, PrivacyDescription, StudioMedium } from "@aquareum/api-client";
-import { agentModelEntries, appName, modelLabel, workLabel } from "@aquareum/user-app/capability-menu";
-import { describePrivacy } from "@aquareum/user-app/privacy";
-import { describeStudio } from "@aquareum/user-app/studio-mediums";
+import type { AgentModelEntry, CapabilityLabel, PrivacyDescription, StudioMedium } from "@livepeer/api-client";
+import { agentModelEntries, appName, modelLabel, workLabel } from "@livepeer/user-app/capability-menu";
+import { describePrivacy } from "@livepeer/user-app/privacy";
+import { describeStudio } from "@livepeer/user-app/studio-mediums";
 
 import { apiFor } from "../api";
 import { studioOfferings } from "../catalogue";

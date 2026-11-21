@@ -11,7 +11,7 @@ How to install, configure and verify an instance unattended. Every command is no
 ## Install
 
 ```bash
-./aquareum setup --preset full --json
+./livepeer setup --preset full --json
 ```
 
 Expected: exit code 0 and one JSON line on stdout:
@@ -38,7 +38,7 @@ and an existing `instance.config.json` are kept (`"config":"kept"`, `"env":[]`).
 
 ```bash
 curl -fsS http://localhost:3000/api/health
-./aquareum doctor --json
+./livepeer doctor --json
 ```
 
 `/api/health` answers 200 with `{"status":"ok",…}`, or 503 with `"status":"degraded"` when the engine is
@@ -51,13 +51,13 @@ carries a `fix`.
   Presets: `packages/config/presets/full.json`, `headless.json`.
 - Secrets and the engine URL: `.env` (never committed). Every variable is described in `.env.example`.
 - Connect a real engine: set `ENGINE_URL`, `ENGINE_READER_TOKEN` (an auditor key) and `ENGINE_ADMIN_TOKEN`
-  (an admin key) in `.env`, then run `./aquareum setup` again. `MOCK_ONLY` is cleared automatically.
-- Restart after editing either file: `./aquareum setup`.
+  (an admin key) in `.env`, then run `./livepeer setup` again. `MOCK_ONLY` is cleared automatically.
+- Restart after editing either file: `./livepeer setup`.
 
 ## Upgrade
 
 ```bash
-git pull && ./aquareum upgrade --json
+git pull && ./livepeer upgrade --json
 ```
 
 The engine version is pinned per release in `release.config.json`, so the app and engine move together.
@@ -68,20 +68,20 @@ The engine version is pinned per release in `release.config.json`, so the app an
 |------|---------|-----|
 | 0 | Success | — |
 | 1 | `doctor` found problems | Apply each check's `fix`, run `doctor` again |
-| 2 | Bad usage | Check flags with `./aquareum --help` |
+| 2 | Bad usage | Check flags with `./livepeer --help` |
 | 3 | Invalid instance config | The error lists each field; compare with the schema |
 | 4 | Docker unavailable | Install or start Docker, or pass `--no-start` |
 | 5 | `docker compose up` failed | Read the last line of the error; commonly the port is in use: pass `--port` |
-| 6 | Health check did not pass in 120s | `docker logs aquareum-app-1`, then `./aquareum doctor` |
+| 6 | Health check did not pass in 120s | `docker logs livepeer-app-1`, then `./livepeer doctor` |
 
 ## Common failures
 
-- **Port already in use** (exit 5): `./aquareum setup --port 3210`.
+- **Port already in use** (exit 5): `./livepeer setup --port 3210`.
 - **`admin token … refused (HTTP 403)`** in `doctor`: `ENGINE_ADMIN_TOKEN` is an actor (builder) key, not an
   admin key. Issue an admin key on the engine.
 - **`engine … not ready`**: the engine isn't reachable at `ENGINE_URL` from where the app runs. Inside the
   bundle the engine is `http://engine:8080`; from the host it is `http://127.0.0.1:8090`.
-- **Health is 500 right after changing config**: the config is invalid. Run `./aquareum doctor`.
+- **Health is 500 right after changing config**: the config is invalid. Run `./livepeer doctor`.
 
 ## Working on the code
 
@@ -108,21 +108,21 @@ MOCK_ONLY=1 INSTANCE_CONFIG=docs/mobile/dev.instance.config.json corepack pnpm d
 corepack pnpm mobile:generate
 
 # 3. Build and test iOS
-xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
+xcodebuild -project apps/ios/Livepeer.xcodeproj -scheme Livepeer \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
-xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
+xcodebuild -project apps/ios/Livepeer.xcodeproj -scheme Livepeer \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 # UI tests of the main flows: need the instance from step 1
-xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme AquareumUITests \
+xcodebuild -project apps/ios/Livepeer.xcodeproj -scheme LivepeerUITests \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 # Unit and UI tests in one pass, as CI runs them: also need the instance
-xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme AquareumAllTests \
+xcodebuild -project apps/ios/Livepeer.xcodeproj -scheme LivepeerAllTests \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 
 # 4. Run it and take a screenshot
 xcrun simctl boot 'iPhone 17 Pro'
-xcrun simctl install booted <DerivedData>/Build/Products/Debug-iphonesimulator/Aquareum.app
-xcrun simctl launch booted app.aquareum.dev
+xcrun simctl install booted <DerivedData>/Build/Products/Debug-iphonesimulator/Livepeer.app
+xcrun simctl launch booted org.livepeer.app.dev
 xcrun simctl ui booted appearance dark        # or light
 xcrun simctl io booted screenshot home.png
 ```
@@ -139,17 +139,17 @@ cd apps/android
 # 6. Run it on an emulator and take a screenshot (10.0.2.2 is the host, where the instance listens)
 $ANDROID_HOME/emulator/emulator -avd <name> -no-snapshot-save &
 adb wait-for-device && adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell pm grant app.aquareum.dev android.permission.ACCESS_LOCAL_NETWORK   # Android 17+, debug builds
-adb shell am start -n app.aquareum.dev/app.aquareum.MainActivity
+adb shell pm grant org.livepeer.app.dev android.permission.ACCESS_LOCAL_NETWORK   # Android 17+, debug builds
+adb shell am start -n org.livepeer.app.dev/org.livepeer.app.MainActivity
 adb shell cmd uimode night yes                # or no
 adb exec-out screencap -p > home.png
 ```
 
 - The Compose version is pinned to the newest one the installed SDK platform can compile against; the note is
   in `apps/android/gradle/libs.versions.toml`.
-- New files under `apps/ios/Aquareum` and `apps/ios/AquareumTests` are picked up without editing the Xcode
+- New files under `apps/ios/Livepeer` and `apps/ios/LivepeerTests` are picked up without editing the Xcode
   project (the folders are synchronised).
-- Never edit `apps/ios/Aquareum/Generated/*` or `apps/android/**/generated/*`: change the source and run
+- Never edit `apps/ios/Livepeer/Generated/*` or `apps/android/**/generated/*`: change the source and run
   `corepack pnpm mobile:generate`.
 - The apps sign in through the instance's own flow. On a mock-only instance every method signs in at once as
   the test user, after the system's "wants to use … to sign in" prompt on iOS.

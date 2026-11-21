@@ -1,7 +1,7 @@
 "use client";
 
-import type { MediaItem, MediaKind, Offering } from "@aquareum/api-client/types";
-import { Badge, Button, Chip, EmptyState, Input, Page, Sheet, cn } from "@aquareum/ui";
+import type { MediaItem, MediaKind, Offering } from "@livepeer/api-client/types";
+import { Badge, Button, Chip, EmptyState, Input, Page, Sheet, cn } from "@livepeer/ui";
 import { AudioLines, Clapperboard, FolderOpen, Image as ImageIcon, MessageCircle, Play, Search, Trash2, Wrench } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

@@ -1,7 +1,7 @@
 "use client";
 
-import type { AppModel, Offering } from "@aquareum/api-client/types";
-import { Popover, PopoverContent, PopoverTrigger, cn } from "@aquareum/ui";
+import type { AppModel, Offering } from "@livepeer/api-client/types";
+import { Popover, PopoverContent, PopoverTrigger, cn } from "@livepeer/ui";
 import { Check, ChevronDown } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 

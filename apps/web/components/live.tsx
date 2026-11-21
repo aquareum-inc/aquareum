@@ -1,7 +1,7 @@
 "use client";
 
-import type { LiveDestination, LiveLook, Offering } from "@aquareum/api-client";
-import { LiveScreen, StudioHeader } from "@aquareum/user-app";
+import type { LiveDestination, LiveLook, Offering } from "@livepeer/api-client";
+import { LiveScreen, StudioHeader } from "@livepeer/user-app";
 import { useRouter } from "next/navigation";
 
 import {

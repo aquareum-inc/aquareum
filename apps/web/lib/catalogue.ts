@@ -1,8 +1,8 @@
 import "server-only";
 
-import type { Offering } from "@aquareum/api-client";
-import { capabilitiesFor, filterCapabilities, placeCapability, type Surface } from "@aquareum/config";
-import type { CatalogueEntry } from "@aquareum/user-app";
+import type { Offering } from "@livepeer/api-client";
+import { capabilitiesFor, filterCapabilities, placeCapability, type Surface } from "@livepeer/config";
+import type { CatalogueEntry } from "@livepeer/user-app";
 
 import { instance } from "./instance";
 

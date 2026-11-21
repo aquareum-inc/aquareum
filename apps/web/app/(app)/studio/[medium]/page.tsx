@@ -1,5 +1,5 @@
-import { DataSourceBadge, isMedium } from "@aquareum/user-app";
-import { MEDIUM_ORDER, studioModes, withdrawnModes } from "@aquareum/user-app/studio-mediums";
+import { DataSourceBadge, isMedium } from "@livepeer/user-app";
+import { MEDIUM_ORDER, studioModes, withdrawnModes } from "@livepeer/user-app/studio-mediums";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 

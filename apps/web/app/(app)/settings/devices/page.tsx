@@ -1,4 +1,4 @@
-import { DevicesSettings, SettingsLayout } from "@aquareum/user-app";
+import { DevicesSettings, SettingsLayout } from "@livepeer/user-app";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 

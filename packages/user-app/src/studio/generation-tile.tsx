@@ -1,7 +1,7 @@
 "use client";
 
-import type { Generation } from "@aquareum/api-client/types";
-import { EASE_OUT_EXPO, cn } from "@aquareum/ui";
+import type { Generation } from "@livepeer/api-client/types";
+import { EASE_OUT_EXPO, cn } from "@livepeer/ui";
 import { Clapperboard, Download, Play, RotateCcw } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";

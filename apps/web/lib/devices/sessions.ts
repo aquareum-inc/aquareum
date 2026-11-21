@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-import type { DeviceSession, DeviceToken } from "@aquareum/api-client";
+import type { DeviceSession, DeviceToken } from "@livepeer/api-client";
 
 import type { Identity } from "../auth/types";
 import type { DeviceRecord, DeviceSessionStore } from "./store";

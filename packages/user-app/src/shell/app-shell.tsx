@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandProvider, BrandSymbol, BrandWordmark, cn, type Brand } from "@aquareum/ui";
+import { BrandProvider, BrandSymbol, BrandWordmark, cn, type Brand } from "@livepeer/ui";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useState, type ComponentType, type ReactNode } from "react";

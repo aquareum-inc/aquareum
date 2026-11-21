@@ -1,7 +1,7 @@
 "use client";
 
-import type { MediaItem, Offering } from "@aquareum/api-client";
-import { LibraryScreen } from "@aquareum/user-app";
+import type { MediaItem, Offering } from "@livepeer/api-client";
+import { LibraryScreen } from "@livepeer/user-app";
 import { useRouter } from "next/navigation";
 
 import { createConversationAction, deleteMediaAction, searchMediaAction } from "@/lib/actions";

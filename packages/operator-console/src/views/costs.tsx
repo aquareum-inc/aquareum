@@ -1,4 +1,4 @@
-import type { CostClass, CostSummary, DataSource } from "@aquareum/api-client";
+import type { CostClass, CostSummary, DataSource } from "@livepeer/api-client";
 
 import { count, label, usd } from "../components/format";
 import { ConsolePage, Panel, Stat } from "../components/parts";

@@ -1,4 +1,4 @@
-import { KeysView } from "@aquareum/operator-console";
+import { KeysView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { issueKeyAction, revokeKeyAction } from "@/lib/operator/actions";

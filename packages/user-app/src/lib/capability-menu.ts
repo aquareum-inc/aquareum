@@ -1,4 +1,4 @@
-import type { AgentModel, AppModel, Offering } from "@aquareum/api-client/types";
+import type { AgentModel, AppModel, Offering } from "@livepeer/api-client/types";
 
 /**
  * How discovered apps read in menus. Discovery gives only an app name, so names and descriptions are

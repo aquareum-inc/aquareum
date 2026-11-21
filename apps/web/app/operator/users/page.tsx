@@ -1,4 +1,4 @@
-import { UsersView } from "@aquareum/operator-console";
+import { UsersView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { ConsoleLink } from "@/components/console";

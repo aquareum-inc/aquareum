@@ -1,4 +1,4 @@
-import type { MediaKind, Offering, StudioMedium } from "@aquareum/api-client/types";
+import type { MediaKind, Offering, StudioMedium } from "@livepeer/api-client/types";
 import { AudioLines, Clapperboard, Film, Image as ImageIcon, ImagePlus, Images, Mic, type LucideIcon } from "lucide-react";
 
 export type Medium = MediaKind;

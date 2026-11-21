@@ -14,10 +14,10 @@
   },
   "mobile": {
     "ios": {
-      "bundleId": "app.aquareum.dev"
+      "bundleId": "org.livepeer.app.dev"
     },
     "android": {
-      "applicationId": "app.aquareum.dev"
+      "applicationId": "org.livepeer.app.dev"
     }
   },
   "capabilities": {

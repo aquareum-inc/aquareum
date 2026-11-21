@@ -1,4 +1,4 @@
-import { DevelopersLayout, DevelopersOverview } from "@aquareum/user-app";
+import { DevelopersLayout, DevelopersOverview } from "@livepeer/user-app";
 import type { Metadata } from "next";
 
 import { developerTabs } from "@/lib/developers";

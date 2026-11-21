@@ -111,7 +111,7 @@ ${declaration.fields
 const header = "// Generated from docs/mobile/openapi.json by packages/mobile-codegen.\n// Do not edit: change apps/web/lib/public-api/operations.ts or the API client's types and run `pnpm mobile:generate`.\n";
 
 const models = `${header}
-package app.aquareum.generated
+package org.livepeer.app.generated
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -149,9 +149,9 @@ function method(operation: (typeof operations)[number]): string {
 }
 
 const client = `${header}
-package app.aquareum.generated
+package org.livepeer.app.generated
 
-import app.aquareum.api.ApiTransport
+import org.livepeer.app.api.ApiTransport
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.nullable
@@ -167,7 +167,7 @@ ${operations.map(method).join("\n\n")}
 }
 `;
 
-const directory = path.join(root, "apps/android/app/src/main/kotlin/app/aquareum/generated");
+const directory = path.join(root, "apps/android/app/src/main/kotlin/org/livepeer/app/generated");
 mkdirSync(directory, { recursive: true });
 writeFileSync(path.join(directory, "Models.kt"), models);
 writeFileSync(path.join(directory, "Api.kt"), client);

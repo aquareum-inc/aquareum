@@ -1,4 +1,4 @@
-import { UserDetailView } from "@aquareum/operator-console";
+import { UserDetailView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 

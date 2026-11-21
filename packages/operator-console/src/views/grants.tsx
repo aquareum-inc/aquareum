@@ -1,7 +1,7 @@
 "use client";
 
-import type { DataSource, Grant } from "@aquareum/api-client";
-import { Button, Field, Input, Sheet } from "@aquareum/ui";
+import type { DataSource, Grant } from "@livepeer/api-client";
+import { Button, Field, Input, Sheet } from "@livepeer/ui";
 import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 

@@ -1,8 +1,8 @@
 "use client";
 
-import type { ConversationSummary } from "@aquareum/api-client";
-import type { Brand } from "@aquareum/ui";
-import { AppShell, type Account, type LinkProps } from "@aquareum/user-app";
+import type { ConversationSummary } from "@livepeer/api-client";
+import type { Brand } from "@livepeer/ui";
+import { AppShell, type Account, type LinkProps } from "@livepeer/user-app";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";

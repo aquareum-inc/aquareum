@@ -1,4 +1,4 @@
-import { quoteCredits } from "@aquareum/api-client";
+import { quoteCredits } from "@livepeer/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { devices } from "@/lib/devices";

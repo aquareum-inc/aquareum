@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@aquareum/ui/styles.css";
+@import "@livepeer/ui/styles.css";
 
 @source "../../../packages/ui/src";
 @source "../../../packages/user-app/src";

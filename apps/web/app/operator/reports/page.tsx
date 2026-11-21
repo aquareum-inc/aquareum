@@ -1,4 +1,4 @@
-import { ReportsView } from "@aquareum/operator-console";
+import { ReportsView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { moderation } from "@/lib/moderation";

@@ -1,4 +1,4 @@
-import type { ReportReason } from "@aquareum/api-client/types";
+import type { ReportReason } from "@livepeer/api-client/types";
 import { describe, expect, it } from "vitest";
 
 import { REPORT_REASONS } from "./report-reasons";

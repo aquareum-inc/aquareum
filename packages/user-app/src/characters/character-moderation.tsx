@@ -1,7 +1,7 @@
 "use client";
 
-import type { Character, ReportReason } from "@aquareum/api-client/types";
-import { Button, cn, Popover, PopoverClose, PopoverContent, PopoverTrigger, Sheet, Textarea } from "@aquareum/ui";
+import type { Character, ReportReason } from "@livepeer/api-client/types";
+import { Button, cn, Popover, PopoverClose, PopoverContent, PopoverTrigger, Sheet, Textarea } from "@livepeer/ui";
 import { Ban, Flag, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 

@@ -1,7 +1,7 @@
 import "server-only";
 
-import { createApiClient, type ApiClient } from "@aquareum/api-client";
-import { isCapabilityEnabled } from "@aquareum/config";
+import { createApiClient, type ApiClient } from "@livepeer/api-client";
+import { isCapabilityEnabled } from "@livepeer/config";
 
 import { getSession } from "./auth/session";
 import { env } from "./env";

@@ -1,8 +1,8 @@
-# Aquareum
+# Livepeer
 
 The open-source video platform you own.
 
-Use it as a ready-made video studio, or headless as the video backend for your own app. Aquareum brings the
+Use it as a ready-made video studio, or headless as the video backend for your own app. Livepeer brings the
 product, the API and the console; the Livepeer Network's open market of GPUs brings the compute, paid per job.
 
 - **Yours to run:** your name, branding, prices, users and rules, in one config file. MIT-licensed, so no one
@@ -29,7 +29,7 @@ reached over its REST API.
 You need Docker with the Compose plugin and Node 22.
 
 ```bash
-./aquareum setup --preset full
+./livepeer setup --preset full
 ```
 
 That writes `.env` (with a generated session secret) and `instance.config.json`, builds and starts the app,
@@ -37,12 +37,12 @@ and waits for its health check. With no engine keys it starts in **mock-only mod
 returns realistic mocked data, so a first run needs nothing else. Open the URL it prints.
 
 To connect a real engine, set `ENGINE_URL`, `ENGINE_READER_TOKEN` and `ENGINE_ADMIN_TOKEN` in `.env` and run
-`./aquareum setup` again. To start the engine, payment provider and signer from the same bundle, see
+`./livepeer setup` again. To start the engine, payment provider and signer from the same bundle, see
 [deploy/README.md](deploy/README.md).
 
 ```bash
-./aquareum doctor      # checks config, keys, engine and provider, and says what to fix
-./aquareum upgrade     # moves the app and its pinned engine to this checkout's release
+./livepeer doctor      # checks config, keys, engine and provider, and says what to fix
+./livepeer upgrade     # moves the app and its pinned engine to this checkout's release
 ```
 
 Agents: see [AGENTS.md](AGENTS.md) for exact commands, expected output and failure fixes.
@@ -71,7 +71,7 @@ packages/config           Instance config schema, generated types, presets, capa
 packages/ui               Theme tokens, primitives, motion
 packages/user-app         User-app screens
 packages/operator-console Operator console screens
-packages/cli              aquareum setup | doctor | upgrade
+packages/cli              livepeer setup | doctor | upgrade
 deploy/                   Compose bundle and deploy templates
 docs/                     Brief, research, design brief, route map, architecture, data sources
 release.config.json       The GitHub organisation, registry and pinned engine/provider/signer versions
@@ -80,7 +80,7 @@ release.config.json       The GitHub organisation, registry and pinned engine/pr
 ## Native apps
 
 iOS (`apps/ios`, Swift and SwiftUI) and Android (`apps/android`, Kotlin and Compose) are native clients of an
-instance's `/api/v1`. They are opt-in for operators: `./aquareum setup` never builds them, and an operator
+instance's `/api/v1`. They are opt-in for operators: `./livepeer setup` never builds them, and an operator
 who wants them builds and publishes their own. The plan, and what is built so far, is in
 `docs/mobile/plan.md`.
 
@@ -96,7 +96,7 @@ development, a volume in Docker).
 ```bash
 # an instance with the apps switched on, for the apps to talk to, on :3100
 MOCK_ONLY=1 INSTANCE_CONFIG=docs/mobile/dev.instance.config.json corepack pnpm dev
-open apps/ios/Aquareum.xcodeproj              # then Run, on any iOS 18+ simulator
+open apps/ios/Livepeer.xcodeproj              # then Run, on any iOS 18+ simulator
 (cd apps/android && ./gradlew :app:installDebug)   # onto a running emulator, Android 10+
 corepack pnpm mobile:generate                 # after changing tokens, operations or API types
 ```

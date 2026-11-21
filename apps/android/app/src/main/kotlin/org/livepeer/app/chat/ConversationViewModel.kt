@@ -1,0 +1,128 @@
+package org.livepeer.app.chat
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import org.livepeer.app.api.ApiError
+import org.livepeer.app.generated.Api
+import org.livepeer.app.generated.Conversation
+import org.livepeer.app.generated.Generation
+import org.livepeer.app.generated.GenerationState
+import org.livepeer.app.generated.Message
+import org.livepeer.app.generated.AgentMessageState
+import org.livepeer.app.home.Draft
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
+
+data class ConversationState(
+    /** Null until the first read, when the screen was opened by id alone. */
+    val conversation: Conversation? = null,
+    val generations: Map<String, Generation> = emptyMap(),
+    /** How each capability reads where it did a piece of work, keyed by app. */
+    val labels: Map<String, String> = emptyMap(),
+    val draft: Draft = Draft(),
+    val sending: Boolean = false,
+    val sendError: String? = null,
+    /** Set when the conversation can't be read at all. */
+    val loadFailed: Boolean = false,
+) {
+    private val generationIds: List<String>
+        get() = conversation?.messages.orEmpty().flatMap { (it as? Message.Agent)?.value?.generationIds.orEmpty() }
+
+    val pendingGenerations: List<String>
+        get() = generationIds.filter { id -> generations[id]?.state.let { it == null || it == GenerationState.Queued || it == GenerationState.Running } }
+
+    /** True while there is something to wait for: a turn in progress or a shot still rendering. */
+    val working: Boolean
+        get() = conversation == null || pendingGenerations.isNotEmpty() || conversation.messages.any { (it as? Message.Agent)?.value?.state == AgentMessageState.Working }
+}
+
+/** One conversation, kept current while the agent works. */
+class ConversationViewModel(private val api: Api, private val id: String, seed: Conversation?) : ViewModel() {
+    private val _state = MutableStateFlow(ConversationState(conversation = seed, draft = seed?.let(::carriedOn) ?: Draft()))
+    val state: StateFlow<ConversationState> = _state
+
+    fun setDraft(draft: Draft) = _state.update { it.copy(draft = draft) }
+
+    /**
+     * Follows the conversation until nothing is in progress: quick at first, then backing off, as a
+     * long render doesn't need watching closely. Ends when the caller is cancelled, which the screen
+     * does when it is no longer in front.
+     */
+    suspend fun follow() {
+        if (_state.value.labels.isEmpty()) {
+            runCatching { api.listCapabilityLabels() }.onSuccess { all -> _state.update { it.copy(labels = all.associate { label -> label.app to label.work }) } }
+        }
+        val started = TimeSource.Monotonic.markNow()
+        while (true) {
+            refresh()
+            if (!_state.value.working || _state.value.loadFailed) return
+            val elapsed = started.elapsedNow()
+            delay(if (elapsed < 10.seconds) 700.milliseconds else if (elapsed < 30.seconds) 1500.milliseconds else if (elapsed < 90.seconds) 3.seconds else 5.seconds)
+        }
+    }
+
+    private suspend fun refresh() {
+        try {
+            val fresh = api.getConversation(id)
+            _state.update { it.copy(conversation = fresh, loadFailed = false, draft = if (it.conversation == null) carriedOn(fresh) else it.draft) }
+        } catch (error: ApiError) {
+            if (error.status == 404 || error.isSignedOut) _state.update { it.copy(loadFailed = true) }
+            return
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            return // A dropped poll is retried on the next turn of the loop.
+        }
+        val read = coroutineScope { _state.value.pendingGenerations.map { id -> async { runCatching { api.getGeneration(id) }.getOrNull() } }.awaitAll() }.filterNotNull()
+        if (read.isNotEmpty()) _state.update { it.copy(generations = it.generations + read.associateBy { generation -> generation.id }) }
+    }
+
+    fun retry() {
+        _state.update { it.copy(loadFailed = false) }
+        viewModelScope.launch { follow() }
+    }
+
+    fun send() {
+        val draft = _state.value.draft
+        if (!draft.canSend || _state.value.sending) return
+        _state.update { it.copy(sending = true, sendError = null) }
+        viewModelScope.launch {
+            try {
+                val fresh = api.sendMessage(
+                    id,
+                    text = draft.text,
+                    app = draft.app,
+                    aspect = if (draft.isVideo) draft.aspect else null,
+                    durationSeconds = if (draft.isVideo) draft.durationSeconds.toDouble() else null,
+                    attachmentIds = draft.attachments.map { it.id }.ifEmpty { null },
+                    agentModel = draft.model,
+                    characterSlug = draft.cast?.slug,
+                )
+                _state.update { it.copy(conversation = fresh, sending = false, draft = draft.carriedOn) }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                _state.update { it.copy(sending = false, sendError = "That message didn’t send. Try again.") }
+            }
+        }
+    }
+}
+
+/**
+ * A conversation carries on as it was: the same model runs the agent, and a cast character stays cast so
+ * the next message can direct them further.
+ */
+private fun carriedOn(conversation: Conversation): Draft {
+    val last = conversation.messages.filterIsInstance<Message.User>().lastOrNull()?.value ?: return Draft()
+    return Draft(cast = last.cast, model = last.agentModel)
+}

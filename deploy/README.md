@@ -1,6 +1,6 @@
 # Deploy
 
-`compose.yaml` is both the local development setup and the standard way to self-host. `./aquareum setup`
+`compose.yaml` is both the local development setup and the standard way to self-host. `./livepeer setup`
 drives it; you can also run Compose directly:
 
 ```bash
@@ -33,7 +33,7 @@ The network services pay for compute on Arbitrum One, so they need keys this rep
 Then:
 
 ```bash
-./aquareum setup --network
+./livepeer setup --network
 ```
 
 Versions are pinned in `release.config.json` and copied into `.env` by `setup` and `upgrade`. The engine

@@ -1,4 +1,4 @@
-import { CostsView } from "@aquareum/operator-console";
+import { CostsView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { operatorApi, pricing } from "@/lib/operator/client";

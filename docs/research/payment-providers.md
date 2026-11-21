@@ -1,6 +1,6 @@
 # Payment and identity providers: Clearinghouse Batteries, PymtHouse, and the engine's provider protocols
 
-Research note for the aquareum front end. Written 17 November 2026.
+Research note for the livepeer front end. Written 17 November 2026.
 
 **What was read**
 
@@ -883,7 +883,7 @@ Others found during this research:
 18. **Admin read scope.** The reader (auditor) token is bound to one application and cannot list grants. Should grants be readable by an auditor, so the Grants view does not need the admin token for a read?
 19. **Decimal format.** Engine decimals arrive as strings, sometimes in scientific notation, with up to 18 fractional digits. Is that stable, and will PymtHouse-backed figures arrive as engine `Money` or as micros?
 20. **The `.env` admin token.** `ENGINE_ADMIN_TOKEN` is an actor key for `acme-studio`, not an admin credential. Is that intended? Admin routes cannot be exercised, even read-only, until it is replaced.
-21. **PymtHouse licence and self-hosting.** The repository has no licence set. Its README documents deploying your own copy (Next.js app, PostgreSQL, OpenMeter and a signer), but that is a multi-service stack, not a single container. Can a self-hosted aquareum instance bundle or depend on it, and under what terms?
+21. **PymtHouse licence and self-hosting.** The repository has no licence set. Its README documents deploying your own copy (Next.js app, PostgreSQL, OpenMeter and a signer), but that is a multi-service stack, not a single container. Can a self-hosted livepeer instance bundle or depend on it, and under what terms?
 22. **Platform fee.** PymtHouse reports a platform cut on network fees. What is the rate, and does it apply to self-hosted instances?
 
 ---

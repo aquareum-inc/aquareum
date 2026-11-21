@@ -1,4 +1,4 @@
-import { CreditsProvider, SIDEBAR_COOKIE, sidebarOpenFrom } from "@aquareum/user-app";
+import { CreditsProvider, SIDEBAR_COOKIE, sidebarOpenFrom } from "@livepeer/user-app";
 import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";

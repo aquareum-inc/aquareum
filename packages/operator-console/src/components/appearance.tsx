@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandSymbol, BrandWordmark, Button, Input, cn, type Brand } from "@aquareum/ui";
+import { BrandSymbol, BrandWordmark, Button, Input, cn, type Brand } from "@livepeer/ui";
 import { ImageUp, X } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
 

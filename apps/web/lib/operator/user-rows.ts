@@ -1,5 +1,5 @@
-import type { Allocation, KnownActor, Plan, ProviderUser } from "@aquareum/api-client";
-import type { UserRow } from "@aquareum/operator-console";
+import type { Allocation, KnownActor, Plan, ProviderUser } from "@livepeer/api-client";
+import type { UserRow } from "@livepeer/operator-console";
 
 /** The engine's default application, where accounts live unless the instance names another. */
 const DEFAULT_APPLICATION = "default";

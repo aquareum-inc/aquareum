@@ -27,7 +27,7 @@ import type {
   ReportReason,
   SendMessageInput,
   VideoAnalysis,
-} from "@aquareum/api-client";
+} from "@livepeer/api-client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 

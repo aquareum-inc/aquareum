@@ -1,5 +1,5 @@
 {
-  "name": "@aquareum/mobile-codegen",
+  "name": "@livepeer/mobile-codegen",
   "version": "0.1.0",
   "private": true,
   "type": "module",

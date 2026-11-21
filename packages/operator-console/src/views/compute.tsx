@@ -1,7 +1,7 @@
 "use client";
 
-import type { ComputeOperator, DataSource } from "@aquareum/api-client";
-import { Button } from "@aquareum/ui";
+import type { ComputeOperator, DataSource } from "@livepeer/api-client";
+import { Button } from "@livepeer/ui";
 import { useState } from "react";
 
 import { count, host, label } from "../components/format";

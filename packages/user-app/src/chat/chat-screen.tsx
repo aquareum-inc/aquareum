@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentModel, AppModel, Character, CharacterCast, Conversation, Generation, MediaItem, Offering, SendMessageInput, VideoMoment } from "@aquareum/api-client/types";
+import type { AgentModel, AppModel, Character, CharacterCast, Conversation, Generation, MediaItem, Offering, SendMessageInput, VideoMoment } from "@livepeer/api-client/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Composer, messageFrom, type ComposerValue } from "../home/composer";

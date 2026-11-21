@@ -1,7 +1,7 @@
 /**
  * Writes the native apps' design tokens from the web's own sources, so no value is retyped:
  * colours, radii and type sizes from packages/ui/src/styles/tokens.css, motion from
- * packages/ui/src/lib/motion.ts. Run with `pnpm --filter @aquareum/mobile-codegen tokens`.
+ * packages/ui/src/lib/motion.ts. Run with `pnpm --filter @livepeer/mobile-codegen tokens`.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -116,7 +116,7 @@ enum Motion {
 // ── Kotlin ───────────────────────────────────────────────────────────────
 const kotlinColour = (c: Rgba) => `Color(0x${byte(c.a)}${byte(c.r)}${byte(c.g)}${byte(c.b)})`;
 const kotlin = `${header("//")}
-package app.aquareum.generated
+package org.livepeer.app.generated
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
@@ -170,8 +170,8 @@ object Motion {
 `;
 
 const outputs: Array<[string, string]> = [
-  ["apps/ios/Aquareum/Generated/Tokens.generated.swift", swift],
-  ["apps/android/app/src/main/kotlin/app/aquareum/generated/Tokens.kt", kotlin],
+  ["apps/ios/Livepeer/Generated/Tokens.generated.swift", swift],
+  ["apps/android/app/src/main/kotlin/org/livepeer/app/generated/Tokens.kt", kotlin],
 ];
 for (const [file, content] of outputs) {
   const target = path.join(root, file);

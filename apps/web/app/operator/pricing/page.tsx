@@ -1,4 +1,4 @@
-import { PricingView } from "@aquareum/operator-console";
+import { PricingView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { ConsoleLink } from "@/components/console";

@@ -1,5 +1,5 @@
-import type { MockArtwork as Artwork } from "@aquareum/api-client/types";
-import { cn } from "@aquareum/ui";
+import type { MockArtwork as Artwork } from "@livepeer/api-client/types";
+import { cn } from "@livepeer/ui";
 
 export interface MockArtworkProps {
   artwork: Artwork;

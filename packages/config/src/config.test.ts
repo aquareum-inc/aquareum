@@ -21,7 +21,7 @@ describe("presets", () => {
   it("the mobile development config is valid and names the development apps", () => {
     const { config } = loadConfig({ cwd: path.resolve(import.meta.dirname, "../../.."), env: { INSTANCE_CONFIG: "docs/mobile/dev.instance.config.json" } });
     expect(config.surfaces.mobile).toBe(true);
-    expect(config.mobile).toEqual({ ios: { bundleId: "app.aquareum.dev" }, android: { applicationId: "app.aquareum.dev" } });
+    expect(config.mobile).toEqual({ ios: { bundleId: "org.livepeer.app.dev" }, android: { applicationId: "org.livepeer.app.dev" } });
   });
 
   it("adult content is off by default in both", () => {

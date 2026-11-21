@@ -66,7 +66,7 @@ Reads use `ENGINE_READER_TOKEN`; writes use `ENGINE_ADMIN_TOKEN`.
 | `getCapabilitySetting`, `updateCapabilitySetting` | live (instance config) | `instance.config.json`, through the `CapabilityStore`: switched off is an exact entry in `capabilities.block`, where it appears is `capabilities.overrides[app].surfaces`, markup is `pricing.markup.perApp[app]` | — | Users are served and priced from the same file, so a change applies on their next request. |
 | Provider: grants, allocations, plans, credit packs (list, create, edit), usage, users | per `payments.provider` | see the provider interface | reader / admin | `mock` by default; `batteries` reads allocations and grants through the engine. |
 | Instance settings | real | writes `instance.config.json`, validated | — | Read-only when the file is mounted read-only (the Compose bundle). |
-| Doctor | real | probes engine and tokens | reader, admin | Same checks as `aquareum doctor`. |
+| Doctor | real | probes engine and tokens | reader, admin | Same checks as `livepeer doctor`. |
 
 ## Instance API and MCP
 

@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "aquareum-android"
+rootProject.name = "livepeer-android"
 include(":app")

@@ -1,7 +1,7 @@
 "use client";
 
-import type { AgentModel, Character, CharacterCast, MediaItem, Offering, SendMessageInput } from "@aquareum/api-client/types";
-import { Chip, EASE_OUT_EXPO, Sheet, cn } from "@aquareum/ui";
+import type { AgentModel, Character, CharacterCast, MediaItem, Offering, SendMessageInput } from "@livepeer/api-client/types";
+import { Chip, EASE_OUT_EXPO, Sheet, cn } from "@livepeer/ui";
 import { ArrowUp, Check, Film, Mic, Plus, UserRound, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type Ref } from "react";

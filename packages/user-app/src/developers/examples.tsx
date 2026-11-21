@@ -1,7 +1,7 @@
 "use client";
 
-import type { ExampleApp } from "@aquareum/api-client/types";
-import { Badge, Card, cn } from "@aquareum/ui";
+import type { ExampleApp } from "@livepeer/api-client/types";
+import { Badge, Card, cn } from "@livepeer/ui";
 import { useState } from "react";
 
 import { MockArtwork } from "../media/mock-artwork";

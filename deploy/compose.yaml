@@ -3,16 +3,16 @@
 #   app only (mock-only mode, no keys needed):   docker compose -f deploy/compose.yaml up -d
 #   app + engine + payment provider + signer:    docker compose -f deploy/compose.yaml --profile network up -d
 #
-# Image names and pins come from the instance's .env, which `aquareum setup` writes from
+# Image names and pins come from the instance's .env, which `livepeer setup` writes from
 # release.config.json. INSTANCE_DIR is the directory holding .env and instance.config.json
 # (the repository root by default).
 # The engine and Clearinghouse Batteries publish no images yet, so each service also carries a
 # pinned Git build context; `docker compose pull` is used once images exist, `build` until then.
-name: aquareum
+name: livepeer
 
 services:
   app:
-    image: ${REGISTRY}/${ORG}/aquareum:${APP_VERSION:-local}
+    image: ${REGISTRY}/${ORG}/livepeer:${APP_VERSION:-local}
     build: { context: .., dockerfile: Dockerfile }
     env_file: [{ path: "${INSTANCE_DIR:-..}/.env", required: true }]
     environment:
@@ -25,7 +25,7 @@ services:
 
   engine:
     profiles: [network]
-    image: ${REGISTRY}/${ORG}/aquareum-engine:${ENGINE_REF}
+    image: ${REGISTRY}/${ORG}/livepeer-engine:${ENGINE_REF}
     build:
       context: https://github.com/${ENGINE_REPO}.git#${ENGINE_REF}
       dockerfile: deploy/dev-stack/engine/Dockerfile
@@ -51,7 +51,7 @@ services:
 
   discovery:
     profiles: [network]
-    image: ${REGISTRY}/${ORG}/aquareum-engine:${ENGINE_REF}
+    image: ${REGISTRY}/${ORG}/livepeer-engine:${ENGINE_REF}
     command: [lpb, discovery]
     environment: { LPD_ORCHESTRATORS: /etc/lpd/orchestrators.txt, LPD_HTTP_HOST: 0.0.0.0 }
     volumes: [./config/orchestrators.txt:/etc/lpd/orchestrators.txt:ro]
@@ -63,7 +63,7 @@ services:
 
   clearinghouse:
     profiles: [network]
-    image: ${REGISTRY}/${ORG}/aquareum-clearinghouse:${PROVIDER_REF}
+    image: ${REGISTRY}/${ORG}/livepeer-clearinghouse:${PROVIDER_REF}
     build:
       context: https://github.com/${PROVIDER_REPO}.git#${PROVIDER_REF}
       dockerfile: examples/compose/Dockerfile
@@ -81,7 +81,7 @@ services:
 
   signer:
     profiles: [network]
-    image: ${REGISTRY}/${ORG}/aquareum-signer:${SIGNER_REF}
+    image: ${REGISTRY}/${ORG}/livepeer-signer:${SIGNER_REF}
     build:
       context: https://github.com/livepeer/node.git#${SIGNER_REF}
       dockerfile: docker/Dockerfile

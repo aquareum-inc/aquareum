@@ -1,4 +1,4 @@
-import { ComputeView } from "@aquareum/operator-console";
+import { ComputeView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { setOperatorBlockedAction } from "@/lib/operator/actions";

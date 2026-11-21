@@ -1,4 +1,4 @@
-import { BrandSymbol, Button, Input } from "@aquareum/ui";
+import { BrandSymbol, Button, Input } from "@livepeer/ui";
 import { KeyRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";

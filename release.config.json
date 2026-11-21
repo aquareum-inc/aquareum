@@ -1,6 +1,6 @@
 {
   "org": "aquareum-inc",
-  "repo": "aquareum",
+  "repo": "livepeer",
   "registry": "ghcr.io",
   "engine": {
     "repo": "NE-Build-Track/livepeer-builder-core",

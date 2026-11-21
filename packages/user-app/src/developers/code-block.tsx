@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@aquareum/ui";
+import { cn } from "@livepeer/ui";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 

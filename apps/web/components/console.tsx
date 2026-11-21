@@ -1,7 +1,7 @@
 "use client";
 
-import { ConsoleShell, type ConsoleLinkProps } from "@aquareum/operator-console";
-import type { Brand } from "@aquareum/ui";
+import { ConsoleShell, type ConsoleLinkProps } from "@livepeer/operator-console";
+import type { Brand } from "@livepeer/ui";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";

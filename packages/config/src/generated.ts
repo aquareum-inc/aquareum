@@ -1,4 +1,4 @@
-/* Generated from schema/instance.schema.json by `pnpm --filter @aquareum/config generate`. Do not edit. */
+/* Generated from schema/instance.schema.json by `pnpm --filter @livepeer/config generate`. Do not edit. */
 
 /**
  * One file that defines an instance: branding, engine, surfaces, capability rules, auth, payments and content policy. Secrets never go here; they are environment variables.

@@ -1,7 +1,7 @@
 "use client";
 
-import type { CreditPack } from "@aquareum/api-client";
-import { Badge, Button, Field, Input, Sheet, Switch } from "@aquareum/ui";
+import type { CreditPack } from "@livepeer/api-client";
+import { Badge, Button, Field, Input, Sheet, Switch } from "@livepeer/ui";
 import { Plus } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 

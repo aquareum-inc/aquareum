@@ -8,7 +8,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json release.
 COPY apps ./apps
 COPY packages ./packages
 RUN pnpm install --frozen-lockfile
-RUN MOCK_ONLY=1 pnpm --filter @aquareum/web build
+RUN MOCK_ONLY=1 pnpm --filter @livepeer/web build
 
 FROM node:22-alpine AS run
 WORKDIR /app

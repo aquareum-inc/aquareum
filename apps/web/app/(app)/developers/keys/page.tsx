@@ -1,4 +1,4 @@
-import { DataSourceBadge, DevelopersLayout, KeysScreen } from "@aquareum/user-app";
+import { DataSourceBadge, DevelopersLayout, KeysScreen } from "@livepeer/user-app";
 import type { Metadata } from "next";
 
 import { createApiKeyAction, revokeApiKeyAction } from "@/lib/actions";

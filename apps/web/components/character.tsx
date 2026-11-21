@@ -1,7 +1,7 @@
 "use client";
 
-import type { Character, CharacterInput } from "@aquareum/api-client";
-import { CallScreen, CharacterForm, CharacterScreen } from "@aquareum/user-app";
+import type { Character, CharacterInput } from "@livepeer/api-client";
+import { CallScreen, CharacterForm, CharacterScreen } from "@livepeer/user-app";
 import { useRouter } from "next/navigation";
 
 import { blockCharacterAction, createCharacterAction, createConversationAction, endCallAction, reportCharacterAction, startCallAction } from "@/lib/actions";

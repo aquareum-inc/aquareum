@@ -1,7 +1,7 @@
 "use client";
 
-import type { DataSource, Plan, UsageEntry } from "@aquareum/api-client";
-import { Button, Chip, Sheet } from "@aquareum/ui";
+import type { DataSource, Plan, UsageEntry } from "@livepeer/api-client";
+import { Button, Chip, Sheet } from "@livepeer/ui";
 import { ArrowLeft } from "lucide-react";
 import { useState, type ComponentType, type ReactNode } from "react";
 

@@ -1,4 +1,4 @@
-import type { AgentModelEntry, ApiClient, CapabilityLabel, Character, Preferences, PrivacyDescription, ReportReason, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorClient } from "@aquareum/api-client";
+import type { AgentModelEntry, ApiClient, CapabilityLabel, Character, Preferences, PrivacyDescription, ReportReason, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorClient } from "@livepeer/api-client";
 
 import type { Moderation } from "../moderation/moderation";
 

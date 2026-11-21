@@ -1,5 +1,5 @@
 {
-  "name": "@aquareum/user-app",
+  "name": "@livepeer/user-app",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@aquareum/api-client": "workspace:*",
-    "@aquareum/ui": "workspace:*",
+    "@livepeer/api-client": "workspace:*",
+    "@livepeer/ui": "workspace:*",
     "liveline": "0.0.7",
     "lucide-react": "^1.48.0",
     "motion": "^13.4.3",

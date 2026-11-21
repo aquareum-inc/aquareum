@@ -1,7 +1,7 @@
 "use client";
 
-import type { AgentMessage, AgentStep, AppModel, Generation, VideoMoment } from "@aquareum/api-client/types";
-import { EASE_OUT_EXPO, cn } from "@aquareum/ui";
+import type { AgentMessage, AgentStep, AppModel, Generation, VideoMoment } from "@livepeer/api-client/types";
+import { EASE_OUT_EXPO, cn } from "@livepeer/ui";
 import { Check, ChevronDown, Clapperboard, Eye, ListTree, Wrench } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";

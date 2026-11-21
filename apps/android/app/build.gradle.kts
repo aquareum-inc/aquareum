@@ -11,7 +11,7 @@ val instance = Properties().apply { rootProject.file("instance.properties").inpu
 fun instanceValue(key: String): String = instance.getProperty(key)?.takeIf { it.isNotBlank() } ?: error("instance.properties must set $key")
 
 android {
-    namespace = "app.aquareum"
+    namespace = "org.livepeer.app"
     compileSdk = 37
 
     defaultConfig {

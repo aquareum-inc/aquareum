@@ -1,4 +1,4 @@
-import type { Plan } from "@aquareum/api-client/provider";
+import type { Plan } from "@livepeer/api-client/provider";
 import { describe, expect, it } from "vitest";
 
 import { planLadder } from "./plan-ladder";
