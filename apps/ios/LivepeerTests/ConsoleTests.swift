@@ -75,11 +75,11 @@ struct ConsoleTests {
         let all = try fixture("operator_list_jobs", as: [EngineJob].self)
         let running = try #require(all.first)
         #expect(running.state == .running && running.took == nil && running.stateWord == "Running")
-        #expect(running.facts == ["1 attempt", "…d4e5"])
+        #expect(running.facts == ["1\u{00A0}attempt", "…d4e5"])
 
         let failed = try #require(try fixture("operator_list_jobs_failed", as: [EngineJob].self).first)
         #expect(failed.state == .failed && failed.tone == .bad)
-        #expect(failed.facts == ["unreachable", "1 attempt", "…ebcb"])
+        #expect(failed.facts == ["unreachable", "1\u{00A0}attempt", "…ebcb"])
         #expect(JobDetailView.stateLine(for: failed) == "Failed after 900 ms")
         #expect(JobDetailView.outcome(of: try #require(failed.attempts.first)) == "unreachable · 502")
         #expect(failed.summary.contains("The runner closed the connection before answering."))

@@ -48,7 +48,7 @@ struct StatusView: View {
                 note(message, mono: false)
                 retry
             case (nil, let status?):
-                sentence(ConsoleFormat.headline(needing: status.attention.count), tone: status.attention.isEmpty ? .good : StatusModel.serviceIsDown(status.attention) ? .bad : .active)
+                sentence(ConsoleFormat.headline(needing: status.attention.count), tone: status.attention.isEmpty ? .good : StatusModel.serviceIsDown(status.attention) ? .bad : .ink)
                 if let checked = model.checked { note("Checked \(ConsoleFormat.ago(checked, now: now))", mono: true) }
             case (nil, nil):
                 sentence("Checking…", tone: .quiet)
@@ -60,8 +60,7 @@ struct StatusView: View {
 
     private func sentence(_ text: String, tone: StateDot.Tone) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            StateDot(tone: tone == .active ? .quiet : tone, size: 12)
-                .alignmentGuide(.firstTextBaseline) { $0[.bottom] + 3 }
+            StateDot(tone: tone, size: 12, lift: 3)
             Text(text)
                 .text(.title, weight: .semibold)
                 .foregroundStyle(palette.foreground)
@@ -134,7 +133,7 @@ private struct AttentionRow: View {
 
     private func row(chevron: Bool) -> some View {
         HStack(spacing: 12) {
-            StateDot(tone: item.kind == .reportsWaiting ? .quiet : .bad)
+            StateDot(tone: item.kind == .reportsWaiting ? .ink : .bad)
             Text(item.message)
                 .text(.lead, weight: .medium)
                 .foregroundStyle(palette.foreground)

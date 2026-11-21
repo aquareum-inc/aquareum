@@ -46,15 +46,24 @@ struct ConsoleToolbar: ToolbarContent {
 
 /// A state as a dot. Always beside the word for it, never the only sign.
 struct StateDot: View {
-    enum Tone { case good, bad, active, quiet }
+    /// Good and bad are states of the service; active is work in progress, and breathes; ink is something
+    /// waiting for a person; quiet is finished and unremarkable.
+    enum Tone { case good, bad, active, ink, quiet }
     let tone: Tone
     var size: CGFloat = 8
+    /// How far above a first line's baseline the dot sits, where it is aligned to one.
+    var lift: CGFloat = 0
+    @ScaledMetric(relativeTo: .body) private var textScale: CGFloat = 1
     @Environment(\.palette) private var palette
+
+    /// The dot grows with the text beside it, to a point.
+    private var scale: CGFloat { min(textScale, 2) }
 
     var body: some View {
         Circle()
             .fill(colour)
-            .frame(width: size, height: size)
+            .frame(width: size * scale, height: size * scale)
+            .alignmentGuide(.firstTextBaseline) { $0[.bottom] + lift * scale }
             .breathing(tone == .active)
             .accessibilityHidden(true)
     }
@@ -63,7 +72,7 @@ struct StateDot: View {
         switch tone {
         case .good: palette.brand
         case .bad: palette.destructive
-        case .active: palette.foreground
+        case .active, .ink: palette.foreground
         case .quiet: palette.subtleForeground
         }
     }
@@ -95,8 +104,8 @@ struct RowRule: View {
     var body: some View { Rectangle().fill(palette.hairline).frame(height: 1).padding(.leading, 16) }
 }
 
-/// One fact: what it is, then its value in mono. At the largest text sizes the value moves under its name.
-/// A value that can be copied offers it on a long press.
+/// One fact: what it is, then its value in mono. A value too long for the line, and every value at the largest
+/// text sizes, moves under its name. A value that can be copied offers it on a long press.
 struct FactRow<Accessory: View>: View {
     let name: String
     let value: String
@@ -108,16 +117,15 @@ struct FactRow<Accessory: View>: View {
     var body: some View {
         Group {
             if typeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 4) {
-                    nameText
-                    HStack(spacing: 8) { accessory; valueText.multilineTextAlignment(.leading) }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                stacked
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: 16) {
-                    nameText.layoutPriority(1)
-                    Spacer(minLength: 0)
-                    HStack(alignment: .firstTextBaseline, spacing: 8) { accessory; valueText.multilineTextAlignment(.trailing) }
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 16) {
+                        nameText
+                        Spacer(minLength: 0)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) { accessory; valueText.lineLimit(1) }
+                    }
+                    stacked
                 }
             }
         }
@@ -133,8 +141,16 @@ struct FactRow<Accessory: View>: View {
         .accessibilityElement(children: .combine)
     }
 
+    private var stacked: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            nameText
+            HStack(alignment: .firstTextBaseline, spacing: 8) { accessory; valueText.multilineTextAlignment(.leading) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var nameText: some View {
-        Text(name).text(.body).foregroundStyle(palette.mutedForeground)
+        Text(name).text(.body).foregroundStyle(palette.mutedForeground).fixedSize()
     }
 
     private var valueText: some View {

@@ -43,6 +43,7 @@ final class ConsoleSession {
         self.instance = instance
         api = OperatorAPI(session: ConsoleTransport(baseURL: BuildConfig.instanceURL, token: { vault.token }))
         stage = vault.token == nil ? .signedOut : .locked
+        watchForLeaving()
     }
 
     /// This phone has a console session, locked or open.
@@ -67,17 +68,21 @@ final class ConsoleSession {
         if stage == .open { stage = .locked }
     }
 
-    /// Locks the console when the app has been in the background for more than a minute.
-    func sceneChanged(to phase: ScenePhase) {
-        switch phase {
-        case .background:
-            leftAt = leftAt ?? .now
-        case .active:
-            if let leftAt, Date.now.timeIntervalSince(leftAt) > Self.awayLimit { lock() }
-            leftAt = nil
-        default:
-            break
+    /// Locks the console when the app comes back from more than a minute in the background. The system's own
+    /// notices are used, not the scene phase: a view may not hear of the background until the app returns.
+    private func watchForLeaving() {
+        let centre = NotificationCenter.default
+        centre.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.leftAt = .now }
         }
+        centre.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.returned() }
+        }
+    }
+
+    private func returned() {
+        if let leftAt, Date.now.timeIntervalSince(leftAt) > Self.awayLimit { lock() }
+        leftAt = nil
     }
 
     /// One of the console's reads. A refusal that locks or ends the session changes the console at once.

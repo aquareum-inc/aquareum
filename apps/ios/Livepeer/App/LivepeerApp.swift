@@ -66,7 +66,6 @@ struct RootView: View {
         .tint(palette.foreground)
         .preferredColorScheme(theme == "dark" ? .dark : theme == "light" ? .light : nil)
         .onChange(of: scenePhase) { _, phase in
-            console.sceneChanged(to: phase)
             guard phase == .active else { return }
             Task {
                 await instance.refresh()

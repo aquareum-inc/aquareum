@@ -96,7 +96,7 @@ struct JobRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            StateDot(tone: job.tone).alignmentGuide(.firstTextBaseline) { $0[.bottom] + 2 }
+            StateDot(tone: job.tone, lift: 2)
             VStack(alignment: .leading, spacing: 3) {
                 if typeSize.isAccessibilitySize {
                     title
@@ -125,7 +125,7 @@ struct JobRow: View {
     private var stateColour: Color {
         switch job.tone {
         case .bad: palette.destructive
-        case .active: palette.foreground
+        case .active, .ink: palette.foreground
         case .good, .quiet: palette.mutedForeground
         }
     }

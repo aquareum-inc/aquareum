@@ -22,12 +22,17 @@ nonisolated enum ConsoleFormat {
 
     /// The time alone for today, with the day before it otherwise.
     static func clock(_ date: Date, now: Date, calendar: Calendar = .current) -> String {
-        calendar.isDate(date, inSameDayAs: now) ? date.formatted(date: .omitted, time: .shortened) : date.formatted(.dateTime.day().month(.abbreviated).hour().minute())
+        let time = date.formatted(date: .omitted, time: .shortened)
+        return calendar.isDate(date, inSameDayAs: now) ? time : "\(day(date)) \(time)"
     }
 
     /// The day and the time to the second, for a job's own page.
     static func moment(_ date: Date) -> String {
-        date.formatted(.dateTime.day().month(.abbreviated).hour().minute().second())
+        "\(day(date)) \(date.formatted(.dateTime.hour().minute().second()))"
+    }
+
+    private static func day(_ date: Date) -> String {
+        date.formatted(.dateTime.day().month(.abbreviated))
     }
 
     static func money(_ usd: Double) -> String {
@@ -92,13 +97,13 @@ nonisolated extension EngineJob {
         }
     }
 
-    /// The facts on a row's second line, after the state.
+    /// The facts on a row's second line, after the state. Each holds together when the line wraps.
     var facts: [String] {
         var facts: [String] = []
         if let kind = failure?.kind { facts.append(kind) } else if let took { facts.append(ConsoleFormat.duration(took)) }
         facts.append(attempts.count == 1 ? "1 attempt" : "\(attempts.count) attempts")
         facts.append(ConsoleFormat.tail(id))
-        return facts
+        return facts.map { $0.replacingOccurrences(of: " ", with: "\u{00A0}") }
     }
 
     /// The job in a few lines, for the share sheet.

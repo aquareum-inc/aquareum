@@ -22,7 +22,7 @@ struct JobDetailView: View {
                 ForEach(job.attempts, id: \.number) { attempt in
                     ConsoleSection(title: "Attempt \(ConsoleFormat.count(attempt.number))") {
                         FactRow(name: "Outcome", value: Self.outcome(of: attempt)) {
-                            StateDot(tone: attempt.outcome == "succeeded" ? .good : attempt.endedAt == nil ? .active : .bad)
+                            StateDot(tone: attempt.outcome == "succeeded" ? .good : attempt.endedAt == nil ? .active : .bad, lift: 1)
                         }
                         if let host = ConsoleFormat.host(attempt.orchestratorUrl) { RowRule(); FactRow(name: "Compute operator", value: host, copies: true) }
                         if let start = ConsoleFormat.date(attempt.startedAt), let end = ConsoleFormat.date(attempt.endedAt) {
@@ -81,7 +81,7 @@ struct JobDetailView: View {
     }
 }
 
-/// Why a job failed, in the engine's own words, on the destructive tint.
+/// Why a job failed, in the engine's own words, on a wash of the destructive colour: it reports, it doesn't ask.
 private struct FailureCard: View {
     let failure: JobFailure
     @Environment(\.palette) private var palette
@@ -111,8 +111,8 @@ private struct FailureCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.destructiveFill, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(palette.destructive.opacity(0.35), lineWidth: 1))
+        .background(palette.destructive.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(palette.destructive.opacity(0.4), lineWidth: 1))
         .contextMenu { Button("Copy", systemImage: "doc.on.doc") { UIPasteboard.general.string = failure.message } }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Failure: \(failure.message) \(facts)")
