@@ -628,6 +628,13 @@ function message(input: Record<string, unknown>) {
   };
 }
 
+/**
+ * The console session's own plumbing on a phone: enrolling, unlocking, asking for a nonce, signing out. They
+ * aren't operator operations (the proof of who is asking is the session itself), and the native clients get
+ * them in their operator client, beside the operator operations marked for phones.
+ */
+export const OPERATOR_SESSION_OPERATIONS: readonly string[] = ["create_operator_device_session", "delete_operator_device_session", "create_operator_challenge", "unlock_operator_device_session"];
+
 /** Finds the operation for a REST request and extracts its path inputs. */
 export function matchOperation(method: string, segments: string[]): { operation: Operation; params: Record<string, string> } | null {
   for (const operation of OPERATIONS) {

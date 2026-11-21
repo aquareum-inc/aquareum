@@ -24,7 +24,7 @@ struct API: Sendable {
         try await transport.send("DELETE", "/auth/device", query: [:], body: nil)
     }
 
-    /// The signed-in person: their name, email and credit balance.
+    /// The signed-in person: their name, email, credit balance and whether they run this instance.
     func getMe() async throws -> Me {
         try await transport.send("GET", "/me", query: [:], body: nil)
     }

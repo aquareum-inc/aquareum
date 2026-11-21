@@ -15,8 +15,11 @@ import { createHash, createPublicKey, verify, type KeyObject } from "node:crypto
 export const unlockMessage = (nonce: string) => `livepeer-operator-unlock\n${nonce}`;
 export const confirmMessage = (nonce: string, operation: string, inputHash: string) => `livepeer-operator-confirm\n${nonce}\n${operation}\n${inputHash}`;
 
-/** JSON with object keys in order and no spacing, so a phone and the instance hash the same bytes. */
-function canonical(value: unknown): string {
+/**
+ * JSON with object keys in order (by UTF-16 code unit, as a plain string sort gives) and no spacing, so a
+ * phone and the instance hash the same bytes. Absent values are left out; strings are escaped as JSON.stringify does.
+ */
+export function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value !== null && typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>).filter(([, entry]) => entry !== undefined).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));

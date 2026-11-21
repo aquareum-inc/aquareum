@@ -374,6 +374,110 @@ data class DeviceToken(
     @SerialName("device") val device: DeviceSession,
 )
 
+/** The answer to a change that has nothing else to say. */
+@Serializable
+data class Done(
+    @SerialName("ok") val ok: Boolean,
+)
+
+/** `GET /readyz`. */
+@Serializable
+data class EngineHealth(
+    @SerialName("ready") val ready: Boolean,
+    @SerialName("discovery_fresh") val discoveryFresh: Boolean,
+    @SerialName("discovery_observed_at") val discoveryObservedAt: String? = null,
+    @SerialName("discovery_error") val discoveryError: String? = null,
+    @SerialName("cost_sync_at") val costSyncAt: String? = null,
+    @SerialName("cost_sync_error") val costSyncError: String? = null,
+    @SerialName("running_jobs") val runningJobs: Double,
+    @SerialName("allocation_mode") val allocationMode: String,
+    @SerialName("version") val version: String,
+)
+
+@Serializable(with = EngineJobMode.Serializer::class)
+enum class EngineJobMode(val value: String) {
+    Immediate("immediate"),
+    Async("async"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<EngineJobMode> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("EngineJobMode", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): EngineJobMode = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: EngineJobMode) = encoder.encodeString(value.value)
+    }
+}
+
+/** `GET /v1/jobs` item. */
+@Serializable
+data class EngineJob(
+    @SerialName("id") val id: String,
+    @SerialName("actor_id") val actorId: String,
+    @SerialName("application_id") val applicationId: String,
+    @SerialName("operation_ref") val operationRef: String? = null,
+    @SerialName("mode") val mode: EngineJobMode,
+    @SerialName("app") val app: String,
+    @SerialName("capability") val capability: String? = null,
+    @SerialName("model") val model: String? = null,
+    @SerialName("state") val state: JobState,
+    @SerialName("attempts") val attempts: List<JobAttempt>,
+    @SerialName("failure") val failure: JobFailure? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("completed_at") val completedAt: String? = null,
+)
+
+/** Operator-side types. The engine shapes are as documented in docs/research/engine.md §4. */
+@Serializable(with = JobState.Serializer::class)
+enum class JobState(val value: String) {
+    Queued("queued"),
+    Running("running"),
+    Succeeded("succeeded"),
+    Failed("failed"),
+    Uncertain("uncertain"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<JobState> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("JobState", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): JobState = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: JobState) = encoder.encodeString(value.value)
+    }
+}
+
+@Serializable
+data class JobAttemptTimings(
+    @SerialName("challenge_ms") val challengeMs: Double? = null,
+    @SerialName("signing_ms") val signingMs: Double? = null,
+    @SerialName("response_ms") val responseMs: Double? = null,
+)
+
+@Serializable
+data class JobAttempt(
+    @SerialName("job_id") val jobId: String,
+    @SerialName("number") val number: Double,
+    @SerialName("runner_url") val runnerUrl: String? = null,
+    @SerialName("orchestrator_url") val orchestratorUrl: String? = null,
+    @SerialName("allocation_id") val allocationId: String? = null,
+    @SerialName("payment_sent") val paymentSent: Boolean,
+    @SerialName("outcome") val outcome: String,
+    @SerialName("status_code") val statusCode: Double? = null,
+    @SerialName("started_at") val startedAt: String,
+    @SerialName("ended_at") val endedAt: String? = null,
+    @SerialName("timings") val timings: JobAttemptTimings? = null,
+)
+
+@Serializable
+data class JobFailure(
+    @SerialName("kind") val kind: String,
+    @SerialName("message") val message: String,
+    @SerialName("status_code") val statusCode: Double? = null,
+    @SerialName("body") val body: String? = null,
+    @SerialName("payment_sent") val paymentSent: Boolean,
+    @SerialName("reason") val reason: String? = null,
+)
+
 /** An async generation job. Mocked: the engine's async jobs return 501 today. */
 @Serializable
 data class Generation(
@@ -586,6 +690,47 @@ enum class SignInMethodName(val value: String) {
     }
 }
 
+@Serializable(with = KnownActorAllocationStatus.Serializer::class)
+enum class KnownActorAllocationStatus(val value: String) {
+    Active("active"),
+    Paused("paused"),
+    Exhausted("exhausted"),
+    Revoked("revoked"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<KnownActorAllocationStatus> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("KnownActorAllocationStatus", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): KnownActorAllocationStatus = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: KnownActorAllocationStatus) = encoder.encodeString(value.value)
+    }
+}
+
+@Serializable
+data class KnownActorAllocation(
+    @SerialName("grant_id") val grantId: String,
+    @SerialName("allocation_id") val allocationId: String,
+    @SerialName("currency") val currency: String,
+    @SerialName("status") val status: KnownActorAllocationStatus,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("label") val label: String,
+)
+
+/** `GET /v1/admin/actors` item. */
+@Serializable
+data class KnownActor(
+    @SerialName("application_id") val applicationId: String,
+    @SerialName("actor_id") val actorId: String,
+    @SerialName("label") val label: String,
+    @SerialName("name") val name: String? = null,
+    @SerialName("allocation") val allocation: KnownActorAllocation? = null,
+    @SerialName("first_seen_at") val firstSeenAt: String? = null,
+    @SerialName("last_seen_at") val lastSeenAt: String? = null,
+    @SerialName("provisioned") val provisioned: Boolean,
+)
+
 @Serializable(with = LiveSessionState.Serializer::class)
 enum class LiveSessionState(val value: String) {
     Live("live"),
@@ -614,12 +759,30 @@ data class LiveSession(
     @SerialName("recording_media_id") val recordingMediaId: String? = null,
 )
 
+/** Whether the person runs this instance. An app offers the console from this; the server still decides every request. */
+@Serializable(with = MeRole.Serializer::class)
+enum class MeRole(val value: String) {
+    User("user"),
+    Operator("operator"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<MeRole> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("MeRole", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): MeRole = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: MeRole) = encoder.encodeString(value.value)
+    }
+}
+
 /** The signed-in user, as the account menu shows them. */
 @Serializable
 data class Me(
     @SerialName("id") val id: String,
     @SerialName("name") val name: String,
     @SerialName("email") val email: String? = null,
+    /** Whether the person runs this instance. An app offers the console from this; the server still decides every request. */
+    @SerialName("role") val role: MeRole,
     @SerialName("balance") val balance: CreditBalance,
 )
 
@@ -714,6 +877,160 @@ data class RatePoint(
     @SerialName("source") val source: String,
     @SerialName("observed_at") val observedAt: String,
     @SerialName("observed_by") val observedBy: String,
+)
+
+/** A value for the phone's key to sign, once, before it expires. */
+@Serializable
+data class OperatorChallenge(
+    @SerialName("nonce") val nonce: String,
+    @SerialName("expires_at") val expiresAt: String,
+)
+
+/** A new operator device session. The token is shown once; the instance keeps only a keyed hash of it. */
+@Serializable
+data class OperatorDeviceToken(
+    @SerialName("token") val token: String,
+    @SerialName("device") val device: OperatorDeviceSession,
+)
+
+@Serializable(with = OperatorDeviceSessionPlatform.Serializer::class)
+enum class OperatorDeviceSessionPlatform(val value: String) {
+    Ios("ios"),
+    Android("android"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<OperatorDeviceSessionPlatform> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("OperatorDeviceSessionPlatform", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): OperatorDeviceSessionPlatform = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: OperatorDeviceSessionPlatform) = encoder.encodeString(value.value)
+    }
+}
+
+/** An operator's phone enrolled for the console: its own session, bound to a key in the phone's secure hardware. */
+@Serializable
+data class OperatorDeviceSession(
+    @SerialName("id") val id: String,
+    /** Whose phone it is. */
+    @SerialName("user_id") val userId: String,
+    @SerialName("user_name") val userName: String,
+    /** The phone's own name, as it reported it. */
+    @SerialName("name") val name: String,
+    @SerialName("platform") val platform: OperatorDeviceSessionPlatform,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("last_used_at") val lastUsedAt: String,
+    /** When the phone last proved a face or fingerprint to open the console. */
+    @SerialName("last_unlocked_at") val lastUnlockedAt: String? = null,
+    /** When the session ends whatever its use, and the operator signs in again. */
+    @SerialName("expires_at") val expiresAt: String,
+)
+
+@Serializable
+data class OperatorStatusToday(
+    @SerialName("active_users") val activeUsers: Double,
+    @SerialName("jobs") val jobs: Double,
+    @SerialName("failed") val failed: Double,
+    @SerialName("revenue_usd") val revenueUsd: Double,
+    @SerialName("wholesale_usd") val wholesaleUsd: Double,
+    @SerialName("margin_usd") val marginUsd: Double,
+    @SerialName("revenue_estimated") val revenueEstimated: Boolean,
+)
+
+@Serializable
+data class OperatorStatusService(
+    @SerialName("engine_ready") val engineReady: Boolean,
+    @SerialName("discovery_fresh") val discoveryFresh: Boolean,
+    @SerialName("discovery_observed_at") val discoveryObservedAt: String? = null,
+    @SerialName("cost_sync_at") val costSyncAt: String? = null,
+    @SerialName("cost_sync_error") val costSyncError: String? = null,
+    @SerialName("running_jobs") val runningJobs: Double,
+    @SerialName("engine_version") val engineVersion: String,
+)
+
+/** Whether anything is wrong, today's figures and the state of the service, in one answer. */
+@Serializable
+data class OperatorStatus(
+    @SerialName("checked_at") val checkedAt: String,
+    /** Empty when everything is running. */
+    @SerialName("attention") val attention: List<OperatorAttention>,
+    @SerialName("today") val today: OperatorStatusToday,
+    @SerialName("service") val service: OperatorStatusService,
+)
+
+@Serializable(with = OperatorAttentionKind.Serializer::class)
+enum class OperatorAttentionKind(val value: String) {
+    EngineNotReady("engine_not_ready"),
+    DiscoveryStale("discovery_stale"),
+    CostsNotSynced("costs_not_synced"),
+    JobsFailing("jobs_failing"),
+    ReportsWaiting("reports_waiting"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<OperatorAttentionKind> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("OperatorAttentionKind", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): OperatorAttentionKind = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: OperatorAttentionKind) = encoder.encodeString(value.value)
+    }
+}
+
+/** Where to deal with it. */
+@Serializable(with = OperatorAttentionOpens.Serializer::class)
+enum class OperatorAttentionOpens(val value: String) {
+    Status("status"),
+    Jobs("jobs"),
+    Reports("reports"),
+
+    /** A value this build doesn't know, from a newer instance. */
+    Unknown("");
+
+    object Serializer : KSerializer<OperatorAttentionOpens> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("OperatorAttentionOpens", PrimitiveKind.STRING)
+        override fun deserialize(decoder: Decoder): OperatorAttentionOpens = decoder.decodeString().let { value -> entries.firstOrNull { it.value == value } ?: Unknown }
+        override fun serialize(encoder: Encoder, value: OperatorAttentionOpens) = encoder.encodeString(value.value)
+    }
+}
+
+/** Something that needs the operator, as the Status screen lists it. */
+@Serializable
+data class OperatorAttention(
+    @SerialName("kind") val kind: OperatorAttentionKind,
+    /** The line to show: "3 reports are waiting". */
+    @SerialName("message") val message: String,
+    @SerialName("count") val count: Double? = null,
+    /** Where to deal with it. */
+    @SerialName("opens") val opens: OperatorAttentionOpens,
+)
+
+/** The console is open on this phone until then. */
+@Serializable
+data class OperatorUnlock(
+    @SerialName("unlocked_until") val unlockedUntil: String,
+)
+
+@Serializable
+data class OverviewStatsSeries(
+    @SerialName("day") val day: String,
+    @SerialName("revenue_usd") val revenueUsd: Double,
+    @SerialName("wholesale_usd") val wholesaleUsd: Double,
+)
+
+@Serializable
+data class OverviewStats(
+    @SerialName("active_users") val activeUsers: Double,
+    @SerialName("jobs_today") val jobsToday: Double,
+    @SerialName("jobs_failed_today") val jobsFailedToday: Double,
+    /** Credits charged, as money at the instance's rate. */
+    @SerialName("revenue_usd") val revenueUsd: Double,
+    @SerialName("wholesale_usd") val wholesaleUsd: Double,
+    @SerialName("margin_usd") val marginUsd: Double,
+    @SerialName("pending_usd") val pendingUsd: Double,
+    /** True while revenue is worked out from wholesale cost at the default markup, rather than reported by the payment provider. */
+    @SerialName("revenue_estimated") val revenueEstimated: Boolean,
+    /** Per day, oldest first. */
+    @SerialName("series") val series: List<OverviewStatsSeries>,
 )
 
 @Serializable
