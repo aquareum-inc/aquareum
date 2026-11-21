@@ -12,7 +12,7 @@ on:
     types: [opened, reopened, ready_for_review, labeled]
     paths:
       - "apps/android/**"
-      - "packages/mobile-codegen/**"
+      - "packages/mobile-codegen/src/**"
       - "docs/mobile/openapi.json"
       - "docs/mobile/dev.instance.config.json"
       - "apps/web/lib/public-api/**"
