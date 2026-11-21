@@ -577,13 +577,14 @@ audit in a UI test target (`performAccessibilityAudit`), which the project doesn
 - **Android notes.** Compose's test library brings Espresso 3.5, which calls an input API removed in API 37, so
   Espresso is pinned to 3.7. The tests grant `ACCESS_LOCAL_NETWORK` themselves, since a test run installs the
   app fresh, and turn system animations off so the aurora and the orb let the screen settle.
-- **CI.** `.github/workflows/mobile.yml`: `ios` (macOS) and `android` (Linux, an API 37 emulator), started only
-  by mobile paths. Each starts a mock-only instance, then runs the unit and UI tests. Not required checks yet.
+- **CI.** `.github/workflows/mobile-ios.yml` (macOS) and `mobile-android.yml` (Linux, an API 37 emulator), each
+  started only by its own app's paths and what the apps share (the public API, the generator, the dev config). Each starts a mock-only instance, then runs the unit and UI tests. Not required checks yet.
 - **CI minutes.** macOS minutes count ten times, so the jobs skip draft pull requests (they start when one is
   marked ready, then on each push), don't run again after merging, and can be started by hand. On iOS the
   build takes about a minute and a fresh simulator's boot about six, so the job boots it first and builds while it
   boots, then runs unit and UI tests in one pass (the `AquareumAllTests` scheme): about 12 minutes down to
-  about 10. Android caches Gradle and a booted emulator between runs.
+  about 10. The instance compiles each route on first use, so the job asks for sign-in and the API during
+  the build, not the tests. Android caches Gradle and a booted emulator between runs.
 
 ### Slice 6: Settings (20 November 2026)
 
