@@ -31,6 +31,13 @@ Found during research (2026-11-17). Detail and evidence are in `docs/research/en
 | R8 | Publish app names that are capabilities only, with the model as its own field (the SPEC's migration: `blueclaw/chat/qwen3.8-27b` → `chat` with model `qwen3.8-27b`, `live/flux-klein` → `live-video-to-video` with model `flux-klein`), and group offerings by capability, then model. | The composer lists models (the agent's language model) and the studio lists capabilities; today the app tells them apart by parsing names (`lib/capability-menu.ts`), and a plain `chat` hides which model serves it. | open |
 | R9 | Let provisioning link an actor to the sign-in identity: an `external_id` (the identity provider's user id) and an optional `email` on the actor, set when the admin token creates it at sign-up, returned by `GET /v1/admin/actors` and filterable. | The operator console's Users view joins the identity provider's people to the engine's accounts by id. With no link stored on the engine, the actor id must equal the provider's user id, and accounts made outside sign-up show with no name or email. Settle this before sign-up provisioning is built. | open |
 
+### Filter and page `GET /v1/jobs`
+
+The console on phones lists jobs by state (failed, running) and pages back through them. `GET /v1/jobs` takes
+only `limit`, so the instance asks for the newest 500 and filters and cuts pages itself
+(`operator_list_jobs`). That is fine for a small instance and wrong for a busy one: a failed job older than
+the newest 500 can't be found. Proposed: `state=` and `before=<created_at>` (or a cursor) on `GET /v1/jobs`.
+
 ## Additional questions
 
 | # | Question | Status |

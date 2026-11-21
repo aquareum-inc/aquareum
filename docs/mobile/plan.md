@@ -803,7 +803,8 @@ Not done, and why:
 
 ## 18. The operator console on phones (proposed 21 November 2026)
 
-Status: **proposed, nothing built.** This section reverses two earlier lines: the console "stays on the
+Status: **accepted; the server is built (18.8), no app code yet.** The owner accepted every recommendation in
+18.7. This section reverses two earlier lines: the console "stays on the
 web" (section 1) and device sessions "always have the `user` role" (section 5). Decisions the owner still
 has to make are in 18.7. A builder can start from this section alone, after reading sections 4, 5 and 7.
 
@@ -1131,3 +1132,54 @@ entry.
 | 8 | Custom scheme or universal links for the operator callback | Custom scheme with PKCE for the first release, as section 5. The device key makes an intercepted code useless. Move both flows to universal links together. |
 | 9 | Push alerts | Stage 3, not stage 1. Pull to refresh is enough for the sample and avoids push credentials early. |
 | 10 | Should the web console also ask for a fresh sign-in or a passkey before its riskiest changes | Out of scope here, but worth a follow-up: phones will have a stronger check per change than the web does. |
+
+### 18.8 Log
+
+**21 November 2026: step 1, the server.** Everything 18.6 lists under "Server first" is built, with its tests.
+
+- `surfaces.mobileConsole` in the schema, both presets (off), Settings ▸ Surfaces, `get_instance`
+  (`surfaces.console`, `surfaces.mobile_console`) and `./livepeer doctor` (on needs a named app and the web
+  console).
+- Operator device sessions, device keys, challenges, unlock and confirm proofs and the audit log in
+  `apps/web/lib/operator-devices`; the `authenticate()` branch; `runOperation` as the one dispatcher;
+  operator sign-in with a new provider sign-in. How it fits together is in `docs/architecture.md`.
+- Marked for phones: `operator_status` (new), `operator_overview`, `operator_health`, `operator_list_jobs`,
+  `operator_list_users`, `operator_list_reports` as reads; `operator_resolve_report`,
+  `operator_set_user_status` as changes. The stage 2 reads in 18.2's table are **not** marked yet, so a phone
+  gets `web_only` for them until stage 2 marks them.
+- Web: Operator phones and Phone activity on System, the notice when a phone is added (decision 67 in
+  `docs/design-proposals.md`).
+- Generated: `OperatorAPI.generated.swift` and `OperatorApi.kt`, separate from the user client.
+
+Decided while building, where 18 left room:
+
+- **What is signed.** `livepeer-operator-unlock\n<nonce>` and
+  `livepeer-operator-confirm\n<nonce>\n<operation>\n<input hash>`, ECDSA P-256 over SHA-256, DER, base64url.
+  The input hash is base64url SHA-256 of the whole input (path values included) as JSON with keys in order
+  and no spacing. The apps check their own hashing against `docs/mobile/fixtures/operator_proof_vectors.json`.
+  The generated client has a `…Input(...)` function for each change that builds exactly that input.
+- **The public key** is sent as base64 of the uncompressed point (iOS) or the SubjectPublicKeyInfo (Android).
+  Only P-256 is accepted.
+- **A change doesn't also need an unlock.** The proof is the stronger check, and the app can't reach a
+  change without the console open anyway.
+- **What counts as a refused proof.** One that is presented and wrong: unknown or used nonce, expired, made
+  for another operation or input, or not this phone's signature, for an unlock or a change. A change sent
+  with no proof at all is refused and logged but not counted, so an app bug can't revoke a phone.
+- **The session's own operations** (`create_operator_challenge`, `unlock_operator_device_session`,
+  `delete_operator_device_session`) are not operator operations: the session is their proof. With
+  `get_instance` and `get_me` they are all an `aqo_` token can call outside the marked list.
+- **`get_me` on a user device session now carries the provider's role**, recorded at sign-in, so the user
+  app can offer the console. It grants nothing: that session still gets `operator: null`. Sessions made
+  before this say `user` until the person signs in again.
+- **Fresh sign-in is checked, not only asked for.** The callback reads `auth_time` from the ID token and
+  refuses an operator sign-in older than 5 minutes, or one the provider won't date (`not_fresh`). A provider
+  that ignores `max_age` therefore can't enrol a phone from a stale browser session.
+- **Rate limit:** 120 requests a minute per session, kept in memory, so it is per server process.
+- **Removing the operator role in the console** (`setUserRole`) ends that person's operator sessions, as
+  suspending does. A role removed at the provider itself still waits for revocation or the 30 days (Q13).
+- **The new-phone notice** shows for two days and can't be dismissed.
+
+Not done here, for the sessions that follow: the API fixtures for the new operations
+(`docs/mobile/fixtures/`), which are captured from a running mock-only instance when the iOS decoding tests
+are written; everything in the apps.
+

@@ -93,6 +93,12 @@ those. The apps sign in in the system's own browser session and get a revocable 
 the instance keeps sessions, and reports and blocks of shared characters, in `DATA_DIR` (`.data` in
 development, a volume in Docker).
 
+The operator console on phones is a second switch (`surfaces.mobileConsole`, also off in both presets). The
+server side is built: an operator's phone gets its own short-lived session, bound to a key in the phone's
+secure hardware, which reads only after a face or fingerprint and needs a new one for every change; phones
+are listed and revoked on the web console's System page. The app screens are not built yet; see
+`docs/mobile/plan.md` section 18.
+
 ```bash
 # an instance with the apps switched on, for the apps to talk to, on :3100
 MOCK_ONLY=1 INSTANCE_CONFIG=docs/mobile/dev.instance.config.json corepack pnpm dev
