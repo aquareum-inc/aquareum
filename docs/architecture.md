@@ -124,12 +124,46 @@ The native apps sign in through the same `/auth/start` and `/auth/callback`, ope
 session with `client`, a PKCE `challenge` and their own `state`. The callback sets no cookie for them: it
 redirects to `<bundle id>://auth` with a 60-second one-time code, only for an app named in the config's
 `mobile` block. The app exchanges the code and its verifier at `POST /api/v1/auth/device` for a device session
-(`aqd_…`, always the `user` role; a separate operator device session is planned in `docs/mobile/plan.md` §18), sent as a bearer token. Sessions live in `apps/web/lib/devices` behind a
+(`aqd_…`; it never does operator work, whatever the person's role), sent as a bearer token. Sessions live in `apps/web/lib/devices` behind a
 `DeviceSessionStore` (a JSON file in `DATA_DIR` for now), stored as an HMAC keyed with `SESSION_SECRET`. They
 end after 90 days unused, on sign-out or revocation, when the user is suspended, or when `SESSION_SECRET`
 changes. With `surfaces.mobile` off, a device session gets 403 `mobile_off`. Sign-in addresses are built from
 the configured domain, or else the address the request came in on, so a phone reaching a development server
 at another address comes back to it.
+
+**The console on phones** (`surfaces.mobileConsole`, off in both presets; `docs/mobile/plan.md` §18) has its
+own session, so that a phone alone is never enough to administer an instance. `apps/web/lib/operator-devices`
+holds it:
+
+- *Sign-in.* `/auth/start` with `purpose=operator` asks the provider for a new sign-in (`prompt=login`,
+  `max_age=0`). The callback gives a one-time code only if the provider says the sign-in happened in the last
+  5 minutes (`auth_time`) and marks the identity an operator; otherwise the app gets `not_fresh` or
+  `not_operator`. `POST /api/v1/auth/operator-device` exchanges the code, the PKCE verifier and the phone's
+  P-256 public key for an operator device session (`aqo_…`): 7 days idle, 30 days absolute, no builder key.
+- *Proofs.* The token alone does nothing. The phone asks for a nonce (`POST /operator/device/challenge`:
+  single use, 60 seconds) and signs it with the key in its secure hardware, which it does only after a face
+  or fingerprint. An unlock signature (`livepeer-operator-unlock\n<nonce>`) opens reads for 5 minutes. A
+  change needs its own signature over `livepeer-operator-confirm\n<nonce>\n<operation>\n<input hash>`, sent
+  as `X-Operator-Proof: <nonce>.<signature>`; the input hash is base64url SHA-256 of the whole input as
+  canonical JSON, and the instance recomputes it from what arrived. Test vectors for the apps are in
+  `docs/mobile/fixtures/operator_proof_vectors.json`.
+- *One gate.* `authenticate()` (`lib/public-api/auth.ts`) recognises `aqo_` before `aqd_` and returns a caller
+  with `via: "operator_device"`. `runOperation` (`lib/public-api/dispatch.ts`) is the only place a request
+  reaches an operation's `run`, for REST and MCP both, and for that caller it checks in order: the flag; a
+  per-session rate limit; the operation is an operator operation marked `mobile` in `operations.ts` (an
+  allow-list: no mark is 403 `web_only`) or one of five the session itself needs (`get_instance`, `get_me`,
+  challenge, unlock, sign out; anything else a user can do is 403 `operator_session`); a read needs the
+  session unlocked (401 `locked`); a change needs a valid unused proof for exactly this operation and input
+  (401 `proof_required`), and five refused proofs in a row revoke the session. A phone's change takes its
+  input from the body and path only, never the query string. MCP refuses an `aqo_` token outright. The
+  `operator(context)` guard inside each operator operation stays as the second line, and `checkAccess` (the
+  web role guard) is unchanged: an `aqo_` token never opens `/operator` pages and never becomes a cookie.
+- *Record.* Every sign-in, unlock, change, refusal and revocation is written to the audit log
+  (`DATA_DIR/operator-audit.json`), shown with the enrolled phones on the web console's System page, where
+  phones are revoked. Every console page says so for two days after a phone is enrolled.
+- *Clients.* `pnpm api:openapi` writes these operations with `x-operator` and `x-mobile`;
+  `packages/mobile-codegen` generates them into a separate `OperatorAPI` (Swift) and `OperatorApi` (Kotlin)
+  that take an operator transport, and every change takes an `OperatorProof` argument.
 
 State the instance keeps itself lives in `apps/web/lib/data`: a `StateStore` interface and a JSON file in
 `DATA_DIR` behind it, until the instance has a database. Device sessions use it, and so does

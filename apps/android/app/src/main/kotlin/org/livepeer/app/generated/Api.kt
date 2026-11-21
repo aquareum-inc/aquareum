@@ -27,7 +27,7 @@ class Api(private val transport: ApiTransport) {
     suspend fun endDeviceSession(): Deleted =
         transport.send(Deleted.serializer(), "DELETE", "/auth/device", query = emptyMap(), body = null)
 
-    /** The signed-in person: their name, email and credit balance. */
+    /** The signed-in person: their name, email, credit balance and whether they run this instance. */
     suspend fun getMe(): Me =
         transport.send(Me.serializer(), "GET", "/me", query = emptyMap(), body = null)
 

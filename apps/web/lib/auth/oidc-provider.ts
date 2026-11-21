@@ -25,6 +25,20 @@ async function json<T>(response: Response, what: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+/**
+ * When the person signed in, from the ID token's `auth_time`. The token came straight from the provider's
+ * token endpoint over TLS, in exchange for our own code and verifier, so its claims are read without
+ * checking its signature (OpenID Connect Core 3.1.3.7). Null when there is no such claim.
+ */
+function authTime(idToken: string | undefined): number | null {
+  try {
+    const claims = JSON.parse(Buffer.from(idToken?.split(".")[1] ?? "", "base64url").toString("utf8")) as { auth_time?: unknown };
+    return typeof claims.auth_time === "number" && Number.isFinite(claims.auth_time) ? claims.auth_time : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Authorization-code flow with PKCE against any OpenID Connect issuer. */
 export function oidcProvider(options: OidcOptions): AuthProvider {
   let discovery: Promise<Discovery> | null = null;
@@ -35,7 +49,7 @@ export function oidcProvider(options: OidcOptions): AuthProvider {
 
   return {
     id: "oidc",
-    async authorizationUrl({ redirectUri, state, codeVerifier, method, email }) {
+    async authorizationUrl({ redirectUri, state, codeVerifier, method, email, fresh }) {
       const { authorization_endpoint } = await discover();
       const url = new URL(authorization_endpoint);
       url.search = new URLSearchParams({
@@ -49,12 +63,14 @@ export function oidcProvider(options: OidcOptions): AuthProvider {
         // Tell the provider what was picked, so it can skip its own chooser.
         [options.methodParam ?? "connection"]: method,
         ...(email ? { login_hint: email } : {}),
+        // A sign-in that must be new: the provider asks again even when it has a session for this browser.
+        ...(fresh ? { prompt: "login", max_age: "0" } : {}),
       }).toString();
       return url.toString();
     },
     async exchange({ code, redirectUri, codeVerifier }) {
       const { token_endpoint, userinfo_endpoint } = await discover();
-      const tokens = await json<{ access_token: string }>(
+      const tokens = await json<{ access_token: string; id_token?: string }>(
         await fetch(token_endpoint, {
           method: "POST",
           headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -80,7 +96,7 @@ export function oidcProvider(options: OidcOptions): AuthProvider {
         email: typeof claims.email === "string" ? claims.email : null,
         role: roles.includes(options.operatorRole ?? "operator") ? "operator" : "user",
       };
-      return identity;
+      return { identity, authenticatedAt: authTime(tokens.id_token) };
     },
   };
 }

@@ -59,7 +59,7 @@ export function deviceSessions(store: DeviceSessionStore, secret: string, now: (
       const code = base64url(randomBytes(32));
       store.update((contents) => {
         contents.codes = contents.codes.filter((entry) => entry.expiresAt > now());
-        contents.codes.push({ codeHash: hash(code), challenge, platform, userId: identity.userId, name: identity.name, email: identity.email, builderKey, expiresAt: now() + CODE_SECONDS * 1000 });
+        contents.codes.push({ codeHash: hash(code), challenge, platform, userId: identity.userId, name: identity.name, email: identity.email, role: identity.role, builderKey, expiresAt: now() + CODE_SECONDS * 1000 });
       });
       return code;
     },
@@ -81,6 +81,7 @@ export function deviceSessions(store: DeviceSessionStore, secret: string, now: (
           userId: pending.userId,
           name: pending.name,
           email: pending.email,
+          role: pending.role ?? "user",
           deviceName: deviceName.trim().slice(0, 80) || (platform === "ios" ? "iPhone" : "Android phone"),
           platform,
           builderKey: pending.builderKey,

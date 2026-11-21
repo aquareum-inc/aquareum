@@ -1,12 +1,14 @@
 "use server";
 
-import type { AccessKey, BillingSettings, CharacterReport, CapabilitySetting, CreditPack, EngineJob, Grant, Payment, Plan, TopUpRange } from "@livepeer/api-client";
+import type { AccessKey, BillingSettings, CharacterReport, CapabilitySetting, CreditPack, EngineJob, Grant, OperatorDeviceSession, Payment, Plan, TopUpRange } from "@livepeer/api-client";
 import { EngineError } from "@livepeer/api-client";
 import type { InstanceSettings } from "@livepeer/operator-console";
 import { revalidatePath } from "next/cache";
 
+import { getSession } from "../auth/session";
 import { devices } from "../devices";
 import { moderation } from "../moderation";
+import { operatorDevices } from "../operator-devices";
 import { operatorApi, requireOperator } from "./client";
 import { saveSettings } from "./settings";
 
@@ -30,13 +32,18 @@ export async function setUserStatusAction(applicationId: string, actorId: string
   } catch (error) {
     throw new Error(explain(error));
   }
-  // A suspended user's apps sign out on their next request.
-  if (status === "paused") devices().revokeAll(actorId);
+  // A suspended user's apps sign out on their next request, and so does the console on any phone of theirs.
+  if (status === "paused") {
+    devices().revokeAll(actorId);
+    operatorDevices().revokeUser(actorId, "suspended");
+  }
   revalidatePath("/operator/users", "layout");
 }
 
 export async function setUserRoleAction(userId: string, role: "user" | "operator"): Promise<void> {
   await (await operatorApi()).provider.identity.setUserRole(userId, role);
+  // The role is read when a phone signs in, so taking it away ends the console sessions it opened.
+  if (role === "user") operatorDevices().revokeUser(userId, "operator role removed");
   revalidatePath("/operator/users", "layout");
 }
 
@@ -134,4 +141,25 @@ export async function resolveReportAction(id: string, outcome: "dismissed" | "hi
   await requireOperator();
   moderation().resolve(id, outcome);
   return moderation().reports();
+}
+
+/** The signed-in operator, as the audit log names whoever revokes a phone. */
+async function revoker() {
+  const session = await getSession();
+  if (session?.role !== "operator") throw new Error("Operator role required");
+  return { userId: session.userId, name: session.name, deviceId: null, deviceName: null };
+}
+
+/** Revokes one operator phone; answers with the phones still enrolled. */
+export async function revokeOperatorPhoneAction(id: string): Promise<OperatorDeviceSession[]> {
+  operatorDevices().revoke(id, await revoker());
+  revalidatePath("/operator", "layout");
+  return operatorDevices().list();
+}
+
+/** Revokes every operator phone; answers with the phones still enrolled. */
+export async function revokeAllOperatorPhonesAction(): Promise<OperatorDeviceSession[]> {
+  operatorDevices().revokeAll(await revoker());
+  revalidatePath("/operator", "layout");
+  return operatorDevices().list();
 }

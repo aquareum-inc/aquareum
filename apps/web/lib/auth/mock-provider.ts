@@ -21,6 +21,7 @@ export const mockProvider: AuthProvider = {
   },
   async exchange({ code }) {
     const identity = code === "operator" ? PEOPLE.operator : PEOPLE.user;
-    return { ...identity };
+    // There is no provider session to reuse: every mock sign-in is a new one.
+    return { identity: { ...identity }, authenticatedAt: Math.floor(Date.now() / 1000) };
   },
 };

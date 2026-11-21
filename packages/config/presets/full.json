@@ -10,7 +10,8 @@
     "console": true,
     "api": true,
     "mcp": true,
-    "mobile": false
+    "mobile": false,
+    "mobileConsole": false
   },
   "capabilities": {
     "allow": [],

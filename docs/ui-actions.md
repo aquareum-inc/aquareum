@@ -69,9 +69,9 @@ in `apps/web/lib/public-api/operations.ts`.
 | Developers | Run a video analysis in the playground | `analyseVideo` | Not on mobile |
 | Developers | Open and close a session in the playground | `startLiveSession`, `stopLiveSession` | Not on mobile |
 | Developers | Browse example apps | `listExampleApps` | Not on mobile |
-| Operator · Overview | See users, jobs, revenue, cost, margin, engine status | `getOverview`, `getEngineHealth`, `listJobs` | Not on mobile |
-| Operator · Users | List users with email, budget, spent, remaining, plan | `provider.identity.listUsers`, `listActors`, `provider.budgets.getAllocation`, `provider.plans.getUserPlan` | Not on mobile |
-| Operator · User | Suspend or resume | `setActorStatus` | Not on mobile |
+| Operator · Overview | See users, jobs, revenue, cost, margin, engine status | `getOverview`, `getEngineHealth`, `listJobs` | Server built (`operator_status`, `operator_overview`, `operator_health`); app screens not yet (plan §18) |
+| Operator · Users | List users with email, budget, spent, remaining, plan | `provider.identity.listUsers`, `listActors`, `provider.budgets.getAllocation`, `provider.plans.getUserPlan` | Server built (`operator_list_users` with `query`); app screens not yet |
+| Operator · User | Suspend or resume | `setActorStatus` | Server built (`operator_set_user_status`, a proof from the phone each time); app screens not yet |
 | Operator · User | Change role | `provider.identity.setUserRole` | Not on mobile |
 | Operator · User | Assign or remove a plan | `provider.plans.assignPlan` | Not on mobile |
 | Operator · User | Add credit (manual adjustment) | `provider.budgets.topUpAllocation` | Not on mobile |
@@ -83,11 +83,21 @@ in `apps/web/lib/public-api/operations.ts`.
 | Operator · Billing | Connect a processor, tax setting | `getBillingSettings`, `updateBillingSettings` | Not on mobile |
 | Operator · Billing | See payments, invoices, failed payments; refund | `listPayments`, `refundPayment` | Not on mobile |
 | Operator · Costs | Retail against wholesale per capability, pending | `getCostSummary` | Not on mobile |
-| Operator · Jobs | List, filter, inspect attempts and failures | `listJobs` | Not on mobile |
+| Operator · Jobs | List, filter, inspect attempts and failures | `listJobs` | Server built (`operator_list_jobs` with `status` and `before`); app screens not yet |
 | Operator · Jobs | Retry | `retryJob` | Not on mobile |
 | Operator · Capabilities | See discovery; enable, set markup, override surfaces | `listOfferings`, `getCapabilitySetting`, `updateCapabilitySetting` | Not on mobile |
 | Operator · Compute | See operators that served jobs; allow or block | `listComputeOperators`, `setComputeOperatorBlocked` | Not on mobile |
 | Operator · Grants | List, create, add funding | `provider.budgets.listGrants`, `createGrant`, `fundGrant` | Not on mobile |
+| Operator · Reports (phone) | See the queue; keep a character up or take it down | `operator_list_reports`, `operator_resolve_report` (a proof from the phone each time) | Server built; app screens not yet |
+| Operator · Settings | Switch the console on phones on or off | `saveInstanceSettingsAction` (`surfaces.mobileConsole` in the instance config) | Not on mobile |
+| Operator · System | See the phones enrolled for the console | `operator_list_devices` (`operatorDevices().list()`) | Not on mobile |
+| Operator · System | Revoke one operator phone, or all of them | `operator_revoke_device`, `operator_revoke_all_devices`; on the web `revokeOperatorPhoneAction`, `revokeAllOperatorPhonesAction` | Not on mobile |
+| Operator · System | Read what operators' phones did and were refused | `operator_list_audit` (`operatorAudit().list()`) | Not on mobile |
+| Operator · every page | See that a phone was enrolled in the last two days, and go to revoke it | `operator_list_devices` | Not on mobile |
+| Console on a phone | Sign in to the console (new provider sign-in, operators only), enrolling the phone's key | `/auth/start?purpose=operator`, then `create_operator_device_session` | Server built; app not yet |
+| Console on a phone | Unlock with a face or fingerprint | `create_operator_challenge`, `unlock_operator_device_session` | Server built; app not yet |
+| Console on a phone | Confirm a change with a face or fingerprint | `create_operator_challenge` with the operation and its input hash, then the operation with `X-Operator-Proof` | Server built; app not yet |
+| Console on a phone | Sign out of the console on this phone | `delete_operator_device_session` | Server built; app not yet |
 | Operator · Settings | Name, domain, logo and symbol (upload, replace, remove; previewed in both themes; checked and cleaned on save by `lib/operator/logo.ts`), colours, sign-up, privacy, surfaces (app, API, MCP, phone apps, reviewed before any is switched off; the console is shown on and disabled), content policy | Writes the instance config (`@livepeer/config` `validateConfig`) | Not on mobile |
 | Operator · Reports | List reports of shared characters, open first | `operator_list_reports` (`moderation().reports()`) | Not on mobile |
 | Operator · Reports | Keep a character up, or take it down for everyone | `operator_resolve_report` (`moderation().resolve()`) | Not on mobile |

@@ -22,6 +22,12 @@ export interface Identity {
   role: Role;
 }
 
+export interface Exchanged {
+  identity: Identity;
+  /** Unix seconds of the sign-in itself (OpenID Connect's `auth_time`), or null when the provider doesn't say. */
+  authenticatedAt: number | null;
+}
+
 /**
  * An identity provider, shaped on OpenID Connect's authorization-code flow so a hosted provider
  * (for example a white-label login) plugs in without changes to the app.
@@ -37,7 +43,9 @@ export interface AuthProvider {
     method: SignInMethod;
     /** The email typed on the sign-in screen, for the email method. */
     email?: string;
+    /** Ask the person to sign in again now, whatever session the provider already has for this browser. */
+    fresh?: boolean;
   }): Promise<string>;
-  /** Exchanges the callback's code for an identity. */
-  exchange(input: { code: string; redirectUri: string; codeVerifier: string }): Promise<Identity>;
+  /** Exchanges the callback's code for an identity, and when the provider says the person actually signed in. */
+  exchange(input: { code: string; redirectUri: string; codeVerifier: string }): Promise<Exchanged>;
 }

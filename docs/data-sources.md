@@ -107,8 +107,37 @@ browser session cookie holds it.
 |-----------|------|-------|
 | `create_device_session` | Exchanges the one-time code from a native sign-in, with its PKCE verifier, for a device session | none (the code is the credential) |
 | `end_device_session` | Signs the calling device out | its device session |
-| `get_me` | The signed-in person and their balance (`getCreditBalance`) | a device or browser session |
+| `get_me` | The signed-in person, their balance (`getCreditBalance`) and their `role`, so an app knows whether to offer the console | a device, operator device or browser session |
 | `list_devices`, `revoke_device` | The person's device sessions; sign one out | a device or browser session |
+
+**Operator device sessions** (`aqo_…`) are what let an operator's phone open the console (`docs/mobile/plan.md`
+§18). They are a separate record, token and file from users' device sessions: `apps/web/lib/operator-devices`
+keeps sessions, pending sign-ins and pending nonces in `DATA_DIR/operator-device-sessions.json`, and the audit
+log (the newest 2,000 entries) in `DATA_DIR/operator-audit.json`, both behind the same `StateStore` interface.
+The file holds an HMAC of each token, code and nonce keyed with `SESSION_SECRET`, the phone's P-256 public
+key, and no builder key. A session ends after 7 days unused, 30 days after it was made, on sign-out or
+revocation, at five refused proofs in a row, when the person is suspended or loses the operator role in the
+console, or when `SESSION_SECRET` changes. With `surfaces.mobileConsole` off every request carrying one gets
+403 `mobile_console_off`.
+
+The engine's reader and admin tokens stay inside `buildOperatorClient()` on the server, as for the web
+console. A phone sends its `aqo_` token and, for a change, an `X-Operator-Proof`; it receives JSON.
+
+| Operation | Does | Token | Mobile |
+|-----------|------|-------|--------|
+| `create_operator_device_session` | Exchanges the one-time code from an operator's native sign-in, with its PKCE verifier and the phone's public key, for an operator device session | none (the code is the credential) | Server built; apps not yet |
+| `delete_operator_device_session` | Signs the phone out of the console | its operator device session | Server built; apps not yet |
+| `create_operator_challenge` | A single-use, 60-second nonce: to unlock, or for one named change and the hash of its input | its operator device session | Server built; apps not yet |
+| `unlock_operator_device_session` | Opens reads for 5 minutes, for the phone key's signature over an unlock nonce | its operator device session | Server built; apps not yet |
+| `operator_status` | Health (`getEngineHealth`), today's figures (`getOverview`), failures in the last hour (`listJobs`) and open reports, with the list of what needs attention | the operator role; on a phone, unlocked | Server built; apps not yet |
+| `operator_overview`, `operator_health`, `operator_list_jobs`, `operator_list_users`, `operator_list_reports` | The console's reads a phone may make. Jobs take `status` and `before`; users take `query` | the operator role; on a phone, unlocked | Server built; apps not yet |
+| `operator_resolve_report`, `operator_set_user_status` | The two changes a phone may make | the operator role; on a phone, a proof each time | Server built; apps not yet |
+| `operator_list_devices`, `operator_revoke_device`, `operator_revoke_all_devices` | The phones enrolled for the console; revoke one or all | the operator role, web or API only | Not on mobile |
+| `operator_list_audit` | What operators' phones did and were refused | the operator role, web or API only | Not on mobile |
+
+Every other operator operation has no `mobile` mark and is refused to a phone with 403 `web_only`.
+`operator_list_jobs` filters and pages by cutting from the engine's newest 500 jobs, because `GET /v1/jobs`
+takes only a limit (see `docs/engine-requests.md`).
 
 **Reports, blocks and characters taken down** belong to the instance too: the app stores require them of an
 app where people share characters. `apps/web/lib/moderation` keeps them in `DATA_DIR/moderation.json` behind
@@ -126,4 +155,4 @@ A mock-only instance still accepts one documented key, `MOCK_ONLY_DEMO_KEY`, for
 `verifyApiKey` refuses it unless `MOCK_ONLY=1`. The apps no longer send it: they sign in.
 
 Suspending a user (`setActorStatus` to paused, from the console or `operator_set_user_status`) also ends their
-device sessions.
+device sessions and any operator device session they hold.

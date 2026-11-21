@@ -11,11 +11,16 @@ describe("presets", () => {
   });
 
   it("full serves every surface except the phone apps, which an operator opts into", () => {
-    expect(preset("full").surfaces).toEqual({ app: true, console: true, api: true, mcp: true, mobile: false });
+    expect(preset("full").surfaces).toEqual({ app: true, console: true, api: true, mcp: true, mobile: false, mobileConsole: false });
   });
 
   it("headless has no app but keeps the console that runs the business", () => {
-    expect(preset("headless").surfaces).toEqual({ app: false, console: true, api: true, mcp: true, mobile: false });
+    expect(preset("headless").surfaces).toEqual({ app: false, console: true, api: true, mcp: true, mobile: false, mobileConsole: false });
+  });
+
+  it("no preset offers the console on phones: an operator opts into it", () => {
+    for (const name of PRESET_NAMES) expect(preset(name).surfaces.mobileConsole).toBe(false);
+    expect(validateConfig({ name: "Console only", surfaces: { app: false, console: true, api: false, mcp: false, mobileConsole: true } }).surfaces.mobileConsole).toBe(true);
   });
 
   it("the mobile development config is valid and names the development apps", () => {

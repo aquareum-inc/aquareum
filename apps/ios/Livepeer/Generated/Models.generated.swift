@@ -388,6 +388,153 @@ struct DeviceToken: Codable, Sendable, Hashable {
     var device: DeviceSession
 }
 
+/// The answer to a change that has nothing else to say.
+struct Done: Codable, Sendable, Hashable {
+    var ok: Bool
+}
+
+/// `GET /readyz`.
+struct EngineHealth: Codable, Sendable, Hashable {
+    var ready: Bool
+    var discoveryFresh: Bool
+    var discoveryObservedAt: String?
+    var discoveryError: String?
+    var costSyncAt: String?
+    var costSyncError: String?
+    var runningJobs: Double
+    var allocationMode: String
+    var version: String
+
+    enum CodingKeys: String, CodingKey {
+        case ready
+        case discoveryFresh = "discovery_fresh"
+        case discoveryObservedAt = "discovery_observed_at"
+        case discoveryError = "discovery_error"
+        case costSyncAt = "cost_sync_at"
+        case costSyncError = "cost_sync_error"
+        case runningJobs = "running_jobs"
+        case allocationMode = "allocation_mode"
+        case version
+    }
+}
+
+enum EngineJobMode: String, Codable, Sendable, Hashable, CaseIterable {
+    case immediate = "immediate"
+    case async = "async"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+/// `GET /v1/jobs` item.
+struct EngineJob: Codable, Sendable, Hashable {
+    var id: String
+    var actorId: String
+    var applicationId: String
+    var operationRef: String?
+    var mode: EngineJobMode
+    var app: String
+    var capability: String?
+    var model: String?
+    var state: JobState
+    var attempts: [JobAttempt]
+    var failure: JobFailure?
+    var createdAt: String
+    var completedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case actorId = "actor_id"
+        case applicationId = "application_id"
+        case operationRef = "operation_ref"
+        case mode
+        case app
+        case capability
+        case model
+        case state
+        case attempts
+        case failure
+        case createdAt = "created_at"
+        case completedAt = "completed_at"
+    }
+}
+
+/// Operator-side types. The engine shapes are as documented in docs/research/engine.md §4.
+enum JobState: String, Codable, Sendable, Hashable, CaseIterable {
+    case queued = "queued"
+    case running = "running"
+    case succeeded = "succeeded"
+    case failed = "failed"
+    case uncertain = "uncertain"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+struct JobAttemptTimings: Codable, Sendable, Hashable {
+    var challengeMs: Double?
+    var signingMs: Double?
+    var responseMs: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case challengeMs = "challenge_ms"
+        case signingMs = "signing_ms"
+        case responseMs = "response_ms"
+    }
+}
+
+struct JobAttempt: Codable, Sendable, Hashable {
+    var jobId: String
+    var number: Double
+    var runnerUrl: String?
+    var orchestratorUrl: String?
+    var allocationId: String?
+    var paymentSent: Bool
+    var outcome: String
+    var statusCode: Double?
+    var startedAt: String
+    var endedAt: String?
+    var timings: JobAttemptTimings?
+
+    enum CodingKeys: String, CodingKey {
+        case jobId = "job_id"
+        case number
+        case runnerUrl = "runner_url"
+        case orchestratorUrl = "orchestrator_url"
+        case allocationId = "allocation_id"
+        case paymentSent = "payment_sent"
+        case outcome
+        case statusCode = "status_code"
+        case startedAt = "started_at"
+        case endedAt = "ended_at"
+        case timings
+    }
+}
+
+struct JobFailure: Codable, Sendable, Hashable {
+    var kind: String
+    var message: String
+    var statusCode: Double?
+    var body: String?
+    var paymentSent: Bool
+    var reason: String?
+
+    enum CodingKeys: String, CodingKey {
+        case kind
+        case message
+        case statusCode = "status_code"
+        case body
+        case paymentSent = "payment_sent"
+        case reason
+    }
+}
+
 /// An async generation job. Mocked: the engine's async jobs return 501 today.
 struct Generation: Codable, Sendable, Hashable {
     var id: String
@@ -500,9 +647,20 @@ struct InstanceDescriptionTheme: Codable, Sendable, Hashable {
 
 struct InstanceDescriptionSurfaces: Codable, Sendable, Hashable {
     var app: Bool
+    var console: Bool
     var api: Bool
     var mcp: Bool
     var mobile: Bool
+    var mobileConsole: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case app
+        case console
+        case api
+        case mcp
+        case mobile
+        case mobileConsole = "mobile_console"
+    }
 }
 
 struct InstanceDescriptionMobileIos: Codable, Sendable, Hashable {
@@ -622,6 +780,62 @@ enum SignInMethodName: String, Codable, Sendable, Hashable, CaseIterable {
     }
 }
 
+enum KnownActorAllocationStatus: String, Codable, Sendable, Hashable, CaseIterable {
+    case active = "active"
+    case paused = "paused"
+    case exhausted = "exhausted"
+    case revoked = "revoked"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+struct KnownActorAllocation: Codable, Sendable, Hashable {
+    var grantId: String
+    var allocationId: String
+    var currency: String
+    var status: KnownActorAllocationStatus
+    var createdAt: String
+    var updatedAt: String
+    var label: String
+
+    enum CodingKeys: String, CodingKey {
+        case grantId = "grant_id"
+        case allocationId = "allocation_id"
+        case currency
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case label
+    }
+}
+
+/// `GET /v1/admin/actors` item.
+struct KnownActor: Codable, Sendable, Hashable {
+    var applicationId: String
+    var actorId: String
+    var label: String
+    var name: String?
+    var allocation: KnownActorAllocation?
+    var firstSeenAt: String?
+    var lastSeenAt: String?
+    var provisioned: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case applicationId = "application_id"
+        case actorId = "actor_id"
+        case label
+        case name
+        case allocation
+        case firstSeenAt = "first_seen_at"
+        case lastSeenAt = "last_seen_at"
+        case provisioned
+    }
+}
+
 enum LiveSessionState: String, Codable, Sendable, Hashable, CaseIterable {
     case live = "live"
     case ended = "ended"
@@ -656,11 +870,25 @@ struct LiveSession: Codable, Sendable, Hashable {
     }
 }
 
+/// Whether the person runs this instance. An app offers the console from this; the server still decides every request.
+enum MeRole: String, Codable, Sendable, Hashable, CaseIterable {
+    case user = "user"
+    case `operator` = "operator"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
 /// The signed-in user, as the account menu shows them.
 struct Me: Codable, Sendable, Hashable {
     var id: String
     var name: String
     var email: String?
+    /// Whether the person runs this instance. An app offers the console from this; the server still decides every request.
+    var role: MeRole
     var balance: CreditBalance
 }
 
@@ -777,6 +1005,204 @@ struct RatePoint: Codable, Sendable, Hashable {
         case source
         case observedAt = "observed_at"
         case observedBy = "observed_by"
+    }
+}
+
+/// A value for the phone's key to sign, once, before it expires.
+struct OperatorChallenge: Codable, Sendable, Hashable {
+    var nonce: String
+    var expiresAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case nonce
+        case expiresAt = "expires_at"
+    }
+}
+
+/// A new operator device session. The token is shown once; the instance keeps only a keyed hash of it.
+struct OperatorDeviceToken: Codable, Sendable, Hashable {
+    var token: String
+    var device: OperatorDeviceSession
+}
+
+enum OperatorDeviceSessionPlatform: String, Codable, Sendable, Hashable, CaseIterable {
+    case ios = "ios"
+    case android = "android"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+/// An operator's phone enrolled for the console: its own session, bound to a key in the phone's secure hardware.
+struct OperatorDeviceSession: Codable, Sendable, Hashable {
+    var id: String
+    /// Whose phone it is.
+    var userId: String
+    var userName: String
+    /// The phone's own name, as it reported it.
+    var name: String
+    var platform: OperatorDeviceSessionPlatform
+    var createdAt: String
+    var lastUsedAt: String
+    /// When the phone last proved a face or fingerprint to open the console.
+    var lastUnlockedAt: String?
+    /// When the session ends whatever its use, and the operator signs in again.
+    var expiresAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case userName = "user_name"
+        case name
+        case platform
+        case createdAt = "created_at"
+        case lastUsedAt = "last_used_at"
+        case lastUnlockedAt = "last_unlocked_at"
+        case expiresAt = "expires_at"
+    }
+}
+
+struct OperatorStatusToday: Codable, Sendable, Hashable {
+    var activeUsers: Double
+    var jobs: Double
+    var failed: Double
+    var revenueUsd: Double
+    var wholesaleUsd: Double
+    var marginUsd: Double
+    var revenueEstimated: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case activeUsers = "active_users"
+        case jobs
+        case failed
+        case revenueUsd = "revenue_usd"
+        case wholesaleUsd = "wholesale_usd"
+        case marginUsd = "margin_usd"
+        case revenueEstimated = "revenue_estimated"
+    }
+}
+
+struct OperatorStatusService: Codable, Sendable, Hashable {
+    var engineReady: Bool
+    var discoveryFresh: Bool
+    var discoveryObservedAt: String?
+    var costSyncAt: String?
+    var costSyncError: String?
+    var runningJobs: Double
+    var engineVersion: String
+
+    enum CodingKeys: String, CodingKey {
+        case engineReady = "engine_ready"
+        case discoveryFresh = "discovery_fresh"
+        case discoveryObservedAt = "discovery_observed_at"
+        case costSyncAt = "cost_sync_at"
+        case costSyncError = "cost_sync_error"
+        case runningJobs = "running_jobs"
+        case engineVersion = "engine_version"
+    }
+}
+
+/// Whether anything is wrong, today's figures and the state of the service, in one answer.
+struct OperatorStatus: Codable, Sendable, Hashable {
+    var checkedAt: String
+    /// Empty when everything is running.
+    var attention: [OperatorAttention]
+    var today: OperatorStatusToday
+    var service: OperatorStatusService
+
+    enum CodingKeys: String, CodingKey {
+        case checkedAt = "checked_at"
+        case attention
+        case today
+        case service
+    }
+}
+
+enum OperatorAttentionKind: String, Codable, Sendable, Hashable, CaseIterable {
+    case engineNotReady = "engine_not_ready"
+    case discoveryStale = "discovery_stale"
+    case costsNotSynced = "costs_not_synced"
+    case jobsFailing = "jobs_failing"
+    case reportsWaiting = "reports_waiting"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+/// Where to deal with it.
+enum OperatorAttentionOpens: String, Codable, Sendable, Hashable, CaseIterable {
+    case status = "status"
+    case jobs = "jobs"
+    case reports = "reports"
+    /// A value this build doesn't know, from a newer instance.
+    case unknown = "\u{0}unknown"
+
+    init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unknown
+    }
+}
+
+/// Something that needs the operator, as the Status screen lists it.
+struct OperatorAttention: Codable, Sendable, Hashable {
+    var kind: OperatorAttentionKind
+    /// The line to show: "3 reports are waiting".
+    var message: String
+    var count: Double?
+    /// Where to deal with it.
+    var opens: OperatorAttentionOpens
+}
+
+/// The console is open on this phone until then.
+struct OperatorUnlock: Codable, Sendable, Hashable {
+    var unlockedUntil: String
+
+    enum CodingKeys: String, CodingKey {
+        case unlockedUntil = "unlocked_until"
+    }
+}
+
+struct OverviewStatsSeries: Codable, Sendable, Hashable {
+    var day: String
+    var revenueUsd: Double
+    var wholesaleUsd: Double
+
+    enum CodingKeys: String, CodingKey {
+        case day
+        case revenueUsd = "revenue_usd"
+        case wholesaleUsd = "wholesale_usd"
+    }
+}
+
+struct OverviewStats: Codable, Sendable, Hashable {
+    var activeUsers: Double
+    var jobsToday: Double
+    var jobsFailedToday: Double
+    /// Credits charged, as money at the instance's rate.
+    var revenueUsd: Double
+    var wholesaleUsd: Double
+    var marginUsd: Double
+    var pendingUsd: Double
+    /// True while revenue is worked out from wholesale cost at the default markup, rather than reported by the payment provider.
+    var revenueEstimated: Bool
+    /// Per day, oldest first.
+    var series: [OverviewStatsSeries]
+
+    enum CodingKeys: String, CodingKey {
+        case activeUsers = "active_users"
+        case jobsToday = "jobs_today"
+        case jobsFailedToday = "jobs_failed_today"
+        case revenueUsd = "revenue_usd"
+        case wholesaleUsd = "wholesale_usd"
+        case marginUsd = "margin_usd"
+        case pendingUsd = "pending_usd"
+        case revenueEstimated = "revenue_estimated"
+        case series
     }
 }
 

@@ -91,36 +91,54 @@ import Foundation
 ${declarations.map(emit).join("\n\n")}
 `;
 
-function method(operation: (typeof operations)[number]): string {
-  const args = operation.parameters.map((parameter) => `${ident(camel(parameter.key))}: ${type(parameter.type)}${parameter.required ? "" : "? = nil"}`).join(", ");
+type Operation = (typeof operations)[number];
+type Param = Operation["parameters"][number];
+
+const argument = (parameter: Param) => `${ident(camel(parameter.key))}: ${type(parameter.type)}${parameter.required ? "" : "? = nil"}`;
+
+function value(parameter: Param): string {
+  const name = ident(camel(parameter.key));
+  const wrap = (inner: string): string => {
+    switch (parameter.type.kind) {
+      case "string":
+        return `.string(${inner})`;
+      case "number":
+        return `.number(${inner})`;
+      case "boolean":
+        return `.bool(${inner})`;
+      case "array":
+        return `.array(${inner}.map { .string($0) })`;
+      default:
+        return inner;
+    }
+  };
+  return parameter.required ? wrap(name) : `${name}.map { ${wrap("$0")} }`;
+}
+
+const dictionary = (list: Param[]) => (list.length === 0 ? "[:]" : `[${list.map((parameter) => `${JSON.stringify(parameter.key)}: ${value(parameter)}`).join(", ")}]`);
+
+/** One function for an operation. A change the console confirms also takes its proof, so it can't be called without one. */
+function method(operation: Operation): string {
+  const confirm = operation.mobile === "confirm";
+  const args = [...operation.parameters.map(argument), ...(confirm ? ["proof: OperatorProof"] : [])].join(", ");
   const route = operation.path.replace(/\{(\w+)\}/g, (_, name: string) => `\\(APITransport.escape(${ident(camel(name))}))`);
   const entries = (kind: "query" | "body") => operation.parameters.filter((parameter) => parameter.in === kind);
-  const value = (parameter: (typeof operation.parameters)[number]) => {
-    const name = ident(camel(parameter.key));
-    const wrap = (inner: string): string => {
-      switch (parameter.type.kind) {
-        case "string":
-          return `.string(${inner})`;
-        case "number":
-          return `.number(${inner})`;
-        case "boolean":
-          return `.bool(${inner})`;
-        case "array":
-          return `.array(${inner}.map { .string($0) })`;
-        default:
-          return inner;
-      }
-    };
-    return parameter.required ? wrap(name) : `${name}.map { ${wrap("$0")} }`;
-  };
-  const dictionary = (kind: "query" | "body") => {
-    const list = entries(kind);
-    return list.length === 0 ? "[:]" : `[${list.map((parameter) => `${JSON.stringify(parameter.key)}: ${value(parameter)}`).join(", ")}]`;
-  };
-  return `${docLines(operation.doc, "    ")}${operation.public ? "    /// Open to guests.\n" : ""}    func ${camel(operation.name)}(${args}) async throws -> ${type(operation.output)} {
-        try await transport.send(${JSON.stringify(operation.method)}, "${route}", query: ${dictionary("query")}, body: ${entries("body").length > 0 ? dictionary("body") : "nil"})
+  const proof = operation.operator ? `, proof: ${confirm ? "proof" : "nil"}` : "";
+  return `${docLines(operation.doc, "    ")}${operation.public ? "    /// Open to guests.\n" : ""}${operation.mobile === "read" ? "    /// Needs the console unlocked on this phone.\n" : ""}${confirm ? "    /// Needs its own proof: a nonce for exactly this input, signed after a face or fingerprint.\n" : ""}    func ${camel(operation.name)}(${args}) async throws -> ${type(operation.output)} {
+        try await transport.send(${JSON.stringify(operation.method)}, "${route}", query: ${dictionary(entries("query"))}, body: ${entries("body").length > 0 ? dictionary(entries("body")) : "nil"}${proof})
     }`;
 }
+
+/** The whole input of a change, path values included: what the phone hashes when it asks for a nonce. */
+function confirmInput(operation: Operation): string {
+  return `    /// The input of \`${camel(operation.name)}\` as the instance hashes it, for \`createOperatorChallenge\`.
+    static func ${camel(operation.name)}Input(${operation.parameters.map(argument).join(", ")}) -> [String: JSONValue] {
+        (${dictionary(operation.parameters)} as [String: JSONValue?]).compactMapValues { $0 }
+    }`;
+}
+
+const userOperations = operations.filter((operation) => !operation.operator);
+const operatorOperations = operations.filter((operation) => operation.operator);
 
 const client = `${header}
 import Foundation
@@ -129,7 +147,41 @@ import Foundation
 struct API: Sendable {
     let transport: APITransport
 
-${operations.map(method).join("\n\n")}
+${userOperations.map(method).join("\n\n")}
+}
+`;
+
+const operatorClient = `${header}
+import Foundation
+
+/// A confirmation of one change: the nonce the instance gave for exactly that operation and input, and the
+/// phone key's signature over it, made after a face or fingerprint. Good once, for 60 seconds.
+struct OperatorProof: Sendable {
+    let nonce: String
+    let signature: String
+
+    /// The value of the X-Operator-Proof header.
+    var header: String { "\\(nonce).\\(signature)" }
+}
+
+/// What carries the console's requests: the operator device session's token, and a proof when there is one.
+/// Only the console's own session implements it; the user app's transport does not.
+protocol OperatorTransport: Sendable {
+    func send<Output: Decodable>(_ method: String, _ path: String, query: [String: JSONValue?], body: [String: JSONValue?]?, proof: OperatorProof?) async throws -> Output
+}
+
+/// The operator console's operations a phone may call. It is made from an operator session and nothing else,
+/// and every change takes a proof.
+struct OperatorAPI<Transport: OperatorTransport>: Sendable {
+    private let transport: Transport
+
+    init(session transport: Transport) {
+        self.transport = transport
+    }
+
+${operatorOperations.map(method).join("\n\n")}
+
+${operatorOperations.filter((operation) => operation.mobile === "confirm").map(confirmInput).join("\n\n")}
 }
 `;
 
@@ -137,4 +189,5 @@ const directory = path.join(root, "apps/ios/Livepeer/Generated");
 mkdirSync(directory, { recursive: true });
 writeFileSync(path.join(directory, "Models.generated.swift"), models);
 writeFileSync(path.join(directory, "API.generated.swift"), client);
-console.log(`Wrote ${declarations.length} Swift types and ${operations.length} operations.`);
+writeFileSync(path.join(directory, "OperatorAPI.generated.swift"), operatorClient);
+console.log(`Wrote ${declarations.length} Swift types, ${userOperations.length} operations and ${operatorOperations.length} operator operations.`);

@@ -50,7 +50,7 @@ export function describeInstance(origin: string): InstanceDescription {
     name: config.name,
     logo: { symbol: absolute(config.logo?.symbol), wordmark: absolute(config.logo?.wordmark), tint: config.logo?.tint ?? true },
     theme: { dark: hexTokens(config.theme?.dark), light: hexTokens(config.theme?.light) },
-    surfaces: { app: config.surfaces.app, api: config.surfaces.api, mcp: config.surfaces.mcp, mobile: config.surfaces.mobile ?? false },
+    surfaces: { app: config.surfaces.app, console: config.surfaces.console, api: config.surfaces.api, mcp: config.surfaces.mcp, mobile: config.surfaces.mobile ?? false, mobile_console: config.surfaces.mobileConsole ?? false },
     mobile: {
       ios: config.mobile?.ios ? { bundle_id: config.mobile.ios.bundleId, minimum_version: config.mobile.ios.minimumVersion ?? null } : null,
       android: config.mobile?.android ? { application_id: config.mobile.android.applicationId, minimum_version: config.mobile.android.minimumVersion ?? null } : null,

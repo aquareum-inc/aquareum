@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import release from "../../../../../release.config.json";
 
 import { env } from "@/lib/env";
+import { mobileConsoleEnabled, operatorAudit, operatorDevices } from "@/lib/operator-devices";
+import { revokeAllOperatorPhonesAction, revokeOperatorPhoneAction } from "@/lib/operator/actions";
 import { operatorApi } from "@/lib/operator/client";
 import { runDoctor } from "@/lib/operator/doctor";
 
@@ -37,6 +39,8 @@ export default async function SystemPage() {
       checks={await runDoctor()}
       dataSources={dataSources}
       sources={[{ name: "getEngineHealth", source: healthSource }]}
+      phones={{ phones: operatorDevices().list(), offered: mobileConsoleEnabled(), revoke: revokeOperatorPhoneAction, revokeAll: revokeAllOperatorPhonesAction }}
+      phoneActivity={operatorAudit().list(200)}
     />
   );
 }

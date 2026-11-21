@@ -131,39 +131,97 @@ import kotlinx.serialization.json.jsonPrimitive
 ${declarations.map(emit).join("\n\n")}
 `;
 
-function method(operation: (typeof operations)[number]): string {
-  const args = operation.parameters.map((parameter) => `${ident(camel(parameter.key))}: ${type(parameter.type)}${parameter.required ? "" : "? = null"}`).join(", ");
-  const route = operation.path.replace(/\{(\w+)\}/g, (_, name: string) => `\${ApiTransport.escape(${ident(camel(name))})}`);
-  const entries = (kind: "query" | "body") => operation.parameters.filter((parameter) => parameter.in === kind);
-  const value = (parameter: (typeof operation.parameters)[number]) => {
-    const name = ident(camel(parameter.key));
-    const wrap = (inner: string) => (parameter.type.kind === "array" ? `JsonArray(${inner}.map(::JsonPrimitive))` : parameter.type.kind === "any" ? inner : `JsonPrimitive(${inner})`);
-    return parameter.required ? wrap(name) : `${name}?.let { ${wrap("it")} }`;
-  };
-  const map = (kind: "query" | "body") => {
-    const list = entries(kind);
-    return list.length === 0 ? "emptyMap()" : `mapOf(${list.map((parameter) => `${JSON.stringify(parameter.key)} to ${value(parameter)}`).join(", ")})`;
-  };
-  return `${docBlock(`${operation.doc}${operation.public ? " Open to guests." : ""}`, "    ")}    suspend fun ${camel(operation.name)}(${args}): ${type(operation.output)} =
-        transport.send(${serializer(operation.output)}, ${JSON.stringify(operation.method)}, "${route}", query = ${map("query")}, body = ${entries("body").length > 0 ? map("body") : "null"})`;
+type Operation = (typeof operations)[number];
+type Param = Operation["parameters"][number];
+
+const argument = (parameter: Param) => `${ident(camel(parameter.key))}: ${type(parameter.type)}${parameter.required ? "" : "? = null"}`;
+
+function value(parameter: Param): string {
+  const name = ident(camel(parameter.key));
+  const wrap = (inner: string) => (parameter.type.kind === "array" ? `JsonArray(${inner}.map(::JsonPrimitive))` : parameter.type.kind === "any" ? inner : `JsonPrimitive(${inner})`);
+  return parameter.required ? wrap(name) : `${name}?.let { ${wrap("it")} }`;
 }
 
-const client = `${header}
-package org.livepeer.app.generated
+const map = (list: Param[]) => (list.length === 0 ? "emptyMap()" : `mapOf(${list.map((parameter) => `${JSON.stringify(parameter.key)} to ${value(parameter)}`).join(", ")})`);
 
-import org.livepeer.app.api.ApiTransport
+/** One function for an operation. A change the console confirms also takes its proof, so it can't be called without one. */
+function method(operation: Operation): string {
+  const confirm = operation.mobile === "confirm";
+  const args = [...operation.parameters.map(argument), ...(confirm ? ["proof: OperatorProof"] : [])].join(", ");
+  const route = operation.path.replace(/\{(\w+)\}/g, (_, name: string) => `\${ApiTransport.escape(${ident(camel(name))})}`);
+  const entries = (kind: "query" | "body") => operation.parameters.filter((parameter) => parameter.in === kind);
+  const notes = `${operation.public ? " Open to guests." : ""}${operation.mobile === "read" ? " Needs the console unlocked on this phone." : ""}${confirm ? " Needs its own proof: a nonce for exactly this input, signed after a face or fingerprint." : ""}`;
+  const proof = operation.operator ? `, proof = ${confirm ? "proof" : "null"}` : "";
+  return `${docBlock(`${operation.doc}${notes}`, "    ")}    suspend fun ${camel(operation.name)}(${args}): ${type(operation.output)} =
+        transport.send(${serializer(operation.output)}, ${JSON.stringify(operation.method)}, "${route}", query = ${map(entries("query"))}, body = ${entries("body").length > 0 ? map(entries("body")) : "null"}${proof})`;
+}
+
+/** The whole input of a change, path values included: what the phone hashes when it asks for a nonce. */
+function confirmInput(operation: Operation): string {
+  return `${docBlock(`The input of ${camel(operation.name)} as the instance hashes it, for createOperatorChallenge.`, "        ")}        fun ${camel(operation.name)}Input(${operation.parameters.map(argument).join(", ")}): Map<String, JsonElement> =
+            ${map(operation.parameters)}.filterNotNullValues()`;
+}
+
+const userOperations = operations.filter((operation) => !operation.operator);
+const operatorOperations = operations.filter((operation) => operation.operator);
+
+const imports = `import org.livepeer.app.api.ApiTransport
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive`;
+
+const client = `${header}
+package org.livepeer.app.generated
+
+${imports}
 
 /** One function per operation in the instance's API. The same list serves REST, MCP and the web interface. */
 @Suppress("unused")
 class Api(private val transport: ApiTransport) {
-${operations.map(method).join("\n\n")}
+${userOperations.map(method).join("\n\n")}
+}
+`;
+
+const operatorClient = `${header}
+package org.livepeer.app.generated
+
+import kotlinx.serialization.DeserializationStrategy
+${imports}
+
+/**
+ * A confirmation of one change: the nonce the instance gave for exactly that operation and input, and the
+ * phone key's signature over it, made after a face or fingerprint. Good once, for 60 seconds.
+ */
+data class OperatorProof(val nonce: String, val signature: String) {
+    /** The value of the X-Operator-Proof header. */
+    val header: String get() = "$nonce.$signature"
+}
+
+/**
+ * What carries the console's requests: the operator device session's token, and a proof when there is one.
+ * Only the console's own session implements it; the user app's transport does not.
+ */
+interface OperatorTransport {
+    suspend fun <T> send(output: DeserializationStrategy<T>, method: String, path: String, query: Map<String, JsonElement?>, body: Map<String, JsonElement?>?, proof: OperatorProof?): T
+}
+
+/**
+ * The operator console's operations a phone may call. It is made from an operator session and nothing else,
+ * and every change takes a proof.
+ */
+@Suppress("unused")
+class OperatorApi(private val transport: OperatorTransport) {
+${operatorOperations.map(method).join("\n\n")}
+
+    companion object {
+${operatorOperations.filter((operation) => operation.mobile === "confirm").map(confirmInput).join("\n\n")}
+
+        private fun Map<String, JsonElement?>.filterNotNullValues(): Map<String, JsonElement> = mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
+    }
 }
 `;
 
@@ -171,4 +229,5 @@ const directory = path.join(root, "apps/android/app/src/main/kotlin/org/livepeer
 mkdirSync(directory, { recursive: true });
 writeFileSync(path.join(directory, "Models.kt"), models);
 writeFileSync(path.join(directory, "Api.kt"), client);
-console.log(`Wrote ${declarations.length} Kotlin types and ${operations.length} operations.`);
+writeFileSync(path.join(directory, "OperatorApi.kt"), operatorClient);
+console.log(`Wrote ${declarations.length} Kotlin types, ${userOperations.length} operations and ${operatorOperations.length} operator operations.`);

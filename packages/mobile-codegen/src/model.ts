@@ -46,6 +46,10 @@ export interface ApiOperation {
   parameters: Parameter[];
   output: TypeRef;
   public: boolean;
+  /** Belongs to the console on a phone: generated into the operator client, never the user's. */
+  operator: boolean;
+  /** For an operator operation: a read needs an unlocked session, a confirm needs its own proof. */
+  mobile: "read" | "confirm" | null;
 }
 
 /** A type that may be absent. Wrapping twice says nothing more, so it never does. */
@@ -171,6 +175,8 @@ export function readModel(): { declarations: Declaration[]; operations: ApiOpera
         parameters: [...parameters.filter((parameter) => parameter.required), ...parameters.filter((parameter) => !parameter.required)],
         output: typeOf(response, pascal(name)),
         public: Array.isArray(operation.security) && operation.security.length === 0,
+        operator: operation["x-operator"] === true,
+        mobile: operation["x-mobile"] === "read" || operation["x-mobile"] === "confirm" ? operation["x-mobile"] : null,
       });
     }
   }

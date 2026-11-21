@@ -3,7 +3,7 @@
   "info": {
     "title": "Livepeer instance API",
     "version": "1",
-    "description": "Everything the user app can do on an instance. Generated from apps/web/lib/public-api/operations.ts; do not edit."
+    "description": "Everything the user app can do on an instance, and what the operator console can do from a phone (x-operator). Generated from apps/web/lib/public-api/operations.ts; do not edit."
   },
   "servers": [
     {
@@ -149,7 +149,7 @@
     "/me": {
       "get": {
         "operationId": "get_me",
-        "summary": "The signed-in person: their name, email and credit balance.",
+        "summary": "The signed-in person: their name, email, credit balance and whether they run this instance.",
         "responses": {
           "200": {
             "description": "The result.",
@@ -283,6 +283,241 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/operator-device": {
+      "post": {
+        "operationId": "create_operator_device_session",
+        "summary": "Native apps: collect a finished operator sign-in with its one-time code and PKCE verifier, and enrol the phone's public key. Answers with an operator device session token, shown once.",
+        "security": [],
+        "x-operator": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "The code from the sign-in callback"
+                  },
+                  "verifier": {
+                    "type": "string",
+                    "description": "The PKCE verifier whose challenge started the sign-in"
+                  },
+                  "platform": {
+                    "enum": [
+                      "ios",
+                      "android"
+                    ]
+                  },
+                  "device_name": {
+                    "type": "string",
+                    "description": "The phone's own name, shown in the list of operator phones"
+                  },
+                  "public_key": {
+                    "type": "string",
+                    "description": "The phone's P-256 public key, base64: the uncompressed point (iOS) or its SubjectPublicKeyInfo (Android)"
+                  }
+                },
+                "required": [
+                  "code",
+                  "verifier",
+                  "platform",
+                  "public_key"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorDeviceToken"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_operator_device_session",
+        "summary": "Native apps: sign this phone out of the console by ending the operator device session making the request.",
+        "x-operator": true,
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/device/challenge": {
+      "post": {
+        "operationId": "create_operator_challenge",
+        "summary": "Native apps: ask for a nonce for the phone's key to sign, to unlock the console or to confirm one change. It is good once, for 60 seconds.",
+        "x-operator": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "purpose": {
+                    "type": "string",
+                    "description": "\"unlock\", or the name of the operation to confirm"
+                  },
+                  "input_hash": {
+                    "type": "string",
+                    "description": "For a change: base64url SHA-256 of the operation's whole input as canonical JSON (keys in order, no spacing)"
+                  }
+                },
+                "required": [
+                  "purpose"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorChallenge"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/device/unlock": {
+      "post": {
+        "operationId": "unlock_operator_device_session",
+        "summary": "Native apps: open the console on this phone for five minutes, with the phone's signature over an unlock nonce.",
+        "x-operator": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nonce": {
+                    "type": "string",
+                    "description": "The nonce from create_operator_challenge"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "The phone key's signature, base64url DER, over \"livepeer-operator-unlock\\n<nonce>\""
+                  }
+                },
+                "required": [
+                  "nonce",
+                  "signature"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorUnlock"
                 }
               }
             }
@@ -2062,6 +2297,450 @@
           }
         }
       }
+    },
+    "/operator/status": {
+      "get": {
+        "operationId": "operator_status",
+        "summary": "Operator: whether anything needs attention, today's figures and the state of the service, in one answer.",
+        "x-operator": true,
+        "x-mobile": "read",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/overview": {
+      "get": {
+        "operationId": "operator_overview",
+        "summary": "Operator: active users, jobs today, revenue, wholesale cost and margin.",
+        "x-operator": true,
+        "x-mobile": "read",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/health": {
+      "get": {
+        "operationId": "operator_health",
+        "summary": "Operator: engine readiness, discovery freshness, cost sync and version.",
+        "x-operator": true,
+        "x-mobile": "read",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineHealth"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/users": {
+      "get": {
+        "operationId": "operator_list_users",
+        "summary": "Operator: every account the engine knows, with its allocation. A query filters by name, label or id.",
+        "x-operator": true,
+        "x-mobile": "read",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Part of a name, label or id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KnownActor"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/users/{id}/status": {
+      "post": {
+        "operationId": "operator_set_user_status",
+        "summary": "Operator: suspend (pause) or resume a user's allocation. Suspending also signs out their phones and tablets, and ends any console session they have on a phone.",
+        "x-operator": true,
+        "x-mobile": "confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Actor id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "active",
+                      "paused"
+                    ]
+                  },
+                  "application_id": {
+                    "type": "string",
+                    "default": "default"
+                  }
+                },
+                "required": [
+                  "status"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/jobs": {
+      "get": {
+        "operationId": "operator_list_jobs",
+        "summary": "Operator: recent jobs across all users, newest first, with attempts and failures. Filter by state, and page back with the created_at of the last job seen.",
+        "x-operator": true,
+        "x-mobile": "read",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "uncertain"
+              ]
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Only jobs created before this time (ISO 8601): the created_at of the last job on the page before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EngineJob"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/reports": {
+      "get": {
+        "operationId": "operator_list_reports",
+        "summary": "Operator: reports of shared characters, open ones first.",
+        "x-operator": true,
+        "x-mobile": "read",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CharacterReport"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operator/reports/{id}": {
+      "post": {
+        "operationId": "operator_resolve_report",
+        "summary": "Operator: decide a report. Dismiss leaves the character up; hide takes it off the instance for everyone.",
+        "x-operator": true,
+        "x-mobile": "confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Report id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "outcome": {
+                    "enum": [
+                      "dismissed",
+                      "hidden"
+                    ]
+                  }
+                },
+                "required": [
+                  "outcome"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterReport"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2069,7 +2748,7 @@
       "bearer": {
         "type": "http",
         "scheme": "bearer",
-        "description": "An API key or a device session token. Operations marked with empty security answer without one."
+        "description": "An API key or a device session token; for x-operator operations, an operator device session token. An x-mobile read needs the session unlocked; an x-mobile confirm needs an X-Operator-Proof header. Operations marked with empty security answer without one."
       }
     },
     "schemas": {
@@ -2773,6 +3452,315 @@
         "additionalProperties": false,
         "description": "A new device session. The token is shown once; the instance keeps only a keyed hash of it."
       },
+      "Done": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": false,
+        "description": "The answer to a change that has nothing else to say."
+      },
+      "EngineHealth": {
+        "type": "object",
+        "properties": {
+          "ready": {
+            "type": "boolean"
+          },
+          "discovery_fresh": {
+            "type": "boolean"
+          },
+          "discovery_observed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "discovery_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cost_sync_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cost_sync_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "running_jobs": {
+            "type": "number"
+          },
+          "allocation_mode": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ready",
+          "discovery_fresh",
+          "discovery_observed_at",
+          "discovery_error",
+          "cost_sync_at",
+          "cost_sync_error",
+          "running_jobs",
+          "allocation_mode",
+          "version"
+        ],
+        "additionalProperties": false,
+        "description": "`GET /readyz`."
+      },
+      "EngineJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "actor_id": {
+            "type": "string"
+          },
+          "application_id": {
+            "type": "string"
+          },
+          "operation_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "immediate",
+              "async"
+            ]
+          },
+          "app": {
+            "type": "string"
+          },
+          "capability": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JobAttempt"
+            }
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobFailure"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "actor_id",
+          "application_id",
+          "operation_ref",
+          "mode",
+          "app",
+          "capability",
+          "model",
+          "state",
+          "attempts",
+          "failure",
+          "created_at",
+          "completed_at"
+        ],
+        "additionalProperties": false,
+        "description": "`GET /v1/jobs` item."
+      },
+      "JobState": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "uncertain"
+        ],
+        "description": "Operator-side types. The engine shapes are as documented in docs/research/engine.md §4."
+      },
+      "JobAttempt": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "number"
+          },
+          "runner_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "orchestrator_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "allocation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment_sent": {
+            "type": "boolean"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "status_code": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "started_at": {
+            "type": "string"
+          },
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timings": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "challenge_ms": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "signing_ms": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "response_ms": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "challenge_ms",
+                  "signing_ms",
+                  "response_ms"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "job_id",
+          "number",
+          "runner_url",
+          "orchestrator_url",
+          "allocation_id",
+          "payment_sent",
+          "outcome",
+          "status_code",
+          "started_at",
+          "ended_at",
+          "timings"
+        ],
+        "additionalProperties": false
+      },
+      "JobFailure": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status_code": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment_sent": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "message",
+          "status_code",
+          "body",
+          "payment_sent",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
       "Generation": {
         "type": "object",
         "properties": {
@@ -2951,6 +3939,9 @@
               "app": {
                 "type": "boolean"
               },
+              "console": {
+                "type": "boolean"
+              },
               "api": {
                 "type": "boolean"
               },
@@ -2959,13 +3950,18 @@
               },
               "mobile": {
                 "type": "boolean"
+              },
+              "mobile_console": {
+                "type": "boolean"
               }
             },
             "required": [
               "app",
+              "console",
               "api",
               "mcp",
-              "mobile"
+              "mobile",
+              "mobile_console"
             ],
             "additionalProperties": false
           },
@@ -3134,6 +4130,102 @@
         ],
         "description": "A way to sign in that an instance can offer."
       },
+      "KnownActor": {
+        "type": "object",
+        "properties": {
+          "application_id": {
+            "type": "string"
+          },
+          "actor_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "allocation": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "grant_id": {
+                    "type": "string"
+                  },
+                  "allocation_id": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "paused",
+                      "exhausted",
+                      "revoked"
+                    ]
+                  },
+                  "created_at": {
+                    "type": "string"
+                  },
+                  "updated_at": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "grant_id",
+                  "allocation_id",
+                  "currency",
+                  "status",
+                  "created_at",
+                  "updated_at",
+                  "label"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_seen_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_seen_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provisioned": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "application_id",
+          "actor_id",
+          "label",
+          "name",
+          "allocation",
+          "first_seen_at",
+          "last_seen_at",
+          "provisioned"
+        ],
+        "additionalProperties": false,
+        "description": "`GET /v1/admin/actors` item."
+      },
       "LiveSession": {
         "type": "object",
         "properties": {
@@ -3200,6 +4292,14 @@
               "null"
             ]
           },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "operator"
+            ],
+            "description": "Whether the person runs this instance. An app offers the console from this; the server still decides every request."
+          },
           "balance": {
             "$ref": "#/components/schemas/CreditBalance"
           }
@@ -3208,6 +4308,7 @@
           "id",
           "name",
           "email",
+          "role",
           "balance"
         ],
         "additionalProperties": false,
@@ -3407,6 +4508,322 @@
           "source",
           "observed_at",
           "observed_by"
+        ],
+        "additionalProperties": false
+      },
+      "OperatorChallenge": {
+        "type": "object",
+        "properties": {
+          "nonce": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nonce",
+          "expires_at"
+        ],
+        "additionalProperties": false,
+        "description": "A value for the phone's key to sign, once, before it expires."
+      },
+      "OperatorDeviceToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "device": {
+            "$ref": "#/components/schemas/OperatorDeviceSession"
+          }
+        },
+        "required": [
+          "token",
+          "device"
+        ],
+        "additionalProperties": false,
+        "description": "A new operator device session. The token is shown once; the instance keeps only a keyed hash of it."
+      },
+      "OperatorDeviceSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string",
+            "description": "Whose phone it is."
+          },
+          "user_name": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The phone's own name, as it reported it."
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "last_used_at": {
+            "type": "string"
+          },
+          "last_unlocked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the phone last proved a face or fingerprint to open the console."
+          },
+          "expires_at": {
+            "type": "string",
+            "description": "When the session ends whatever its use, and the operator signs in again."
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "user_name",
+          "name",
+          "platform",
+          "created_at",
+          "last_used_at",
+          "last_unlocked_at",
+          "expires_at"
+        ],
+        "additionalProperties": false,
+        "description": "An operator's phone enrolled for the console: its own session, bound to a key in the phone's secure hardware."
+      },
+      "OperatorStatus": {
+        "type": "object",
+        "properties": {
+          "checked_at": {
+            "type": "string"
+          },
+          "attention": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperatorAttention"
+            },
+            "description": "Empty when everything is running."
+          },
+          "today": {
+            "type": "object",
+            "properties": {
+              "active_users": {
+                "type": "number"
+              },
+              "jobs": {
+                "type": "number"
+              },
+              "failed": {
+                "type": "number"
+              },
+              "revenue_usd": {
+                "type": "number"
+              },
+              "wholesale_usd": {
+                "type": "number"
+              },
+              "margin_usd": {
+                "type": "number"
+              },
+              "revenue_estimated": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "active_users",
+              "jobs",
+              "failed",
+              "revenue_usd",
+              "wholesale_usd",
+              "margin_usd",
+              "revenue_estimated"
+            ],
+            "additionalProperties": false
+          },
+          "service": {
+            "type": "object",
+            "properties": {
+              "engine_ready": {
+                "type": "boolean"
+              },
+              "discovery_fresh": {
+                "type": "boolean"
+              },
+              "discovery_observed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cost_sync_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cost_sync_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "running_jobs": {
+                "type": "number"
+              },
+              "engine_version": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "engine_ready",
+              "discovery_fresh",
+              "discovery_observed_at",
+              "cost_sync_at",
+              "cost_sync_error",
+              "running_jobs",
+              "engine_version"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "checked_at",
+          "attention",
+          "today",
+          "service"
+        ],
+        "additionalProperties": false,
+        "description": "Whether anything is wrong, today's figures and the state of the service, in one answer."
+      },
+      "OperatorAttention": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "engine_not_ready",
+              "discovery_stale",
+              "costs_not_synced",
+              "jobs_failing",
+              "reports_waiting"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "The line to show: \"3 reports are waiting\"."
+          },
+          "count": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "opens": {
+            "type": "string",
+            "enum": [
+              "status",
+              "jobs",
+              "reports"
+            ],
+            "description": "Where to deal with it."
+          }
+        },
+        "required": [
+          "kind",
+          "message",
+          "count",
+          "opens"
+        ],
+        "additionalProperties": false,
+        "description": "Something that needs the operator, as the Status screen lists it."
+      },
+      "OperatorUnlock": {
+        "type": "object",
+        "properties": {
+          "unlocked_until": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "unlocked_until"
+        ],
+        "additionalProperties": false,
+        "description": "The console is open on this phone until then."
+      },
+      "OverviewStats": {
+        "type": "object",
+        "properties": {
+          "active_users": {
+            "type": "number"
+          },
+          "jobs_today": {
+            "type": "number"
+          },
+          "jobs_failed_today": {
+            "type": "number"
+          },
+          "revenue_usd": {
+            "type": "number",
+            "description": "Credits charged, as money at the instance's rate."
+          },
+          "wholesale_usd": {
+            "type": "number"
+          },
+          "margin_usd": {
+            "type": "number"
+          },
+          "pending_usd": {
+            "type": "number"
+          },
+          "revenue_estimated": {
+            "type": "boolean",
+            "description": "True while revenue is worked out from wholesale cost at the default markup, rather than reported by the payment provider."
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "string"
+                },
+                "revenue_usd": {
+                  "type": "number"
+                },
+                "wholesale_usd": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "day",
+                "revenue_usd",
+                "wholesale_usd"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Per day, oldest first."
+          }
+        },
+        "required": [
+          "active_users",
+          "jobs_today",
+          "jobs_failed_today",
+          "revenue_usd",
+          "wholesale_usd",
+          "margin_usd",
+          "pending_usd",
+          "revenue_estimated",
+          "series"
         ],
         "additionalProperties": false
       },
@@ -4134,7 +5551,7 @@
               },
               "code": {
                 "type": "string",
-                "description": "A stable reason a client can act on: signed_out, mobile_off, account_required, sign_in_expired."
+                "description": "A stable reason a client can act on: signed_out, mobile_off, account_required, sign_in_expired; for the console on a phone: mobile_console_off, web_only, locked, proof_required, operator_session, operator_device_required, rate_limited."
               }
             },
             "required": [

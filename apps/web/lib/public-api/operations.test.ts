@@ -3,9 +3,14 @@ import { describePrivacy } from "@livepeer/user-app/privacy";
 import { describeStudio } from "@livepeer/user-app/studio-mediums";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 import { memoryStore } from "../data/store";
 import { moderation, type ModerationContents } from "../moderation/moderation";
-import { ApiError, OPERATIONS, matchOperation, type Account, type DeviceAccess } from "./operations";
+import { auditLog } from "../operator-devices/audit";
+import { operatorDeviceSessions } from "../operator-devices/sessions";
+import { TEST_SECRET, emptyAudit, emptyOperatorDevices } from "../operator-devices/testing";
+import { ApiError, OPERATIONS, matchOperation, type Account, type Context, type DeviceAccess } from "./operations";
 
 const provider = createMockProvider();
 const client = createApiClient({ env: { MOCK_ONLY: "1" }, provider });
@@ -16,7 +21,7 @@ const instance: InstanceDescription = {
   name: "Test instance",
   logo: { symbol: null, wordmark: null, tint: true },
   theme: { dark: {}, light: {} },
-  surfaces: { app: true, api: true, mcp: true, mobile: true },
+  surfaces: { app: true, console: true, api: true, mcp: true, mobile: true, mobile_console: true },
   mobile: { ios: { bundle_id: "org.livepeer.app.dev", minimum_version: null }, android: null },
   sign_in: { methods: ["email"], sign_up: "open" },
   content: { characters: true, adult_content: false },
@@ -35,8 +40,9 @@ const devices: DeviceAccess = {
 const agentModelMenu = async () => [];
 const studioMediums = async () => describeStudio([]);
 const desk = moderation(memoryStore<ModerationContents>({ reports: [], blocks: [], hidden: [] }));
-const base = { client, operator: null, account: null, devices, moderation: desk, privacy: () => describePrivacy(false), instance, labels, agentModelMenu, studioMediums, quote: quoteCredits };
-const adam: Account = { user: { id: "usr_demo_adam", name: "Adam Soffer", email: "adam@example.test" }, deviceId: "dev_1" };
+const audit = auditLog(emptyAudit());
+const base: Context = { via: "api_key", client, operator: null, account: null, devices, operatorDevice: null, operatorDevices: operatorDeviceSessions(emptyOperatorDevices(), TEST_SECRET, audit), audit, moderation: desk, privacy: () => describePrivacy(false), instance, labels, agentModelMenu, studioMediums, quote: quoteCredits };
+const adam: Account = { user: { id: "usr_demo_adam", name: "Adam Soffer", email: "adam@example.test" }, role: "user", deviceId: "dev_1" };
 
 describe("public API operations", () => {
   it("names and routes are unique", () => {
@@ -89,14 +95,58 @@ describe("public API operations", () => {
     for (const operation of OPERATIONS) if (!operation.operator) expect(operation.output, operation.name).toBeDefined();
   });
 
+  it("only an operator operation that says what it answers with is marked for phones, and the marked ones are exactly these", () => {
+    for (const operation of OPERATIONS.filter((entry) => entry.mobile)) {
+      expect(operation.operator, operation.name).toBe(true);
+      expect(operation.output, operation.name).toBeDefined();
+      // A read is a GET and a change is not, so a change can never be made by following a link.
+      expect(operation.method === "GET", operation.name).toBe(operation.mobile === "read");
+    }
+    const marked = (mark: "read" | "confirm") => OPERATIONS.filter((operation) => operation.mobile === mark).map((operation) => operation.name).sort();
+    expect(marked("read")).toEqual(["operator_health", "operator_list_jobs", "operator_list_reports", "operator_list_users", "operator_overview", "operator_status"]);
+    expect(marked("confirm")).toEqual(["operator_resolve_report", "operator_set_user_status"]);
+  });
+
+  it("answers the Status screen in one call, and says what needs the operator", async () => {
+    const run = (name: string, input: Record<string, unknown> = {}) => OPERATIONS.find((operation) => operation.name === name)!.run({ ...base, operator }, input);
+    const status = (await run("operator_status")) as { attention: Array<{ kind: string; message: string; count: number | null; opens: string }>; today: Record<string, unknown>; service: Record<string, unknown>; checked_at: string };
+    expect(status.today).toMatchObject({ active_users: expect.any(Number), jobs: expect.any(Number), failed: expect.any(Number), revenue_usd: expect.any(Number), margin_usd: expect.any(Number) });
+    expect(status.service).toMatchObject({ engine_ready: expect.any(Boolean), engine_version: expect.any(String) });
+    expect(status.attention.some((entry) => entry.kind === "reports_waiting")).toBe(false);
+    desk.report("usr_demo_priya", { slug: "juno-live", name: "Juno", author: "relay-club" } as never, "spam", null);
+    const after = (await run("operator_status")) as typeof status;
+    expect(after.attention).toContainEqual({ kind: "reports_waiting", message: "1 report is waiting", count: 1, opens: "reports" });
+  });
+
+  it("filters and pages the operator's jobs, and searches users, on the server", async () => {
+    const run = (name: string, input: Record<string, unknown> = {}) => OPERATIONS.find((operation) => operation.name === name)!.run({ ...base, operator }, input);
+    const all = (await run("operator_list_jobs", { limit: 30 })) as Array<{ id: string; state: string; created_at: string }>;
+    expect(all.length).toBe(30);
+    const failed = (await run("operator_list_jobs", { status: "failed", limit: "10" })) as typeof all;
+    expect(failed.length).toBeGreaterThan(0);
+    expect(failed.every((job) => job.state === "failed")).toBe(true);
+    const older = (await run("operator_list_jobs", { before: all[9]!.created_at, limit: 5 })) as typeof all;
+    expect(older.length).toBe(5);
+    expect(older.every((job) => Date.parse(job.created_at) < Date.parse(all[9]!.created_at))).toBe(true);
+    await expect(run("operator_list_jobs", { status: "exploded" })).rejects.toMatchObject({ status: 400 });
+    await expect(run("operator_list_jobs", { before: "yesterday" })).rejects.toMatchObject({ status: 400 });
+
+    const users = (await run("operator_list_users")) as Array<{ actor_id: string; label: string }>;
+    const one = users[0]!;
+    const found = (await run("operator_list_users", { query: ` ${one.actor_id.toUpperCase()} ` })) as typeof users;
+    expect(found).toEqual([one]);
+    expect(users.length).toBeGreaterThan(1);
+    expect(await run("operator_list_users", { query: "no-one-is-called-this" })).toEqual([]);
+  });
+
   it("only reads are open to guests, apart from collecting a sign-in, and none of them is the operator's", () => {
     const open = OPERATIONS.filter((operation) => operation.public);
-    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "get_character", "get_instance", "get_privacy", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_characters", "list_prompt_starters", "list_showcase", "list_studio_mediums", "quote_generation"]);
-    for (const operation of open) expect((operation.method === "GET" || operation.name === "create_device_session") && !operation.operator, operation.name).toBe(true);
+    expect(open.map((operation) => operation.name).sort()).toEqual(["create_device_session", "create_operator_device_session", "get_character", "get_instance", "get_privacy", "list_agent_model_menu", "list_agent_models", "list_capabilities", "list_capability_labels", "list_characters", "list_prompt_starters", "list_showcase", "list_studio_mediums", "quote_generation"]);
+    for (const operation of open) expect((operation.method === "GET" || operation.name === "create_device_session" || operation.name === "create_operator_device_session") && !operation.operator, operation.name).toBe(true);
   });
 
   it("keeps the apps' sign-in plumbing away from agents", () => {
-    expect(OPERATIONS.filter((operation) => operation.mcp === false).map((operation) => operation.name).sort()).toEqual(["create_device_session", "delete_account", "end_device_session"]);
+    expect(OPERATIONS.filter((operation) => operation.mcp === false).map((operation) => operation.name).sort()).toEqual(["create_device_session", "create_operator_challenge", "create_operator_device_session", "delete_account", "delete_operator_device_session", "end_device_session", "unlock_operator_device_session"]);
   });
 
   it("collects a sign-in once, with a reason a client can act on when it can't", async () => {
@@ -107,7 +157,8 @@ describe("public API operations", () => {
 
   it("knows who is signed in, and refuses account operations to an API key", async () => {
     const run = (name: string, input: Record<string, unknown>, account: Account | null) => OPERATIONS.find((operation) => operation.name === name)!.run({ ...base, account }, input);
-    expect(await run("get_me", {}, adam)).toMatchObject({ id: "usr_demo_adam", name: "Adam Soffer", balance: { credits: expect.any(Number) } });
+    expect(await run("get_me", {}, adam)).toMatchObject({ id: "usr_demo_adam", name: "Adam Soffer", role: "user", balance: { credits: expect.any(Number) } });
+    expect(await run("get_me", {}, { ...adam, role: "operator" })).toMatchObject({ role: "operator" });
     await expect(run("get_me", {}, null)).rejects.toMatchObject({ status: 403, code: "account_required" });
     expect(await run("list_devices", {}, adam)).toEqual([phone]);
     await expect(run("revoke_device", { id: "dev_other" }, adam)).rejects.toMatchObject({ status: 404 });

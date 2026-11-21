@@ -1,15 +1,23 @@
-import type { AgentModelEntry, ApiClient, CapabilityLabel, Character, Preferences, PrivacyDescription, ReportReason, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorClient } from "@livepeer/api-client";
+import type { AgentModelEntry, ApiClient, CapabilityLabel, Character, Preferences, PrivacyDescription, ReportReason, DeviceSession, GenerationRequest, StudioMedium, DeviceToken, InstanceDescription, OperatorAttention, OperatorClient, OperatorStatus } from "@livepeer/api-client";
 
 import type { Moderation } from "../moderation/moderation";
+import type { AuditLog } from "../operator-devices/audit";
+import type { OperatorDeviceSessions } from "../operator-devices/sessions";
+import type { OperatorDeviceRecord } from "../operator-devices/store";
 
 type Schema = Record<string, unknown>;
 
 /** A signed-in person: through a browser session, or a device session from the native apps. */
 export interface Account {
   user: { id: string; name: string; email: string | null };
+  /** Whether the provider marks them as an operator. It says what to offer; it grants nothing by itself. */
+  role: "user" | "operator";
   /** The device session making the request, when it comes from an app. */
   deviceId: string | null;
 }
+
+/** How a caller proved who they are. */
+export type Via = "guest" | "operator_token" | "browser" | "api_key" | "device" | "operator_device";
 
 /** The instance's device sessions, as the operations use them. */
 export interface DeviceAccess {
@@ -20,13 +28,21 @@ export interface DeviceAccess {
   revokeAll(userId: string): number;
 }
 
-interface Context {
+export interface Context {
+  /** How the caller authenticated. An operator device is held to the phone rules in `runOperation`. */
+  via: Via;
   client: ApiClient;
   /** Present for callers with the operator role. */
   operator: OperatorClient | null;
   /** Who is signed in. API keys, the operator token and guests have no account. */
   account: Account | null;
   devices: DeviceAccess;
+  /** The operator device session making the request, when it comes from the console on a phone. */
+  operatorDevice: OperatorDeviceRecord | null;
+  /** The instance's operator device sessions. */
+  operatorDevices: OperatorDeviceSessions;
+  /** The record of what operators' phones did and were refused. */
+  audit: AuditLog;
   /** Reports, blocks and characters taken down. */
   moderation: Moderation;
   /** This instance, as it describes itself to clients. */
@@ -57,9 +73,15 @@ export interface Operation {
   /** REST path under /api/v1; `{name}` segments become inputs. */
   path: string;
   input: Schema;
-  /** What it answers with. Operator operations may leave it out; they are not in the generated clients. */
+  /** What it answers with. Operator operations a phone can't call may leave it out; they are not in the generated clients. */
   output?: Output;
   operator?: boolean;
+  /**
+   * Whether an operator's phone may call this operator operation: "read" needs an unlocked session, "confirm"
+   * needs its own proof every time. No mark means web only, so an operation added later is refused on phones
+   * until someone decides otherwise.
+   */
+  mobile?: "read" | "confirm";
   /** Answers without a caller, as the instance's default account: what a guest can see on the web. */
   public?: boolean;
   /** Left out of the MCP server: sign-in plumbing for the native apps, which agents have no use for. */
@@ -72,6 +94,9 @@ const text = (description: string): Schema => ({ type: "string", description });
 const str = (input: Record<string, unknown>, key: string): string => String(input[key] ?? "");
 const REPORT_REASONS: readonly ReportReason[] = ["sexual", "hateful", "violent", "impersonation", "spam", "other"];
 const aspect = { enum: ["16:9", "9:16", "1:1"], default: "16:9" };
+const JOB_STATES = ["queued", "running", "succeeded", "failed", "uncertain"] as const;
+/** How far back a filtered or paged list of jobs can reach: the most the engine's list is asked for. */
+const JOBS_WINDOW = 500;
 
 const operator = (context: Context): OperatorClient => {
   if (!context.operator) throw new ApiError(403, "This operation needs the operator role.");
@@ -90,6 +115,15 @@ export class ApiError extends Error {
     this.code = code;
   }
 }
+
+/** The operator device session making the request. These operations mean nothing to any other caller. */
+const operatorPhone = (context: Context): OperatorDeviceRecord => {
+  if (!context.operatorDevice) throw new ApiError(403, "This needs the console's own session on a phone.", "operator_device_required");
+  return context.operatorDevice;
+};
+
+/** Who is revoking a phone from the web console or the API, for the audit log. */
+const revoker = (context: Context) => ({ userId: context.account?.user.id ?? "operator_token", name: context.account?.user.name ?? "Operator API token", deviceId: null, deviceName: null });
 
 const signedIn = (context: Context): Account => {
   if (!context.account) throw new ApiError(403, "This needs a signed-in person, not an API key.", "account_required");
@@ -164,12 +198,15 @@ export const OPERATIONS: Operation[] = [
   },
   {
     name: "get_me",
-    description: "The signed-in person: their name, email and credit balance.",
+    description: "The signed-in person: their name, email, credit balance and whether they run this instance.",
     method: "GET",
     path: "/me",
     output: "Me",
     input: object({}),
-    run: async (context) => ({ ...signedIn(context).user, balance: (await context.client.getCreditBalance()).data }),
+    run: async (context) => {
+      const { user, role } = signedIn(context);
+      return { ...user, role, balance: (await context.client.getCreditBalance()).data };
+    },
   },
   { name: "list_devices", description: "List the phones and tablets signed in to the person's account, most recently used first.", method: "GET", path: "/devices", output: ["DeviceSession"], input: object({}), run: async (context) => { const { user, deviceId } = signedIn(context); return context.devices.list(user.id, deviceId); } },
   {
@@ -182,6 +219,65 @@ export const OPERATIONS: Operation[] = [
     run: async (context, input) => {
       if (!context.devices.revoke(signedIn(context).user.id, str(input, "id"))) throw new ApiError(404, "Device not found");
       return { deleted: true };
+    },
+  },
+  {
+    name: "create_operator_device_session",
+    description: "Native apps: collect a finished operator sign-in with its one-time code and PKCE verifier, and enrol the phone's public key. Answers with an operator device session token, shown once.",
+    method: "POST",
+    path: "/auth/operator-device",
+    output: "OperatorDeviceToken",
+    public: true,
+    mcp: false,
+    input: object({ code: text("The code from the sign-in callback"), verifier: text("The PKCE verifier whose challenge started the sign-in"), platform: { enum: ["ios", "android"] }, device_name: text("The phone's own name, shown in the list of operator phones"), public_key: text("The phone's P-256 public key, base64: the uncompressed point (iOS) or its SubjectPublicKeyInfo (Android)") }, ["code", "verifier", "platform", "public_key"]),
+    run: async ({ operatorDevices, instance }, input) => {
+      if (!instance.surfaces.mobile_console) throw new ApiError(403, "This service doesn't offer its console on phones.", "mobile_console_off");
+      const token = operatorDevices.redeemCode({ code: str(input, "code"), verifier: str(input, "verifier"), deviceName: str(input, "device_name"), platform: input.platform === "android" ? "android" : "ios", publicKey: str(input, "public_key") });
+      if (!token) throw new ApiError(400, "That sign-in expired, was already used, or came without a usable key. Sign in again.", "sign_in_expired");
+      return token;
+    },
+  },
+  {
+    name: "delete_operator_device_session",
+    description: "Native apps: sign this phone out of the console by ending the operator device session making the request.",
+    method: "DELETE",
+    path: "/auth/operator-device",
+    output: "Deleted",
+    mcp: false,
+    input: object({}),
+    run: async (context) => ({ deleted: context.operatorDevices.end(operatorPhone(context)) }),
+  },
+  {
+    name: "create_operator_challenge",
+    description: "Native apps: ask for a nonce for the phone's key to sign, to unlock the console or to confirm one change. It is good once, for 60 seconds.",
+    method: "POST",
+    path: "/operator/device/challenge",
+    output: "OperatorChallenge",
+    mcp: false,
+    input: object({ purpose: text("\"unlock\", or the name of the operation to confirm"), input_hash: text("For a change: base64url SHA-256 of the operation's whole input as canonical JSON (keys in order, no spacing)") }, ["purpose"]),
+    run: async (context, input) => {
+      const session = operatorPhone(context);
+      const purpose = str(input, "purpose");
+      if (purpose === "unlock") return context.operatorDevices.challenge(session, null);
+      const operation = OPERATIONS.find((entry) => entry.name === purpose);
+      if (operation?.mobile !== "confirm") throw new ApiError(400, "purpose is \"unlock\" or an operation a phone confirms.");
+      const inputHash = str(input, "input_hash");
+      if (!/^[\w-]{43}$/.test(inputHash)) throw new ApiError(400, "input_hash is the base64url SHA-256 of the operation's input.");
+      return context.operatorDevices.challenge(session, { operation: operation.name, inputHash });
+    },
+  },
+  {
+    name: "unlock_operator_device_session",
+    description: "Native apps: open the console on this phone for five minutes, with the phone's signature over an unlock nonce.",
+    method: "POST",
+    path: "/operator/device/unlock",
+    output: "OperatorUnlock",
+    mcp: false,
+    input: object({ nonce: text("The nonce from create_operator_challenge"), signature: text("The phone key's signature, base64url DER, over \"livepeer-operator-unlock\\n<nonce>\"") }, ["nonce", "signature"]),
+    run: async (context, input) => {
+      const unlocked = context.operatorDevices.unlock(operatorPhone(context), str(input, "nonce"), str(input, "signature"));
+      if (!unlocked) throw new ApiError(401, "That wasn't this phone's signature over a fresh nonce.", "proof_required");
+      return unlocked;
     },
   },
   { name: "list_prompt_starters", description: "List the starting points shown on Home, each with example requests.", method: "GET", path: "/starters", output: ["PromptStarter"], public: true, input: object({}), run: async ({ client }) => (await client.listPromptStarters()).data },
@@ -355,6 +451,7 @@ export const OPERATIONS: Operation[] = [
       const { user } = signedIn(context);
       await context.client.deleteAccount();
       context.devices.revokeAll(user.id);
+      context.operatorDevices.revokeUser(user.id, "account deleted");
       context.moderation.forget(user.id);
       return { deleted: true };
     },
@@ -376,30 +473,91 @@ export const OPERATIONS: Operation[] = [
   { name: "close_session", description: "Close a real-time session.", method: "DELETE", path: "/sessions/{id}", output: "LiveSession", input: object({ id: text("Session id") }, ["id"]), run: async ({ client }, input) => found((await client.stopLiveSession(str(input, "id"))).data, "Session") },
 
   // Operator: administering the instance without the console.
-  { name: "operator_overview", description: "Operator: active users, jobs today, revenue, wholesale cost and margin.", method: "GET", path: "/operator/overview", input: object({}), operator: true, run: async (context) => (await operator(context).getOverview()).data },
-  { name: "operator_health", description: "Operator: engine readiness, discovery freshness, cost sync and version.", method: "GET", path: "/operator/health", input: object({}), operator: true, run: async (context) => (await operator(context).getEngineHealth()).data },
-  { name: "operator_list_users", description: "Operator: every account the engine knows, with its allocation.", method: "GET", path: "/operator/users", input: object({}), operator: true, run: async (context) => (await operator(context).listActors()).data },
-  { name: "operator_set_user_status", description: "Operator: suspend (pause) or resume a user's allocation. Suspending also signs out their phones and tablets.", method: "POST", path: "/operator/users/{id}/status", input: object({ id: text("Actor id"), status: { enum: ["active", "paused"] }, application_id: { type: "string", default: "default" } }, ["id", "status"]), operator: true, run: async (context, input) => {
+  {
+    name: "operator_status",
+    description: "Operator: whether anything needs attention, today's figures and the state of the service, in one answer.",
+    method: "GET",
+    path: "/operator/status",
+    output: "OperatorStatus",
+    input: object({}),
+    operator: true,
+    mobile: "read",
+    run: async (context) => status(operator(context), context.moderation),
+  },
+  { name: "operator_overview", description: "Operator: active users, jobs today, revenue, wholesale cost and margin.", method: "GET", path: "/operator/overview", output: "OverviewStats", input: object({}), operator: true, mobile: "read", run: async (context) => (await operator(context).getOverview()).data },
+  { name: "operator_health", description: "Operator: engine readiness, discovery freshness, cost sync and version.", method: "GET", path: "/operator/health", output: "EngineHealth", input: object({}), operator: true, mobile: "read", run: async (context) => (await operator(context).getEngineHealth()).data },
+  {
+    name: "operator_list_users",
+    description: "Operator: every account the engine knows, with its allocation. A query filters by name, label or id.",
+    method: "GET",
+    path: "/operator/users",
+    output: ["KnownActor"],
+    input: object({ query: text("Part of a name, label or id") }),
+    operator: true,
+    mobile: "read",
+    run: async (context, input) => {
+      const actors = (await operator(context).listActors()).data;
+      const query = str(input, "query").trim().toLowerCase();
+      return query ? actors.filter((actor) => [actor.name, actor.label, actor.actor_id].some((value) => value?.toLowerCase().includes(query))) : actors;
+    },
+  },
+  {
+    name: "operator_set_user_status",
+    description: "Operator: suspend (pause) or resume a user's allocation. Suspending also signs out their phones and tablets, and ends any console session they have on a phone.",
+    method: "POST",
+    path: "/operator/users/{id}/status",
+    output: "Done",
+    input: object({ id: text("Actor id"), status: { enum: ["active", "paused"] }, application_id: { type: "string", default: "default" } }, ["id", "status"]),
+    operator: true,
+    mobile: "confirm",
+    run: async (context, input) => {
+      if (input.status !== "active" && input.status !== "paused") throw new ApiError(400, "status is active or paused.");
       const paused = input.status === "paused";
       const ok = (await operator(context).setActorStatus(str(input, "application_id") || "default", str(input, "id"), paused ? "paused" : "active")).data;
       // A suspended user's apps sign out on their next request.
-      if (ok && paused) context.devices.revokeAll(str(input, "id"));
+      if (ok && paused) {
+        context.devices.revokeAll(str(input, "id"));
+        context.operatorDevices.revokeUser(str(input, "id"), "suspended");
+      }
       return { ok };
-    } },
+    },
+  },
   { name: "operator_top_up_user", description: "Operator: add credit to a user's allocation, as a one-off adjustment.", method: "POST", path: "/operator/users/{id}/top-up", input: object({ id: text("User id"), amount_usd: { type: "number", exclusiveMinimum: 0 } }, ["id", "amount_usd"]), operator: true, run: async (context, input) => operator(context).provider.budgets.topUpAllocation(str(input, "id"), { amount: Number(input.amount_usd).toFixed(2), currency: "USD" }) },
   { name: "operator_assign_plan", description: "Operator: assign a plan to a user, or remove it with a null plan_id.", method: "POST", path: "/operator/users/{id}/plan", input: object({ id: text("User id"), plan_id: { type: ["string", "null"] } }, ["id"]), operator: true, run: async (context, input) => ({ plan: await operator(context).provider.plans.assignPlan(str(input, "id"), typeof input.plan_id === "string" ? input.plan_id : null) }) },
-  { name: "operator_list_jobs", description: "Operator: recent jobs across all users, with attempts and failures.", method: "GET", path: "/operator/jobs", input: object({ limit: { type: "number", default: 50 } }), operator: true, run: async (context, input) => (await operator(context).listJobs(Number(input.limit) || 50)).data },
+  {
+    name: "operator_list_jobs",
+    description: "Operator: recent jobs across all users, newest first, with attempts and failures. Filter by state, and page back with the created_at of the last job seen.",
+    method: "GET",
+    path: "/operator/jobs",
+    output: ["EngineJob"],
+    input: object({ limit: { type: "number", default: 50 }, status: { enum: [...JOB_STATES] }, before: text("Only jobs created before this time (ISO 8601): the created_at of the last job on the page before") }),
+    operator: true,
+    mobile: "read",
+    run: async (context, input) => {
+      const limit = Math.min(Math.max(Math.trunc(Number(input.limit)) || 50, 1), 200);
+      const state = JOB_STATES.find((entry) => entry === input.status);
+      if (input.status !== undefined && input.status !== "" && !state) throw new ApiError(400, `status is one of ${JOB_STATES.join(", ")}.`);
+      const before = input.before === undefined || input.before === "" ? null : Date.parse(str(input, "before"));
+      if (before !== null && Number.isNaN(before)) throw new ApiError(400, "before is a time, such as 2026-11-21T09:00:00Z.");
+      if (!state && before === null) return (await operator(context).listJobs(limit)).data;
+      // The engine lists its newest jobs and takes no filter, so a filter or an earlier page is cut from its widest list.
+      return (await operator(context).listJobs(JOBS_WINDOW)).data.filter((job) => (!state || job.state === state) && (before === null || Date.parse(job.created_at) < before)).slice(0, limit);
+    },
+  },
   { name: "operator_costs", description: "Operator: wholesale network cost by class and capability over a number of days.", method: "GET", path: "/operator/costs", input: object({ days: { type: "number", default: 30 } }), operator: true, run: async (context, input) => (await operator(context).getCostSummary(Number(input.days) || 30)).data },
-  { name: "operator_list_reports", description: "Operator: reports of shared characters, open ones first.", method: "GET", path: "/operator/reports", input: object({}), operator: true, run: async (context) => { operator(context); return context.moderation.reports(); } },
+  { name: "operator_list_reports", description: "Operator: reports of shared characters, open ones first.", method: "GET", path: "/operator/reports", input: object({}), output: ["CharacterReport"], operator: true, mobile: "read", run: async (context) => { operator(context); return context.moderation.reports(); } },
   {
     name: "operator_resolve_report",
     description: "Operator: decide a report. Dismiss leaves the character up; hide takes it off the instance for everyone.",
     method: "POST",
     path: "/operator/reports/{id}",
+    output: "CharacterReport",
     input: object({ id: text("Report id"), outcome: { enum: ["dismissed", "hidden"] } }, ["id", "outcome"]),
     operator: true,
+    mobile: "confirm",
     run: async (context, input) => {
       operator(context);
+      if (input.outcome !== "dismissed" && input.outcome !== "hidden") throw new ApiError(400, "outcome is dismissed or hidden.");
       return found(context.moderation.resolve(str(input, "id"), input.outcome === "hidden" ? "hidden" : "dismissed"), "Report");
     },
   },
@@ -408,7 +566,55 @@ export const OPERATIONS: Operation[] = [
   { name: "operator_list_plans", description: "Operator: the provider's plans and allowances.", method: "GET", path: "/operator/plans", input: object({}), operator: true, run: async (context) => operator(context).provider.plans.listPlans() },
   { name: "operator_list_keys", description: "Operator: engine access keys.", method: "GET", path: "/operator/keys", input: object({}), operator: true, run: async (context) => (await operator(context).listAccessKeys()).data },
   { name: "operator_set_capability", description: "Operator: enable or disable a capability, set its markup or the surfaces it appears in.", method: "PATCH", path: "/operator/capabilities", input: object({ app: text("Capability name"), enabled: { type: "boolean" }, markup: { type: ["number", "null"] }, surfaces: { type: ["array", "null"], items: { type: "string" } } }, ["app"]), operator: true, run: async (context, input) => (await operator(context).updateCapabilitySetting(str(input, "app"), { ...(typeof input.enabled === "boolean" ? { enabled: input.enabled } : {}), ...(input.markup === null || typeof input.markup === "number" ? { markup: input.markup } : {}), ...(input.surfaces === null || Array.isArray(input.surfaces) ? { surfaces: input.surfaces === null ? null : input.surfaces.map(String) } : {}) })).data },
+  { name: "operator_list_devices", description: "Operator: the phones enrolled for the console, with who enrolled each and when it was last used and unlocked.", method: "GET", path: "/operator/devices", output: ["OperatorDeviceSession"], input: object({}), operator: true, run: async (context) => { operator(context); return context.operatorDevices.list(); } },
+  {
+    name: "operator_revoke_device",
+    description: "Operator: revoke one operator phone. Its console stops on its next request; the person's user app is not affected.",
+    method: "DELETE",
+    path: "/operator/devices/{id}",
+    output: "Deleted",
+    input: object({ id: text("Operator device session id, from operator_list_devices") }, ["id"]),
+    operator: true,
+    run: async (context, input) => {
+      operator(context);
+      if (!context.operatorDevices.revoke(str(input, "id"), revoker(context))) throw new ApiError(404, "Operator phone not found");
+      return { deleted: true };
+    },
+  },
+  { name: "operator_revoke_all_devices", description: "Operator: revoke every operator phone at once. Each operator signs in again on their phone to get the console back.", method: "DELETE", path: "/operator/devices", output: "Deleted", input: object({}), operator: true, run: async (context) => { operator(context); return { deleted: context.operatorDevices.revokeAll(revoker(context)) > 0 }; } },
+  { name: "operator_list_audit", description: "Operator: what operators' phones did and were refused, newest first: sign-ins, unlocks, changes, refusals and revocations.", method: "GET", path: "/operator/audit", output: ["OperatorAuditEntry"], input: object({ limit: { type: "number", default: 100 } }), operator: true, run: async (context, input) => { operator(context); return context.audit.list(Math.trunc(Number(input.limit)) || 100); } },
 ];
+
+/** Failures in the last hour at or above this are worth an operator's attention. */
+const FAILING_JOBS = 5;
+/** Cost sync older than this is late. */
+const COST_SYNC_LATE_MS = 2 * 3600_000;
+
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+
+/** What the Status screen shows. What counts as wrong is decided here, so the web and phones agree. */
+async function status(client: OperatorClient, moderation: Moderation, now: number = Date.now()): Promise<OperatorStatus> {
+  const [health, overview, jobs] = await Promise.all([client.getEngineHealth(), client.getOverview(), client.listJobs(JOBS_WINDOW)]);
+  const service = health.data;
+  const failedLastHour = jobs.data.filter((job) => job.state === "failed" && now - Date.parse(job.created_at) < 3600_000).length;
+  const waiting = moderation.reports().filter((report) => report.state === "open").length;
+  const syncedAgo = service.cost_sync_at ? now - Date.parse(service.cost_sync_at) : null;
+  const attention: OperatorAttention[] = [];
+  if (!service.ready) attention.push({ kind: "engine_not_ready", message: "The engine isn't ready", count: null, opens: "status" });
+  if (!service.discovery_fresh) attention.push({ kind: "discovery_stale", message: "Discovery is out of date", count: null, opens: "status" });
+  if (service.cost_sync_error || syncedAgo === null || syncedAgo > COST_SYNC_LATE_MS) {
+    const hours = syncedAgo === null ? null : Math.floor(syncedAgo / 3600_000);
+    attention.push({ kind: "costs_not_synced", message: hours === null ? "Costs have never synced" : hours < 1 ? "Cost sync is failing" : `Costs haven't synced for ${hours} h`, count: hours, opens: "status" });
+  }
+  if (failedLastHour >= FAILING_JOBS) attention.push({ kind: "jobs_failing", message: `${plural(failedLastHour, "job", "jobs")} failed in the last hour`, count: failedLastHour, opens: "jobs" });
+  if (waiting > 0) attention.push({ kind: "reports_waiting", message: waiting === 1 ? "1 report is waiting" : `${waiting} reports are waiting`, count: waiting, opens: "reports" });
+  return {
+    checked_at: new Date(now).toISOString(),
+    attention,
+    today: { active_users: overview.data.active_users, jobs: overview.data.jobs_today, failed: overview.data.jobs_failed_today, revenue_usd: overview.data.revenue_usd, wholesale_usd: overview.data.wholesale_usd, margin_usd: overview.data.margin_usd, revenue_estimated: overview.data.revenue_estimated },
+    service: { engine_ready: service.ready, discovery_fresh: service.discovery_fresh, discovery_observed_at: service.discovery_observed_at, cost_sync_at: service.cost_sync_at, cost_sync_error: service.cost_sync_error, running_jobs: service.running_jobs, engine_version: service.version },
+  };
+}
 
 function message(input: Record<string, unknown>) {
   return {
@@ -421,6 +627,13 @@ function message(input: Record<string, unknown>) {
     ...(typeof input.character_slug === "string" && input.character_slug ? { character_slug: input.character_slug } : {}),
   };
 }
+
+/**
+ * The console session's own plumbing on a phone: enrolling, unlocking, asking for a nonce, signing out. They
+ * aren't operator operations (the proof of who is asking is the session itself), and the native clients get
+ * them in their operator client, beside the operator operations marked for phones.
+ */
+export const OPERATOR_SESSION_OPERATIONS: readonly string[] = ["create_operator_device_session", "delete_operator_device_session", "create_operator_challenge", "unlock_operator_device_session"];
 
 /** Finds the operation for a REST request and extracts its path inputs. */
 export function matchOperation(method: string, segments: string[]): { operation: Operation; params: Record<string, string> } | null {

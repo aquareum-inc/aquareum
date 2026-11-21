@@ -1,8 +1,10 @@
-import type { DataSource, EngineHealth } from "@livepeer/api-client";
+import type { DataSource, EngineHealth, OperatorAuditEntry } from "@livepeer/api-client";
 
 import { ago } from "../components/format";
 import { ConsolePage, Panel, Status } from "../components/parts";
 import { Table } from "../components/table";
+import { OperatorPhonesPanel, type OperatorPhonesProps } from "./operator-phones";
+import { PhoneActivityPanel } from "./phone-activity";
 
 export interface SystemCheck {
   name: string;
@@ -19,9 +21,13 @@ export interface SystemViewProps {
   checks: SystemCheck[];
   dataSources: Array<{ name: string; source: DataSource; area: string }>;
   sources: ReadonlyArray<{ name: string; source: DataSource }>;
+  /** The phones enrolled for the console, and how to revoke them. */
+  phones: OperatorPhonesProps;
+  /** What those phones did and were refused, newest first. */
+  phoneActivity: OperatorAuditEntry[];
 }
 
-export function SystemView({ health, healthError, provider, versions, checks, dataSources, sources }: SystemViewProps) {
+export function SystemView({ health, healthError, provider, versions, checks, dataSources, sources, phones, phoneActivity }: SystemViewProps) {
   const passing = checks.filter((check) => check.ok).length;
   return (
     <ConsolePage title="System" description="Whether the instance, the engine and the payment provider are connected and healthy." sources={sources}>
@@ -74,6 +80,9 @@ export function SystemView({ health, healthError, provider, versions, checks, da
           ))}
         </ul>
       </Panel>
+
+      <OperatorPhonesPanel {...phones} />
+      <PhoneActivityPanel entries={phoneActivity} />
 
       <Panel title="Sources and gaps" description="Every function this console calls, and whether it reads the live engine or a mock. Detail and blockers are in docs/data-sources.md.">
         <Table
