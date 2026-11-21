@@ -457,6 +457,8 @@ export interface Me {
   id: string;
   name: string;
   email: string | null;
+  /** Whether the person runs this instance. An app offers the console from this; the server still decides every request. */
+  role: "user" | "operator";
   balance: CreditBalance;
 }
 
@@ -476,6 +478,84 @@ export interface DeviceSession {
 export interface DeviceToken {
   token: string;
   device: DeviceSession;
+}
+
+/** An operator's phone enrolled for the console: its own session, bound to a key in the phone's secure hardware. */
+export interface OperatorDeviceSession {
+  id: string;
+  /** Whose phone it is. */
+  user_id: string;
+  user_name: string;
+  /** The phone's own name, as it reported it. */
+  name: string;
+  platform: "ios" | "android";
+  created_at: string;
+  last_used_at: string;
+  /** When the phone last proved a face or fingerprint to open the console. */
+  last_unlocked_at: string | null;
+  /** When the session ends whatever its use, and the operator signs in again. */
+  expires_at: string;
+}
+
+/** A new operator device session. The token is shown once; the instance keeps only a keyed hash of it. */
+export interface OperatorDeviceToken {
+  token: string;
+  device: OperatorDeviceSession;
+}
+
+/** A value for the phone's key to sign, once, before it expires. */
+export interface OperatorChallenge {
+  nonce: string;
+  expires_at: string;
+}
+
+/** The console is open on this phone until then. */
+export interface OperatorUnlock {
+  unlocked_until: string;
+}
+
+/** One line of the record of what operators' phones did and were refused. */
+export interface OperatorAuditEntry {
+  id: string;
+  at: string;
+  event: "sign_in" | "sign_out" | "unlock" | "change" | "refused" | "revoked";
+  user_id: string;
+  user_name: string;
+  device_id: string | null;
+  device_name: string | null;
+  /** The operation asked for, when there was one. */
+  operation: string | null;
+  /** What it acted on: a user or report id. */
+  target: string | null;
+  /** Why it was refused or revoked, or how a change ended. */
+  detail: string | null;
+}
+
+/** Something that needs the operator, as the Status screen lists it. */
+export interface OperatorAttention {
+  kind: "engine_not_ready" | "discovery_stale" | "costs_not_synced" | "jobs_failing" | "reports_waiting";
+  /** The line to show: "3 reports are waiting". */
+  message: string;
+  count: number | null;
+  /** Where to deal with it. */
+  opens: "status" | "jobs" | "reports";
+}
+
+/** Whether anything is wrong, today's figures and the state of the service, in one answer. */
+export interface OperatorStatus {
+  checked_at: string;
+  /** Empty when everything is running. */
+  attention: OperatorAttention[];
+  today: { active_users: number; jobs: number; failed: number; revenue_usd: number; wholesale_usd: number; margin_usd: number; revenue_estimated: boolean };
+  service: {
+    engine_ready: boolean;
+    discovery_fresh: boolean;
+    discovery_observed_at: string | null;
+    cost_sync_at: string | null;
+    cost_sync_error: string | null;
+    running_jobs: number;
+    engine_version: string;
+  };
 }
 
 /**
