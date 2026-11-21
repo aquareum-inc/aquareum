@@ -42,6 +42,8 @@ export interface OperatorDeviceSessions {
   find(token: string): OperatorDeviceRecord | null;
   /** Counts a request against the session's limit. False once it is over. */
   allow(sessionId: string): boolean;
+  /** Whether the session's last unlock still stands. */
+  unlocked(session: OperatorDeviceRecord): boolean;
   /** A nonce to sign: for an unlock, or for one operation and one input. */
   challenge(session: OperatorDeviceRecord, change: { operation: string; inputHash: string } | null): OperatorChallenge;
   /** Opens reads for a few minutes. Null when the signature isn't this phone's over an unused unlock nonce. */
@@ -212,6 +214,8 @@ export function operatorDeviceSessions(store: OperatorDeviceStore, secret: strin
       window.count += 1;
       return window.count <= REQUESTS_PER_MINUTE;
     },
+
+    unlocked: (session) => session.unlockedUntil > now(),
 
     challenge(session, change) {
       const nonce = base64url(randomBytes(32));

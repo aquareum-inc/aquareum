@@ -10,6 +10,11 @@ export interface DeviceRecord {
   userId: string;
   name: string;
   email: string | null;
+  /**
+   * Whether the provider marked them an operator at sign-in. It only tells the app whether to offer the
+   * console; a device session never does operator work. Absent on sessions made before it was recorded.
+   */
+  role?: "user" | "operator";
   deviceName: string;
   platform: "ios" | "android";
   /** The user's builder key, sealed with SESSION_SECRET, as the browser session cookie holds it. */
@@ -27,6 +32,7 @@ export interface PendingCode {
   userId: string;
   name: string;
   email: string | null;
+  role?: "user" | "operator";
   builderKey: string | null;
   expiresAt: number;
 }

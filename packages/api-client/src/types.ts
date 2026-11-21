@@ -611,6 +611,11 @@ export interface Quote {
   credits: number;
 }
 
+/** The answer to a change that has nothing else to say. */
+export interface Done {
+  ok: boolean;
+}
+
 /** The answer to a delete. */
 export interface Deleted {
   deleted: boolean;

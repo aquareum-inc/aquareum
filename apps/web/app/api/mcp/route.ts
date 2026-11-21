@@ -1,12 +1,8 @@
-import { quoteCredits } from "@livepeer/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { devices } from "@/lib/devices";
-import { moderation } from "@/lib/moderation";
 import { instance } from "@/lib/instance";
-import { authenticate, type Caller } from "@/lib/public-api/auth";
-import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
-import { agentModelMenu, capabilityLabels, privacyDescription, studioMediums } from "@/lib/public-api/labels";
+import { authenticate, requestContext, type Caller } from "@/lib/public-api/auth";
+import { runOperation } from "@/lib/public-api/dispatch";
 import { ApiError, OPERATIONS } from "@/lib/public-api/operations";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +34,8 @@ export async function POST(request: NextRequest) {
     if (!(cause instanceof ApiError)) throw cause;
     caller = null;
   }
-  if (!caller) {
+  // The console on a phone speaks the REST API only: its session is never an agent's.
+  if (!caller || caller.via === "operator_device") {
     return NextResponse.json(failure(null, -32001, "Send an API key as a bearer token."), { status: 401, headers: { "WWW-Authenticate": "Bearer" } });
   }
 
@@ -74,7 +71,7 @@ export async function POST(request: NextRequest) {
       const operation = TOOLS.find((entry) => entry.name === rpc.params?.name);
       if (!operation) return NextResponse.json(failure(rpc.id, -32602, `Unknown tool: ${String(rpc.params?.name)}`));
       try {
-        const value = await operation.run({ ...caller, devices: devices(), moderation: moderation(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, privacy: privacyDescription, quote: quoteCredits }, (rpc.params?.arguments as Record<string, unknown> | undefined) ?? {});
+        const value = await runOperation(operation, requestContext(request, caller), (rpc.params?.arguments as Record<string, unknown> | undefined) ?? {}, null);
         return NextResponse.json(result(rpc.id, { content: [{ type: "text", text: JSON.stringify(value, null, 2) }], structuredContent: Array.isArray(value) ? { items: value } : value }));
       } catch (cause) {
         return NextResponse.json(result(rpc.id, { isError: true, content: [{ type: "text", text: cause instanceof Error ? cause.message : "The tool failed." }] }));

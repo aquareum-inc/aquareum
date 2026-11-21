@@ -1,14 +1,11 @@
 import { createHash } from "node:crypto";
 
-import { EngineError, NotOffered, UnsupportedByProvider, quoteCredits } from "@livepeer/api-client";
+import { EngineError, NotOffered, UnsupportedByProvider } from "@livepeer/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { devices } from "@/lib/devices";
-import { moderation } from "@/lib/moderation";
 import { instance } from "@/lib/instance";
-import { authenticate, carriesDeviceToken, guest, type Caller } from "@/lib/public-api/auth";
-import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
-import { agentModelMenu, capabilityLabels, privacyDescription, studioMediums } from "@/lib/public-api/labels";
+import { authenticate, carriesDeviceToken, guest, requestContext, type Caller } from "@/lib/public-api/auth";
+import { runOperation } from "@/lib/public-api/dispatch";
 import { ApiError, matchOperation } from "@/lib/public-api/operations";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +53,8 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
       return error(400, "The request body isn't valid JSON.");
     }
   }
-  const query = Object.fromEntries(request.nextUrl.searchParams);
+  // A phone's changes are signed over the body it sends, so nothing in the address may add to or alter it.
+  const query = request.method === "GET" || request.method === "DELETE" || caller.via !== "operator_device" ? Object.fromEntries(request.nextUrl.searchParams) : {};
   const input = { ...query, ...body, ...match.params };
 
   const schema = match.operation.input as { required?: string[] };
@@ -64,7 +62,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   if (missing.length > 0) return error(400, `Missing: ${missing.join(", ")}`);
 
   try {
-    const value = await match.operation.run({ ...caller, devices: devices(), moderation: moderation(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, privacy: privacyDescription, quote: quoteCredits }, input);
+    const value = await runOperation(match.operation, requestContext(request, caller), input, request.headers.get("x-operator-proof"));
     return request.method === "GET" ? read(request, value) : NextResponse.json(value);
   } catch (cause) {
     if (cause instanceof ApiError) return error(cause.status, cause.message, cause.code);

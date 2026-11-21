@@ -46,8 +46,9 @@ export async function GET(request: NextRequest) {
     if (!mobileEnabled()) return fail("mobile_off");
     const { builderKey } = createSession(identity);
     const handoff = devices().issueCode({
-      // A device session is always a user: operator work stays on the web, so a lost phone can't administer the instance.
-      identity: { ...identity, role: "user" },
+      // A device session never does operator work, whoever signs in. It records the role only so the app knows
+      // whether to offer the console, which has its own session, key and biometric check.
+      identity,
       builderKey: builderKey ? seal(builderKey, sessionSecret()) : null,
       challenge: flow.native.challenge,
       platform: flow.native.platform,
