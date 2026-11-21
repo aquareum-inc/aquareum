@@ -579,11 +579,11 @@ audit in a UI test target (`performAccessibilityAudit`), which the project doesn
   app fresh, and turn system animations off so the aurora and the orb let the screen settle.
 - **CI.** `.github/workflows/mobile-ios.yml` (macOS) and `mobile-android.yml` (Linux, an API 37 emulator), each
   started only by its own app's paths and what the apps share (the public API, the generator, the dev config). Each starts a mock-only instance, then runs the unit and UI tests. Not required checks yet.
-- **CI minutes.** macOS minutes count ten times, and a fresh simulator boots in about five minutes on every
-  run, so iOS runs only when a pull request is opened or marked ready, and when asked: add the `run-ios` label
-  (remove and add it again for another run) or start Mobile iOS by hand. Changes are built and tested on a
-  simulator locally before they're pushed, so CI is the second check. Android is cheap: it runs on each push to
-  a ready pull request. Neither runs after merging. On iOS the
+- **When CI runs.** Each app's check runs when a pull request that touches it (or what the apps share) is opened
+  or marked ready, and when asked: add the `run-ios` or `run-android` label (remove and add it again for another
+  run) or start Mobile iOS or Mobile Android by hand. Not on every push, since changes are built and tested on a
+  simulator and an emulator locally first, and not after merging. Each takes 8 to 10 minutes; macOS minutes
+  count ten times, so an iOS run costs about 97 billed minutes and an Android run about 8. On iOS the
   build takes about a minute and a fresh simulator's boot about six, so the job boots it first and builds while it
   boots, then runs unit and UI tests in one pass (the `AquareumAllTests` scheme): about 12 minutes down to
   about 10. The instance compiles each route on first use, so the job asks for sign-in and the API during

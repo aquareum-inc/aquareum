@@ -3,12 +3,13 @@ name: Mobile Android
 # The Android app, built and tested against a mock-only instance (docs/mobile/plan.md section 14).
 # Not a required check until it is stable.
 #
-# It runs only when it's worth it: on a pull request that touches the Android app or what it shares with the
-# other app, once it's ready for review (not while it's a draft), on each push to it after that, and by hand.
-# It doesn't run again after merging; the pull request already tested that code.
+# Same rule as iOS: it runs when a pull request that touches the Android app (or what it shares with iOS) is
+# opened or marked ready for review, and when asked, by adding the run-android label or starting it by hand.
+# Not on every push: changes are built and tested on an emulator locally before they're pushed. Not after
+# merging either.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, labeled]
     paths:
       - "apps/android/**"
       - "packages/mobile-codegen/**"
@@ -18,9 +19,10 @@ on:
       - ".github/workflows/mobile-android.yml"
   workflow_dispatch:
 
+# Queued, not cancelled: a label that doesn't ask for a run would otherwise cancel one that's under way.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   MOCK_ONLY: "1"
@@ -28,7 +30,10 @@ env:
 
 jobs:
   android:
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'run-android') ||
+      (github.event.action != 'labeled' && !github.event.pull_request.draft)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
