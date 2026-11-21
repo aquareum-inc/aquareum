@@ -84,7 +84,8 @@ jobs:
       - name: UI tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 37
+          # Android 17 is published as 37.0 (platforms;android-37.0); quoted so YAML keeps it a string.
+          api-level: "37.0"
           target: google_apis
           arch: x86_64
           disable-animations: true
