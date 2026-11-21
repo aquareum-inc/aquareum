@@ -34,14 +34,15 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.action == 'labeled' && github.event.label.name == 'run-ios') ||
       (github.event.action != 'labeled' && !github.event.pull_request.draft)
-    runs-on: macos-26
+    # Xcode 27 and iOS 27, matching local development. GitHub still labels this image a preview.
+    runs-on: xcode-27
     timeout-minutes: 60
     steps:
       # A fresh simulator takes minutes to boot, far longer than the build: start it first, so it boots while
       # everything else gets ready.
       - name: Boot a simulator
         run: |
-          SIMULATOR=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          SIMULATOR=$(xcrun simctl list devices available -j | jq -r '[.devices | to_entries[] | select(.key | contains("iOS-27")) | .value[] | select(.name | test("^iPhone [0-9]+( Pro)?$"))][0].udid')
           echo "SIMULATOR=$SIMULATOR" >> "$GITHUB_ENV"
           xcrun simctl boot "$SIMULATOR"
       - uses: actions/checkout@v4

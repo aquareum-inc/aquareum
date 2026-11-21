@@ -584,6 +584,7 @@ audit in a UI test target (`performAccessibilityAudit`), which the project doesn
   app fresh, and turn system animations off so the aurora and the orb let the screen settle.
 - **CI.** `.github/workflows/mobile-ios.yml` (macOS) and `mobile-android.yml` (Linux, an API 37 emulator), each
   started only by its own app's paths and what the apps share (the public API, the generator, the dev config). Each starts a mock-only instance, then runs the unit and UI tests. Not required checks yet.
+- **Toolchain.** Development and iOS CI use Xcode 27 and an iOS 27 simulator (the `xcode-27` runner, which GitHub still labels a preview). The app's minimum stays iOS 18.
 - **When CI runs.** Each app's check runs when a pull request that touches it (or what the apps share) is opened
   or marked ready, and when asked: add the `run-ios` or `run-android` label (remove and add it again for another
   run) or start Mobile iOS or Mobile Android by hand. Not on every push, since changes are built and tested on a
