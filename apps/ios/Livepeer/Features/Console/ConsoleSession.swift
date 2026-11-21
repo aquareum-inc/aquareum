@@ -135,7 +135,7 @@ final class ConsoleSession {
             failure = Self.needsBiometrics
         } catch let error as APIError {
             refused(error)
-            failure = stage == .signedOut ? "The console was signed out on this phone. Sign in again." : error.message
+            if stage != .signedOut { failure = error.message }
         } catch is URLError {
             failure = "Can't reach \(instance.name). Check your connection."
         } catch {
@@ -215,7 +215,12 @@ final class ConsoleSession {
             lock()
         } else if error.status == 401 || error.code == "mobile_console_off" || error.code == "operator_session" {
             forget()
-            if error.code == "mobile_console_off" { Task { await instance.refresh() } }
+            if error.code == "mobile_console_off" {
+                failure = "\(instance.name) doesn't offer its console on phones."
+                Task { await instance.refresh() }
+            } else {
+                failure = "The console was signed out on this phone. Sign in again."
+            }
         }
     }
 

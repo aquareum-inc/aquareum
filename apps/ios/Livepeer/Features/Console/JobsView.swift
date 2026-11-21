@@ -7,11 +7,15 @@ struct JobsView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0, pinnedViews: []) {
-                filters
-                content
+            // The clock is outside the lazy stack, so rows stay its direct children: laid out as they scroll
+            // into view, which is also what asks for the next page.
+            TimelineView(.everyMinute) { timeline in
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    filters
+                    content(now: timeline.date)
+                }
+                .padding(.bottom, 16)
             }
-            .padding(.bottom, 16)
         }
         .refreshable { await model.load() }
         .background(palette.background)
@@ -35,11 +39,11 @@ struct JobsView: View {
     }
 
     @ViewBuilder
-    private var content: some View {
+    private func content(now: Date) -> some View {
         switch model.phase {
         case .loading:
             ForEach(0..<8, id: \.self) { _ in
-                JobRow(job: .placeholder, now: .now).redacted(reason: .placeholder).breathing()
+                JobRow(job: .placeholder, now: now).redacted(reason: .placeholder).breathing()
                 rule
             }
             .accessibilityHidden(true)
@@ -52,13 +56,11 @@ struct JobsView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 56)
         case .loaded:
-            TimelineView(.everyMinute) { timeline in
-                ForEach(model.jobs, id: \.id) { job in
-                    NavigationLink(value: job) { JobRow(job: job, now: timeline.date) }
-                        .buttonStyle(RowPressStyle())
-                        .onAppear { if job.id == model.jobs.last?.id { Task { await model.loadMore() } } }
-                    rule
-                }
+            ForEach(model.jobs, id: \.id) { job in
+                NavigationLink(value: job) { JobRow(job: job, now: now) }
+                    .buttonStyle(RowPressStyle())
+                    .onAppear { if job.id == model.jobs.last?.id { Task { await model.loadMore() } } }
+                rule
             }
             foot
         }
@@ -115,7 +117,7 @@ struct JobRow: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
@@ -149,5 +151,5 @@ extension EngineJob {
     }
 
     /// Stands in for a row while the first page is on its way.
-    static let placeholder = EngineJob(id: "00000000", actorId: "", applicationId: "", operationRef: nil, mode: .immediate, app: "text-to-video", capability: nil, model: nil, state: .succeeded, attempts: [], failure: nil, createdAt: "", completedAt: nil)
+    static let placeholder = EngineJob(id: "00000000", actorId: "", applicationId: "", operationRef: nil, mode: .immediate, app: "text-to-video", capability: nil, model: nil, state: .succeeded, attempts: [], failure: nil, createdAt: "2026-01-01T12:00:00Z", completedAt: "2026-01-01T12:00:09Z")
 }
