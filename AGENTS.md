@@ -112,6 +112,9 @@ xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+# UI tests of the main flows: need the instance from step 1
+xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme AquareumUITests \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 
 # 4. Run it and take a screenshot
 xcrun simctl boot 'iPhone 17 Pro'
@@ -126,6 +129,9 @@ xcrun simctl io booted screenshot home.png
 cd apps/android
 ./gradlew :app:assembleDebug
 ./gradlew :app:testDebugUnitTest
+# UI tests of the main flows, on a running emulator: need the instance from step 1. They install the app
+# fresh (so a granted local-network permission goes) and turn system animations off; turn them back on after.
+./gradlew :app:connectedDebugAndroidTest
 
 # 6. Run it on an emulator and take a screenshot (10.0.2.2 is the host, where the instance listens)
 $ANDROID_HOME/emulator/emulator -avd <name> -no-snapshot-save &

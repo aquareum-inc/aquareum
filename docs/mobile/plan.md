@@ -565,6 +565,21 @@ For the engine and provider (added to `docs/engine-requests.md`):
 Not done in the polish pass: a real-device performance check of the aurora, and an automated accessibility
 audit in a UI test target (`performAccessibilityAudit`), which the project doesn't have yet.
 
+### UI tests and mobile CI (20 November 2026)
+
+- **UI tests.** Four main flows on each platform against a mock-only instance: a guest browses Home and the
+  studio and is asked to sign in at Generate; a signed-in person generates a shot and watches it render, opens
+  the library and a character, and reads Settings. iOS: `AquareumUITests` with its own scheme, so the unit
+  tests still run without an instance; 4 of 4 pass in about 80 s. Android: `androidTest` with Compose UI tests;
+  4 of 4 pass in about 30 s.
+- **Signing in.** The real native flow without the browser (section 14). The only app change is iOS's
+  Debug-only `AQUAREUM_UI_TEST_SESSION`.
+- **Android notes.** Compose's test library brings Espresso 3.5, which calls an input API removed in API 37, so
+  Espresso is pinned to 3.7. The tests grant `ACCESS_LOCAL_NETWORK` themselves, since a test run installs the
+  app fresh, and turn system animations off so the aurora and the orb let the screen settle.
+- **CI.** `.github/workflows/mobile.yml`: `ios` (macOS) and `android` (Linux, an API 37 emulator), started only
+  by mobile paths. Each starts a mock-only instance, then runs the unit and UI tests. Not required checks yet.
+
 ### Slice 6: Settings (20 November 2026)
 
 - **Server.** `get_account` (its type renamed `PlanAndCredits`, so it can't be confused with who is signed
