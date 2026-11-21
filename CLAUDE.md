@@ -88,3 +88,10 @@ PROJECT SETUP, DATA and RULES, reproduced below so they load every session.
 - Add tests for the API client, the provider interface, the capability-to-surface mapping, the config schema and presets, the role guard and the main flows.
 - Performance matters: fast first load, lazy-load heavy screens and media, no layout shift.
 - Add a README covering the quick start, the folder structure, the config file and presets, and how to switch a function from mock to live.
+
+## Pull request titles
+
+- Pull requests are squash-merged, so each title becomes the commit on `main`. Titles follow Conventional
+  Commits: `type(scope): what changed`, lower-case after the colon, no full stop. A `!` after the type or scope
+  marks a breaking change. Commits inside a branch have no rule. `CONTRIBUTING.md` lists the types and scopes,
+  and CI checks every title.
