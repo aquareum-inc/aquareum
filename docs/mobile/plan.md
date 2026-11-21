@@ -1,11 +1,11 @@
 # Native apps: plan
 
 Native iOS (Swift, SwiftUI) at `apps/ios` and Android (Kotlin, Jetpack Compose) at `apps/android`, for the
-user app only. The bar is the Linear mobile app: fast, fluid, idiomatic to each platform. Everything in
+user app, and for the operator console from section 18 (proposed). The bar is the Linear mobile app: fast, fluid, idiomatic to each platform. Everything in
 `CLAUDE.md` applies; this plan adds what mobile needs.
 
 Status: **proposed, waiting for review.** Sections marked *Decision* need an answer before the slices
-start. What exists today is in section 17. Facts about store rules and tools were checked on 19 November 2026 and change often; each is marked
+start. What exists today is in section 17. Section 18 plans the operator console on phones. Facts about store rules and tools were checked on 19 November 2026 and change often; each is marked
 *verify* where a decision depends on it.
 
 ## 1. Scope
@@ -21,7 +21,8 @@ start. What exists today is in section 17. Facts about store rules and tools wer
 
 | Out | Why |
 |-----|-----|
-| Operator console, Developers section | A desk job; stays on the web. |
+| Operator console | Out of slices 1 to 6. Planned for phones in section 18, which reverses the earlier "stays on the web". |
+| Developers section | A desk job; stays on the web. |
 | Studio Live, character calls | Planned in section 10; built when live sessions are connected (engine request R2). |
 | Buying credits, changing plan | Balance, plan and usage are shown. Purchasing waits on the decision in section 11. |
 | `./livepeer mobile` | Designed in section 13; built once the apps work against the flagship. |
@@ -120,7 +121,8 @@ Operations describe inputs only. Proposed:
    definition and "the real response wins" keeps holding.
 3. `pnpm api:openapi` writes `docs/mobile/openapi.json` (OpenAPI 3.1) from the operations list: paths,
    inputs, outputs, the error envelope, which operations are public and which need the operator role.
-   Operator operations are left out of the mobile clients.
+   Operator operations are left out of the mobile clients, except those section 18.5 marks for phones,
+   which go into a separate generated client.
 4. A test runs every non-operator operation against a mock-only instance and validates the response
    against its schema. The captured responses are saved as `docs/mobile/fixtures/*.json`, and the native
    decoding tests read those same files.
@@ -200,7 +202,8 @@ The starting point holds up. Proposed flow:
 **The token.** 32 random bytes, shown once. The instance stores only its SHA-256, with the user id, name,
 email, device name, platform, created and last-used times, and the user's builder key sealed with
 `SESSION_SECRET`. `authenticate()` accepts it after the operator token and API keys. A device session
-always has the `user` role: operator work stays on the web, so a lost phone can't administer an instance.
+always has the `user` role, so a lost phone can't administer an instance. Section 18 keeps that true of
+this session and adds a separate operator device session (`aqo_`) for the console.
 
 **Lifetime and revocation.**
 
@@ -517,7 +520,9 @@ Decided with the approval of the design sample (the recommended option in each c
 4. **Callback**: custom scheme with PKCE for the first release (5). Built; universal links are the follow-up.
 5. **Type**: system text with Geist Mono (7).
 6. **Minimum OS**: iOS 18 and Android 10 (8).
-9. **Operator role on phones**: device sessions are always `user`. Built.
+9. **Operator role on phones**: device sessions are always `user`. Built. Reversed on 21 November 2026:
+   the console comes to phones behind a separate operator device session (section 18; its open decisions
+   are in 18.7).
 
 Still open:
 

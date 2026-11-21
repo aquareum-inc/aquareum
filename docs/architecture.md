@@ -124,7 +124,7 @@ The native apps sign in through the same `/auth/start` and `/auth/callback`, ope
 session with `client`, a PKCE `challenge` and their own `state`. The callback sets no cookie for them: it
 redirects to `<bundle id>://auth` with a 60-second one-time code, only for an app named in the config's
 `mobile` block. The app exchanges the code and its verifier at `POST /api/v1/auth/device` for a device session
-(`aqd_…`, always the `user` role), sent as a bearer token. Sessions live in `apps/web/lib/devices` behind a
+(`aqd_…`, always the `user` role; a separate operator device session is planned in `docs/mobile/plan.md` §18), sent as a bearer token. Sessions live in `apps/web/lib/devices` behind a
 `DeviceSessionStore` (a JSON file in `DATA_DIR` for now), stored as an HMAC keyed with `SESSION_SECRET`. They
 end after 90 days unused, on sign-out or revocation, when the user is suspended, or when `SESSION_SECRET`
 changes. With `surfaces.mobile` off, a device session gets 403 `mobile_off`. Sign-in addresses are built from
