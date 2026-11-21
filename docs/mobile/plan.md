@@ -581,8 +581,9 @@ audit in a UI test target (`performAccessibilityAudit`), which the project doesn
   by mobile paths. Each starts a mock-only instance, then runs the unit and UI tests. Not required checks yet.
 - **CI minutes.** macOS minutes count ten times, so the jobs skip draft pull requests (they start when one is
   marked ready, then on each push), don't run again after merging, and can be started by hand. On iOS the
-  build takes about a minute and a fresh simulator's boot about six, so the job boots it first, alongside
-  setup. Android caches Gradle and a booted emulator between runs.
+  build takes about a minute and a fresh simulator's boot about six, so the job boots it first and builds while it
+  boots, then runs unit and UI tests in one pass (the `AquareumAllTests` scheme): about 12 minutes down to
+  about 10. Android caches Gradle and a booted emulator between runs.
 
 ### Slice 6: Settings (20 November 2026)
 

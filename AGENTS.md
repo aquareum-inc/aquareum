@@ -115,6 +115,9 @@ xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
 # UI tests of the main flows: need the instance from step 1
 xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme AquareumUITests \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+# Unit and UI tests in one pass, as CI runs them: also need the instance
+xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme AquareumAllTests \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 
 # 4. Run it and take a screenshot
 xcrun simctl boot 'iPhone 17 Pro'

@@ -46,22 +46,24 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      # Started now and waited for just before the tests, so the build runs while it starts.
       - name: Start a mock-only instance
         run: |
           export SESSION_SECRET="$(openssl rand -hex 32)"
           nohup pnpm dev > instance.log 2>&1 &
-          curl -fsS --retry 60 --retry-delay 2 --retry-all-errors http://localhost:3100/api/v1/instance > /dev/null
       - name: Metal toolchain, for the home screen's shader
         run: xcodebuild -downloadComponent MetalToolchain
-      # The UI tests reuse this build: only their own bundle compiles in the next step.
-      - name: Unit tests
+      # The build doesn't need the simulator, so it runs while the simulator finishes booting.
+      - name: Build
+        working-directory: apps/ios
+        run: xcodebuild -project Aquareum.xcodeproj -scheme AquareumAllTests -destination "platform=iOS Simulator,id=$SIMULATOR" build-for-testing
+      # Unit and UI tests in one pass: Xcode starts up and launches the tests once.
+      - name: Unit and UI tests
         working-directory: apps/ios
         run: |
+          curl -fsS --retry 60 --retry-delay 2 --retry-all-errors http://localhost:3100/api/v1/instance > /dev/null
           xcrun simctl bootstatus "$SIMULATOR" -b > /dev/null
-          xcodebuild -project Aquareum.xcodeproj -scheme Aquareum -destination "platform=iOS Simulator,id=$SIMULATOR" test
-      - name: UI tests
-        working-directory: apps/ios
-        run: xcodebuild -project Aquareum.xcodeproj -scheme AquareumUITests -destination "platform=iOS Simulator,id=$SIMULATOR" test
+          xcodebuild -project Aquareum.xcodeproj -scheme AquareumAllTests -destination "platform=iOS Simulator,id=$SIMULATOR" test-without-building
       - name: Instance log
         if: failure()
         run: tail -n 200 instance.log
