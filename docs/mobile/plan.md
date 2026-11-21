@@ -579,6 +579,10 @@ audit in a UI test target (`performAccessibilityAudit`), which the project doesn
   app fresh, and turn system animations off so the aurora and the orb let the screen settle.
 - **CI.** `.github/workflows/mobile.yml`: `ios` (macOS) and `android` (Linux, an API 37 emulator), started only
   by mobile paths. Each starts a mock-only instance, then runs the unit and UI tests. Not required checks yet.
+- **CI minutes.** macOS minutes count ten times, so the jobs skip draft pull requests (they start when one is
+  marked ready, then on each push), don't run again after merging, and can be started by hand. On iOS the
+  build takes about a minute and a fresh simulator's boot about six, so the job boots it first, alongside
+  setup. Android caches Gradle and a booted emulator between runs.
 
 ### Slice 6: Settings (20 November 2026)
 

@@ -2,10 +2,14 @@ name: Mobile
 
 # The native apps, each built and tested against a mock-only instance (docs/mobile/plan.md section 14).
 # Not required checks until they are stable.
+#
+# macOS minutes count ten times against the plan, so this runs only when it's worth it: on a pull request that
+# touches the apps and is ready for review (not while it's a draft), on each push to it after that, and by hand.
+# It doesn't run again after merging; the pull request already tested that code.
 on:
-  push:
-    branches: [main]
-    paths: &mobile
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
       - "apps/ios/**"
       - "apps/android/**"
       - "packages/mobile-codegen/**"
@@ -13,8 +17,7 @@ on:
       - "docs/mobile/dev.instance.config.json"
       - "apps/web/lib/public-api/**"
       - ".github/workflows/mobile.yml"
-  pull_request:
-    paths: *mobile
+  workflow_dispatch:
 
 concurrency:
   group: mobile-${{ github.ref }}
@@ -26,9 +29,17 @@ env:
 
 jobs:
   ios:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: macos-26
     timeout-minutes: 60
     steps:
+      # A fresh simulator takes minutes to boot, far longer than the build: start it first, so it boots while
+      # everything else gets ready.
+      - name: Boot a simulator
+        run: |
+          SIMULATOR=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          echo "SIMULATOR=$SIMULATOR" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SIMULATOR"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -42,11 +53,12 @@ jobs:
           curl -fsS --retry 60 --retry-delay 2 --retry-all-errors http://localhost:3100/api/v1/instance > /dev/null
       - name: Metal toolchain, for the home screen's shader
         run: xcodebuild -downloadComponent MetalToolchain
-      - name: Pick a simulator
-        run: echo "SIMULATOR=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')" >> "$GITHUB_ENV"
+      # The UI tests reuse this build: only their own bundle compiles in the next step.
       - name: Unit tests
         working-directory: apps/ios
-        run: xcodebuild -project Aquareum.xcodeproj -scheme Aquareum -destination "platform=iOS Simulator,id=$SIMULATOR" test
+        run: |
+          xcrun simctl bootstatus "$SIMULATOR" -b > /dev/null
+          xcodebuild -project Aquareum.xcodeproj -scheme Aquareum -destination "platform=iOS Simulator,id=$SIMULATOR" test
       - name: UI tests
         working-directory: apps/ios
         run: xcodebuild -project Aquareum.xcodeproj -scheme AquareumUITests -destination "platform=iOS Simulator,id=$SIMULATOR" test
@@ -55,8 +67,13 @@ jobs:
         run: tail -n 200 instance.log
 
   android:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      # Android 17 is published as 37.0 (platforms;android-37.0).
+      API_LEVEL: "37.0"
+      EMULATOR_OPTIONS: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -66,6 +83,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      # Gradle's own caching: dependencies and build outputs carry over between runs.
+      - uses: gradle/actions/setup-gradle@v4
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - name: Start a mock-only instance
@@ -81,13 +100,34 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      # A booted emulator, saved once and restored on later runs, instead of a cold boot every time.
+      - name: Restore the emulator
+        id: avd
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ env.API_LEVEL }}-google_apis-x86_64
+      - name: Save a booted emulator
+        if: steps.avd.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.API_LEVEL }}
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: ${{ env.EMULATOR_OPTIONS }}
+          disable-animations: false
+          script: echo "Saved a booted emulator."
       - name: UI tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          # Android 17 is published as 37.0 (platforms;android-37.0); quoted so YAML keeps it a string.
-          api-level: "37.0"
+          api-level: ${{ env.API_LEVEL }}
           target: google_apis
           arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: apps/android
           script: ./gradlew connectedDebugAndroidTest
