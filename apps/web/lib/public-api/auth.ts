@@ -2,7 +2,7 @@ import "server-only";
 
 import { timingSafeEqual } from "node:crypto";
 
-import type { ApiClient, OperatorClient } from "@aquareum/api-client";
+import type { ApiClient, OperatorClient } from "@livepeer/api-client";
 import type { NextRequest } from "next/server";
 
 import { apiFor } from "../api";

@@ -1,7 +1,7 @@
 "use client";
 
-import type { DeviceSession } from "@aquareum/api-client/types";
-import { Button, Card, EmptyState, Sheet } from "@aquareum/ui";
+import type { DeviceSession } from "@livepeer/api-client/types";
+import { Button, Card, EmptyState, Sheet } from "@livepeer/ui";
 import { Smartphone } from "lucide-react";
 import { useState } from "react";
 

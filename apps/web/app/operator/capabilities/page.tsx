@@ -1,5 +1,5 @@
-import { isCapabilityEnabled, placeCapability } from "@aquareum/config";
-import { CapabilitiesView } from "@aquareum/operator-console";
+import { isCapabilityEnabled, placeCapability } from "@livepeer/config";
+import { CapabilitiesView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { instance } from "@/lib/instance";

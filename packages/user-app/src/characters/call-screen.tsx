@@ -1,7 +1,7 @@
 "use client";
 
-import type { Character, CharacterCall } from "@aquareum/api-client/types";
-import { Button, EASE_OUT_EXPO, cn } from "@aquareum/ui";
+import type { Character, CharacterCall } from "@livepeer/api-client/types";
+import { Button, EASE_OUT_EXPO, cn } from "@livepeer/ui";
 import { Mic, MicOff, PhoneOff, Video, VideoOff } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";

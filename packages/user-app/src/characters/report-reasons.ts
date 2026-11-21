@@ -1,4 +1,4 @@
-import type { ReportReason } from "@aquareum/api-client/types";
+import type { ReportReason } from "@livepeer/api-client/types";
 
 /** Why someone can report a character, in the order the report sheet lists them. The phone apps use the same words. */
 export const REPORT_REASONS: ReadonlyArray<{ value: ReportReason; label: string }> = [

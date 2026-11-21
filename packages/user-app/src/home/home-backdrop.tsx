@@ -1,4 +1,4 @@
-import { cn } from "@aquareum/ui";
+import { cn } from "@livepeer/ui";
 
 import { AuroraSky } from "./aurora-sky";
 import { LivingStill } from "./living-still";

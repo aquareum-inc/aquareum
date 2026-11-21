@@ -1,4 +1,4 @@
-import { cn } from "@aquareum/ui";
+import { cn } from "@livepeer/ui";
 import type { ReactNode } from "react";
 
 export interface Column<T> {

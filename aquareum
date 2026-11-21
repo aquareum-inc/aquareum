@@ -1,3 +1,0 @@
-#!/bin/sh
-# Runs the instance CLI from a checkout: ./aquareum setup --preset full
-exec node "$(dirname "$0")/packages/cli/bin/aquareum.mjs" "$@"

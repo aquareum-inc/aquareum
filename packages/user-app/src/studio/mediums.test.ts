@@ -1,4 +1,4 @@
-import type { Offering } from "@aquareum/api-client/types";
+import type { Offering } from "@livepeer/api-client/types";
 import { describe, expect, it } from "vitest";
 
 import { describeStudio, studioModes, withdrawnModes } from "./mediums";

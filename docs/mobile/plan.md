@@ -24,7 +24,7 @@ start. What exists today is in section 17. Facts about store rules and tools wer
 | Operator console, Developers section | A desk job; stays on the web. |
 | Studio Live, character calls | Planned in section 10; built when live sessions are connected (engine request R2). |
 | Buying credits, changing plan | Balance, plan and usage are shown. Purchasing waits on the decision in section 11. |
-| `./aquareum mobile` | Designed in section 13; built once the apps work against the flagship. |
+| `./livepeer mobile` | Designed in section 13; built once the apps work against the flagship. |
 
 ## 2. Toolchain
 
@@ -47,9 +47,9 @@ Checked on the project owner's Mac (Apple silicon, macOS 26.6.2) on 19 November 
 
 ```
 apps/ios                     Xcode project, one app target, one test target, one UI test target
-  Aquareum/                  App, Shell, Features/<Home|Chat|Studio|Library|Characters|Settings>, Design, API
-  Aquareum/Generated/        API models and client, tokens (generated, committed)
-  Config/Instance.xcconfig   Name, bundle identifier, instance URL (written by `./aquareum mobile`)
+  Livepeer/                  App, Shell, Features/<Home|Chat|Studio|Library|Characters|Settings>, Design, API
+  Livepeer/Generated/        API models and client, tokens (generated, committed)
+  Config/Instance.xcconfig   Name, bundle identifier, instance URL (written by `./livepeer mobile`)
 apps/android                 Gradle project, one `app` module
   app/src/main/kotlin/…      same feature folders
   app/src/main/kotlin/…/generated/
@@ -230,7 +230,7 @@ app can claim) are stronger and are the follow-up; the instance would serve
   providers that require their own embedded page.
 - **Apple's rule 4.8** (*verify*): an app offering third-party social sign-in must also offer an
   equivalent privacy-preserving option, in practice Sign in with Apple. An operator publishing to the App
-  Store with Google or Discord enabled needs `apple` in `auth.methods`. `./aquareum mobile` will check.
+  Store with Google or Discord enabled needs `apple` in `auth.methods`. `./livepeer mobile` will check.
 - Passkeys work in the system session for the provider's own domain. Wallet sign-in hands off to a wallet
   app and back, which is unreliable inside an auth session; mobile hides `wallet` and `coinbase` until
   tested against the real provider (Q12).
@@ -348,7 +348,7 @@ Third-party dependencies, each justified:
 | kotlinx.serialization, kotlinx.coroutines | Android | JetBrains' own; the standard for Kotlin. |
 | AndroidX (Compose, Navigation, Lifecycle, Browser, DataStore) | Android | Google's own. |
 | Coil | Android | Compose has no image loader of its own; Coil is the one Google's documentation uses. |
-| Thinking orbs (vendored in `apps/ios/Aquareum/Vendor/ThinkingOrbs`; ported to Kotlin in `apps/android/.../design/orb`; MIT) | iOS, Android | The agent's working indicator, the same drawing as the web's `thinking-orbs` package. Vendored from a pinned commit rather than SwiftPM: the package tracks a branch of a 284 MB repository. |
+| Thinking orbs (vendored in `apps/ios/Livepeer/Vendor/ThinkingOrbs`; ported to Kotlin in `apps/android/.../design/orb`; MIT) | iOS, Android | The agent's working indicator, the same drawing as the web's `thinking-orbs` package. Vendored from a pinned commit rather than SwiftPM: the package tracks a branch of a 284 MB repository. |
 | Material icons (extended) | Android | The platform's own icon set as Compose vectors. Unused icons are stripped from release builds. |
 | None | iOS | Everything is in the SDK. |
 
@@ -439,14 +439,14 @@ choice is the default in the template.
   or takes it down for everyone.
 - Settings has **Delete account**, behind a confirmation tray, calling `delete_account`.
 
-## 13. Self-hosters: `./aquareum mobile` (designed now, built after the apps work)
+## 13. Self-hosters: `./livepeer mobile` (designed now, built after the apps work)
 
-Mobile is opt-in and never part of `./aquareum setup`. An operator who wants apps builds and publishes
+Mobile is opt-in and never part of `./livepeer setup`. An operator who wants apps builds and publishes
 their own, under their own developer accounts. The flagship app is produced by this same path.
 
 ```
-./aquareum mobile init [--platform ios|android|all] [--json]
-./aquareum mobile doctor [--json]
+./livepeer mobile init [--platform ios|android|all] [--json]
+./livepeer mobile doctor [--json]
 ```
 
 `init` reads `instance.config.json` and writes each platform's build config and nothing else:
@@ -480,13 +480,13 @@ notifications, their own purchasing and content choices, and time for store revi
   local mock-only instance (the Android emulator reaches the host at `10.0.2.2`).
 - **No mock layer in the apps.** Development, tests and CI use a build pointed at an instance started
   with `MOCK_ONLY=1`.
-- **UI tests** (`apps/ios/AquareumUITests`, `apps/android/app/src/androidTest`) drive the main flows against
+- **UI tests** (`apps/ios/LivepeerUITests`, `apps/android/app/src/androidTest`) drive the main flows against
   that instance: a guest browsing Home and the studio and being asked to sign in at Generate; a signed-in
   person generating in the studio, opening the library, opening a character and reading Settings. Signing in
   is the real native flow without the browser: the test calls `/auth/start` with its own PKCE challenge,
   follows the mock provider's redirects to the app's callback, and redeems the code at `create_device_session`
   for a genuine device session. Android stores it in the app's `TokenVault` from inside the app's process;
-  iOS passes it at launch in `AQUAREUM_UI_TEST_SESSION`, which only a Debug build reads (`signed-out` clears
+  iOS passes it at launch in `LIVEPEER_UI_TEST_SESSION`, which only a Debug build reads (`signed-out` clears
   the vault). Tests find things by what a screen reader hears, not by private identifiers.
 - **CI.** Two new jobs, `ios` (macOS runner) and `android` (Linux runner), each started only when its
   paths, `packages/mobile-codegen` or `docs/mobile/openapi.json` change. Each starts a mock-only instance,
@@ -569,11 +569,11 @@ audit in a UI test target (`performAccessibilityAudit`), which the project doesn
 
 - **UI tests.** Four main flows on each platform against a mock-only instance: a guest browses Home and the
   studio and is asked to sign in at Generate; a signed-in person generates a shot and watches it render, opens
-  the library and a character, and reads Settings. iOS: `AquareumUITests` with its own scheme, so the unit
+  the library and a character, and reads Settings. iOS: `LivepeerUITests` with its own scheme, so the unit
   tests still run without an instance; 4 of 4 pass in about 80 s. Android: `androidTest` with Compose UI tests;
   4 of 4 pass in about 30 s.
 - **Signing in.** The real native flow without the browser (section 14). The only app change is iOS's
-  Debug-only `AQUAREUM_UI_TEST_SESSION`.
+  Debug-only `LIVEPEER_UI_TEST_SESSION`.
 - **Android notes.** Compose's test library brings Espresso 3.5, which calls an input API removed in API 37, so
   Espresso is pinned to 3.7. The tests grant `ACCESS_LOCAL_NETWORK` themselves, since a test run installs the
   app fresh, and turn system animations off so the aurora and the orb let the screen settle.
@@ -585,7 +585,7 @@ audit in a UI test target (`performAccessibilityAudit`), which the project doesn
   simulator and an emulator locally first, and not after merging. Each takes 8 to 10 minutes; macOS minutes
   count ten times, so an iOS run costs about 97 billed minutes and an Android run about 8. On iOS the
   build takes about a minute and a fresh simulator's boot about six, so the job boots it first and builds while it
-  boots, then runs unit and UI tests in one pass (the `AquareumAllTests` scheme): about 12 minutes down to
+  boots, then runs unit and UI tests in one pass (the `LivepeerAllTests` scheme): about 12 minutes down to
   about 10. The instance compiles each route on first use, so the job asks for sign-in and the API during
   the build, not the tests. Android caches Gradle and a booted emulator between runs.
 
@@ -594,7 +594,7 @@ audit in a UI test target (`performAccessibilityAudit`), which the project doesn
 - **Server.** `get_account` (its type renamed `PlanAndCredits`, so it can't be confused with who is signed
   in), `get_preferences`, `update_preferences` (adult content and the age confirmation are refused from a
   device session with `web_only`), `get_privacy` (the web's privacy tiers, now shared through
-  `@aquareum/user-app/privacy`), and `delete_account`: the provider deletes the user
+  `@livepeer/user-app/privacy`), and `delete_account`: the provider deletes the user
   (`identity.deleteUser`, new; Batteries answers 501, Q14), every device session ends, and the person's
   blocks are forgotten while their reports stay, unattributed. Left out of MCP.
 - **Web.** Settings ▸ Devices lists the phones and tablets signed in and signs any out; Settings ▸ Profile

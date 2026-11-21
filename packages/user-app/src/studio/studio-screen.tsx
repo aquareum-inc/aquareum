@@ -1,7 +1,7 @@
 "use client";
 
-import type { AppModel, Generation, GenerationRequest, Offering } from "@aquareum/api-client/types";
-import { Button, RollingNumber, cn } from "@aquareum/ui";
+import type { AppModel, Generation, GenerationRequest, Offering } from "@livepeer/api-client/types";
+import { Button, RollingNumber, cn } from "@livepeer/ui";
 import { Coins, Info } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";

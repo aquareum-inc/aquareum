@@ -1,7 +1,7 @@
 "use client";
 
-import { quoteCredits, type AppModel, type Offering } from "@aquareum/api-client";
-import { StudioScreen, type Medium } from "@aquareum/user-app";
+import { quoteCredits, type AppModel, type Offering } from "@livepeer/api-client";
+import { StudioScreen, type Medium } from "@livepeer/user-app";
 import { useRouter } from "next/navigation";
 
 import { createGenerationAction, getGenerationAction } from "@/lib/actions";

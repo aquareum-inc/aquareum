@@ -1,7 +1,7 @@
 "use client";
 
-import type { ApiKey, CreatedApiKey } from "@aquareum/api-client/types";
-import { Badge, Button, Card, EmptyState, Field, Input, Sheet } from "@aquareum/ui";
+import type { ApiKey, CreatedApiKey } from "@livepeer/api-client/types";
+import { Badge, Button, Card, EmptyState, Field, Input, Sheet } from "@livepeer/ui";
 import { KeyRound, Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 

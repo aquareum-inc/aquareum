@@ -1,13 +1,13 @@
 {
-  "name": "@aquareum/operator-console",
+  "name": "@livepeer/operator-console",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
   "scripts": { "typecheck": "tsc --noEmit" },
   "dependencies": {
-    "@aquareum/api-client": "workspace:*",
-    "@aquareum/ui": "workspace:*",
+    "@livepeer/api-client": "workspace:*",
+    "@livepeer/ui": "workspace:*",
     "lucide-react": "^1.48.0",
     "motion": "^13.4.3"
   },

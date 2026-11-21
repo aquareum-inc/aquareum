@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://schemas.aquareum.dev/instance.schema.json",
+  "$id": "urn:livepeer:instance-config",
   "title": "InstanceConfig",
   "description": "One file that defines an instance: branding, engine, surfaces, capability rules, auth, payments and content policy. Secrets never go here; they are environment variables.",
   "type": "object",

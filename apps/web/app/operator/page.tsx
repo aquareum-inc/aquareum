@@ -1,4 +1,4 @@
-import { OverviewView } from "@aquareum/operator-console";
+import { OverviewView } from "@livepeer/operator-console";
 
 import { operatorApi } from "@/lib/operator/client";
 import { actorNames } from "@/lib/operator/names";

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createBatteriesProvider, createOperatorClient, mockProvider, type OperatorClient, type PaymentProvider } from "@aquareum/api-client";
+import { createBatteriesProvider, createOperatorClient, mockProvider, type OperatorClient, type PaymentProvider } from "@livepeer/api-client";
 
 import { getSession } from "../auth/session";
 import { env } from "../env";

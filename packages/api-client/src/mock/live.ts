@@ -152,7 +152,7 @@ export const EXAMPLE_APPS: ExampleApp[] = [
     app: "live-avatar",
     language: "TypeScript",
     artwork: { hues: [320, 280, 20], seed: 5 },
-    code: `import { createClient } from "@aquareum/api-client";
+    code: `import { createClient } from "@livepeer/api-client";
 
 const client = createClient({ baseUrl: process.env.INSTANCE_URL, apiKey: process.env.API_KEY });
 

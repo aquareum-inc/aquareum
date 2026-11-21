@@ -3,9 +3,9 @@ import "server-only";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
-import { ConfigError, DEFAULT_CONFIG_FILE, loadConfig, validateConfig, type InstanceConfig, type Surface } from "@aquareum/config";
-import type { CapabilityStore } from "@aquareum/api-client";
-import type { InstanceSettings } from "@aquareum/operator-console";
+import { ConfigError, DEFAULT_CONFIG_FILE, loadConfig, validateConfig, type InstanceConfig, type Surface } from "@livepeer/config";
+import type { CapabilityStore } from "@livepeer/api-client";
+import type { InstanceSettings } from "@livepeer/operator-console";
 
 import { env } from "../env";
 import { cleanLogo } from "./logo";

@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentModel } from "@aquareum/api-client/types";
+import type { AgentModel } from "@livepeer/api-client/types";
 import { Bot } from "lucide-react";
 import { useEffect, useMemo } from "react";
 

@@ -1,4 +1,4 @@
-import { CharactersScreen, DataSourceBadge } from "@aquareum/user-app";
+import { CharactersScreen, DataSourceBadge } from "@livepeer/user-app";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 

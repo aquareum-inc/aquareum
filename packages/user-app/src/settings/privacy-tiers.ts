@@ -1,4 +1,4 @@
-import type { PrivacyDescription, PrivacyTier } from "@aquareum/api-client/types";
+import type { PrivacyDescription, PrivacyTier } from "@livepeer/api-client/types";
 
 const TIERS: PrivacyTier[] = [
   {

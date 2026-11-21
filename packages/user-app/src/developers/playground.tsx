@@ -1,7 +1,7 @@
 "use client";
 
-import type { LiveSession, VideoAnalysis } from "@aquareum/api-client/types";
-import { Button, Card, Field, Input, Segmented } from "@aquareum/ui";
+import type { LiveSession, VideoAnalysis } from "@livepeer/api-client/types";
+import { Button, Card, Field, Input, Segmented } from "@livepeer/ui";
 import { Play, Square } from "lucide-react";
 import { useState } from "react";
 

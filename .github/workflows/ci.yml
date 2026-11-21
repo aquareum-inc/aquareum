@@ -19,7 +19,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - name: Generated native code is current
-        run: pnpm mobile:generate && git diff --exit-code -- docs/mobile/openapi.json apps/ios/Aquareum/Generated apps/android
+        run: pnpm mobile:generate && git diff --exit-code -- docs/mobile/openapi.json apps/ios/Livepeer/Generated apps/android
       - run: pnpm test
       - run: pnpm build
 
@@ -35,10 +35,10 @@ jobs:
         with:
           node-version: 22
       - name: Set up from a clean machine, in mock-only mode
-        run: ./aquareum setup --preset ${{ matrix.preset }} --mock-only --json
+        run: ./livepeer setup --preset ${{ matrix.preset }} --mock-only --json
       - name: Running it twice is safe
-        run: ./aquareum setup --preset ${{ matrix.preset }} --mock-only --json
+        run: ./livepeer setup --preset ${{ matrix.preset }} --mock-only --json
       - name: Health check passes
         run: curl -fsS http://localhost:3000/api/health
       - name: Doctor passes
-        run: ./aquareum doctor --json
+        run: ./livepeer doctor --json

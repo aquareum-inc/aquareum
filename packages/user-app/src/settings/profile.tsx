@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Row, Section, Sheet } from "@aquareum/ui";
+import { Button, Row, Section, Sheet } from "@livepeer/ui";
 import { useState } from "react";
 
 export interface ProfileSettingsProps {

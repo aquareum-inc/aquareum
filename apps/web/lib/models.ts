@@ -1,7 +1,7 @@
 import "server-only";
 
-import { appModel, type DataSource, type AppModel, type Offering, type Sourced } from "@aquareum/api-client";
-import { placeCapability } from "@aquareum/config";
+import { appModel, type DataSource, type AppModel, type Offering, type Sourced } from "@livepeer/api-client";
+import { placeCapability } from "@livepeer/config";
 
 import { instance } from "./instance";
 import { buildOperatorClient } from "./operator/client";

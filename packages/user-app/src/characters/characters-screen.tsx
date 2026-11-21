@@ -1,7 +1,7 @@
 "use client";
 
-import type { Character } from "@aquareum/api-client/types";
-import { Button, EmptyState, Input, Page } from "@aquareum/ui";
+import type { Character } from "@livepeer/api-client/types";
+import { Button, EmptyState, Input, Page } from "@livepeer/ui";
 import { Plus, Search, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 

@@ -1,5 +1,5 @@
-import type { Character } from "@aquareum/api-client/types";
-import { cn } from "@aquareum/ui";
+import type { Character } from "@livepeer/api-client/types";
+import { cn } from "@livepeer/ui";
 
 import { MockArtwork } from "../media/mock-artwork";
 

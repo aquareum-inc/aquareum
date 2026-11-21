@@ -1,5 +1,5 @@
-import type { PrivacyDescription } from "@aquareum/api-client/types";
-import { Badge, Card } from "@aquareum/ui";
+import type { PrivacyDescription } from "@livepeer/api-client/types";
+import { Badge, Card } from "@livepeer/ui";
 
 /** A plain account of who can see a job, per privacy tier. No claims beyond what is true today. */
 export function PrivacySettings({ description }: { description: PrivacyDescription }) {

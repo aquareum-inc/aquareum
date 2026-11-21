@@ -1,5 +1,5 @@
-import { PrivacySettings, SettingsLayout } from "@aquareum/user-app";
-import { describePrivacy } from "@aquareum/user-app/privacy";
+import { PrivacySettings, SettingsLayout } from "@livepeer/user-app";
+import { describePrivacy } from "@livepeer/user-app/privacy";
 import type { Metadata } from "next";
 
 import { instance } from "@/lib/instance";

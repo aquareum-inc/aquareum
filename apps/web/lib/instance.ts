@@ -3,8 +3,8 @@ import "server-only";
 import { statSync } from "node:fs";
 import path from "node:path";
 
-import { DEFAULT_CONFIG_FILE, loadConfig, type InstanceConfig } from "@aquareum/config";
-import type { Brand } from "@aquareum/ui";
+import { DEFAULT_CONFIG_FILE, loadConfig, type InstanceConfig } from "@livepeer/config";
+import type { Brand } from "@livepeer/ui";
 
 import { env } from "./env";
 

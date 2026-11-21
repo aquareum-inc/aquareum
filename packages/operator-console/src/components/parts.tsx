@@ -1,5 +1,5 @@
-import type { DataSource } from "@aquareum/api-client";
-import { Badge, cn, Tooltip } from "@aquareum/ui";
+import type { DataSource } from "@livepeer/api-client";
+import { Badge, cn, Tooltip } from "@livepeer/ui";
 import { Info } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 

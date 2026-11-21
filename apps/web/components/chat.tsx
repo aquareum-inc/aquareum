@@ -1,7 +1,7 @@
 "use client";
 
-import type { AgentModel, AppModel, Conversation, Offering } from "@aquareum/api-client";
-import { ChatScreen } from "@aquareum/user-app";
+import type { AgentModel, AppModel, Conversation, Offering } from "@livepeer/api-client";
+import { ChatScreen } from "@livepeer/user-app";
 import { useRouter } from "next/navigation";
 
 import { getConversationAction, getGenerationAction, listCastableCharactersAction, listMediaAction, sendMessageAction } from "@/lib/actions";

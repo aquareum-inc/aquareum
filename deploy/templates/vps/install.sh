@@ -13,9 +13,9 @@ command -v node >/dev/null 2>&1 || {
 }
 command -v caddy >/dev/null 2>&1 || apt-get install -y caddy
 
-./aquareum setup --preset "$PRESET"
+./livepeer setup --preset "$PRESET"
 
 sed "s/{\$DOMAIN}/$DOMAIN/" deploy/templates/vps/Caddyfile > /etc/caddy/Caddyfile
 systemctl reload caddy
-./aquareum doctor
+./livepeer doctor
 echo "Instance is live at https://$DOMAIN"

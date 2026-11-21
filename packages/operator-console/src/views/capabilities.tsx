@@ -1,7 +1,7 @@
 "use client";
 
-import type { CapabilitySetting, DataSource, Offering } from "@aquareum/api-client";
-import { Badge, Input, Switch } from "@aquareum/ui";
+import type { CapabilitySetting, DataSource, Offering } from "@livepeer/api-client";
+import { Badge, Input, Switch } from "@livepeer/ui";
 import { useState } from "react";
 
 import { label } from "../components/format";

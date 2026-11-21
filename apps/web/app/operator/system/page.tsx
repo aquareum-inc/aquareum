@@ -1,5 +1,5 @@
-import { DATA_SOURCES, OPERATOR_DATA_SOURCES, isMockOnly, type DataSource, type EngineHealth } from "@aquareum/api-client";
-import { SystemView } from "@aquareum/operator-console";
+import { DATA_SOURCES, OPERATOR_DATA_SOURCES, isMockOnly, type DataSource, type EngineHealth } from "@livepeer/api-client";
+import { SystemView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import release from "../../../../../release.config.json";

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { Character, CharacterBlock, CharacterReport, ReportReason } from "@aquareum/api-client";
+import type { Character, CharacterBlock, CharacterReport, ReportReason } from "@livepeer/api-client";
 
 import type { StateStore } from "../data/store";
 

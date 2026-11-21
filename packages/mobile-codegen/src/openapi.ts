@@ -87,7 +87,7 @@ for (const operation of operations) {
 const document = {
   openapi: "3.1.0",
   info: {
-    title: "Aquareum instance API",
+    title: "Livepeer instance API",
     version: "1",
     description: "Everything the user app can do on an instance. Generated from apps/web/lib/public-api/operations.ts; do not edit.",
   },

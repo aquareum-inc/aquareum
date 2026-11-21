@@ -1,6 +1,6 @@
 # Engine research: livepeer-builder-core
 
-Reference for the aquareum API client. Written 17 November 2026 from two sources:
+Reference for the livepeer API client. Written 17 November 2026 from two sources:
 
 - **Source:** `.reference/livepeer-builder-core` at commit `d67836b` (the package is `livepeer_builder`, the CLI is `lpb`). File paths below are relative to that repository.
 - **Live engine:** `http://127.0.0.1:8090`, read with GET requests only. No POST, PUT, PATCH or DELETE was sent, and no job was run.
@@ -29,7 +29,7 @@ The live engine is 15 commits behind the clone. Its `/openapi.json` is byte-iden
 
 Everything else in this document (routes, auth, jobs, costs, payments services) is unchanged between the two commits: `services/payments.py`, `services/jobs.py`, `services/keys.py`, `services/policy.py` and `store/sql.py` have no diff.
 
-**Consequence:** type `Runner` against whichever engine aquareum pins. Section 4 lists both shapes.
+**Consequence:** type `Runner` against whichever engine livepeer pins. Section 4 lists both shapes.
 
 ### 0.2 `ENGINE_ADMIN_TOKEN` is not an admin credential on this engine
 
@@ -1458,9 +1458,9 @@ Other commands: `lpb revision`, `lpb gen-secret-key`, `lpb smoke`, `lpb backup|v
 
 **Shape of the API**
 
-4. **No CORS.** A browser cannot call the engine directly; aquareum needs a server-side proxy, which is also where tokens must stay ("browsers never hold admin, management or payment credentials").
+4. **No CORS.** A browser cannot call the engine directly; livepeer needs a server-side proxy, which is also where tokens must stay ("browsers never hold admin, management or payment credentials").
 5. **No "who am I" route.** A token cannot be asked for its kind, actor, application or permissions. The UI must remember that beside the token, or probe.
-6. **No application or customer model.** `application_id` is a bare string; nothing lists applications; an actor has only `actor_id` and a `label`. Names, emails and organisations must live in aquareum.
+6. **No application or customer model.** `application_id` is a bare string; nothing lists applications; an actor has only `actor_id` and a `label`. Names, emails and organisations must live in livepeer.
 7. **`POST /v1/jobs` returns the runner's raw response**, not JSON about the job. The job id is only in the `Livepeer-Job-Id` header. The client must keep the body: the engine cannot give it again (`/result` is 501, and immediate results will be 410 even in M4).
 8. **Job history has no inputs and no outputs.** Neither the request payload nor the result is stored; a history view can show only app, state, attempts, a result hash and size.
 9. **Two error envelopes** (`{"error"}` and FastAPI's `{"detail"}`), and **no machine-readable `code`** except on 409 and 413. The reference console "decides state by matching error text". 402 and 403 are each ambiguous (5.4).

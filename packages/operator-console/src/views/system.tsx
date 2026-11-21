@@ -1,4 +1,4 @@
-import type { DataSource, EngineHealth } from "@aquareum/api-client";
+import type { DataSource, EngineHealth } from "@livepeer/api-client";
 
 import { ago } from "../components/format";
 import { ConsolePage, Panel, Status } from "../components/parts";
@@ -58,7 +58,7 @@ export function SystemView({ health, healthError, provider, versions, checks, da
         </Panel>
       </div>
 
-      <Panel title="Doctor" description={`${passing} of ${checks.length} checks pass. The same checks as \`aquareum doctor\`.`}>
+      <Panel title="Doctor" description={`${passing} of ${checks.length} checks pass. The same checks as \`livepeer doctor\`.`}>
         <ul className="divide-y divide-hairline rounded-card border border-hairline bg-card">
           {checks.map((check) => (
             <li key={check.name} className="px-4 py-2.5">

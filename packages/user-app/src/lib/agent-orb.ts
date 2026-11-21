@@ -1,4 +1,4 @@
-import type { AgentStep } from "@aquareum/api-client/types";
+import type { AgentStep } from "@livepeer/api-client/types";
 
 /** The thinking orb's animations this product uses, named as the `thinking-orbs` package names them. */
 export type AgentOrbState = "breathing" | "solving" | "searching" | "composing" | "weaving" | "working";

@@ -1,7 +1,7 @@
 "use client";
 
-import type { AgentModel, CharacterCast, Offering, PromptStarter, ShowcaseItem } from "@aquareum/api-client";
-import { HomeScreen, messageFrom } from "@aquareum/user-app";
+import type { AgentModel, CharacterCast, Offering, PromptStarter, ShowcaseItem } from "@livepeer/api-client";
+import { HomeScreen, messageFrom } from "@livepeer/user-app";
 import { useRouter } from "next/navigation";
 
 import { createConversationAction, listCastableCharactersAction, listMediaAction } from "@/lib/actions";

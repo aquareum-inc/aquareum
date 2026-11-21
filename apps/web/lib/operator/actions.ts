@@ -1,8 +1,8 @@
 "use server";
 
-import type { AccessKey, BillingSettings, CharacterReport, CapabilitySetting, CreditPack, EngineJob, Grant, Payment, Plan, TopUpRange } from "@aquareum/api-client";
-import { EngineError } from "@aquareum/api-client";
-import type { InstanceSettings } from "@aquareum/operator-console";
+import type { AccessKey, BillingSettings, CharacterReport, CapabilitySetting, CreditPack, EngineJob, Grant, Payment, Plan, TopUpRange } from "@livepeer/api-client";
+import { EngineError } from "@livepeer/api-client";
+import type { InstanceSettings } from "@livepeer/operator-console";
 import { revalidatePath } from "next/cache";
 
 import { devices } from "../devices";

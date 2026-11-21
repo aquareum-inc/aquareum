@@ -1,4 +1,4 @@
-import { DataSourceBadge, DevelopersLayout, Playground } from "@aquareum/user-app";
+import { DataSourceBadge, DevelopersLayout, Playground } from "@livepeer/user-app";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 

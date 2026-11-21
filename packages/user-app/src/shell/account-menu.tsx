@@ -1,6 +1,6 @@
 "use client";
 
-import { Popover, PopoverClose, PopoverContent, PopoverTrigger, RollingNumber, cn, useTheme } from "@aquareum/ui";
+import { Popover, PopoverClose, PopoverContent, PopoverTrigger, RollingNumber, cn, useTheme } from "@livepeer/ui";
 import { Coins, LogIn, LogOut, Moon, Settings2, ShieldCheck, Sparkles, Sun, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 

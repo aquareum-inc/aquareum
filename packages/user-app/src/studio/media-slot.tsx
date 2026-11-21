@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@aquareum/ui";
+import { cn } from "@livepeer/ui";
 import { X, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

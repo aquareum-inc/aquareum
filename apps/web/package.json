@@ -1,5 +1,5 @@
 {
-  "name": "@aquareum/web",
+  "name": "@livepeer/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,11 +10,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@aquareum/api-client": "workspace:*",
-    "@aquareum/config": "workspace:*",
-    "@aquareum/operator-console": "workspace:*",
-    "@aquareum/ui": "workspace:*",
-    "@aquareum/user-app": "workspace:*",
+    "@livepeer/api-client": "workspace:*",
+    "@livepeer/config": "workspace:*",
+    "@livepeer/operator-console": "workspace:*",
+    "@livepeer/ui": "workspace:*",
+    "@livepeer/user-app": "workspace:*",
     "@fontsource-variable/inter": "^5.2.5",
     "geist": "^1.7.2",
     "lucide-react": "^1.74.0",

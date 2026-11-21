@@ -1,7 +1,7 @@
 "use client";
 
-import type { CapabilityRun, Offering } from "@aquareum/api-client/types";
-import { Badge, Button, Card, EmptyState, Input, Textarea } from "@aquareum/ui";
+import type { CapabilityRun, Offering } from "@livepeer/api-client/types";
+import { Badge, Button, Card, EmptyState, Input, Textarea } from "@livepeer/ui";
 import { ArrowLeft, Blocks, Play, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 

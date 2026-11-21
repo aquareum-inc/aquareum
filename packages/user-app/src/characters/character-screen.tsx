@@ -1,7 +1,7 @@
 "use client";
 
-import type { Character } from "@aquareum/api-client/types";
-import { Badge, Button, Textarea } from "@aquareum/ui";
+import type { Character } from "@livepeer/api-client/types";
+import { Badge, Button, Textarea } from "@livepeer/ui";
 import { ArrowLeft, Clapperboard, Phone, Star, Video } from "lucide-react";
 import { useState } from "react";
 

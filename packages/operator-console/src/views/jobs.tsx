@@ -1,7 +1,7 @@
 "use client";
 
-import type { DataSource, EngineJob } from "@aquareum/api-client";
-import { Button, Chip } from "@aquareum/ui";
+import type { DataSource, EngineJob } from "@livepeer/api-client";
+import { Button, Chip } from "@livepeer/ui";
 import { ChevronRight, RotateCw } from "lucide-react";
 import { Fragment, useState } from "react";
 

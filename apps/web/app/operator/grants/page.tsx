@@ -1,5 +1,5 @@
-import { EngineError, type Grant } from "@aquareum/api-client";
-import { GrantsView } from "@aquareum/operator-console";
+import { EngineError, type Grant } from "@livepeer/api-client";
+import { GrantsView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { createGrantAction, fundGrantAction } from "@/lib/operator/actions";

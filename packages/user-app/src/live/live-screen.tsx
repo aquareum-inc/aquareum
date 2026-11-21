@@ -1,7 +1,7 @@
 "use client";
 
-import type { LiveDestination, LiveDestinationInput, LiveHealth, LiveLook, LiveSession, LiveSessionInput, Offering } from "@aquareum/api-client/types";
-import { Badge, Button, Card, Chip, EASE_OUT_EXPO, Field, Input, Segmented, Sheet, Switch, cn, useTheme } from "@aquareum/ui";
+import type { LiveDestination, LiveDestinationInput, LiveHealth, LiveLook, LiveSession, LiveSessionInput, Offering } from "@livepeer/api-client/types";
+import { Badge, Button, Card, Chip, EASE_OUT_EXPO, Field, Input, Segmented, Sheet, Switch, cn, useTheme } from "@livepeer/ui";
 import { Camera, CircleDot, Monitor, Plus, Radio, Trash2, VideoOff } from "lucide-react";
 import { Liveline } from "liveline";
 import { AnimatePresence, motion } from "motion/react";

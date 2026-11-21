@@ -1,7 +1,7 @@
 "use client";
 
-import type { CharacterReport, ReportReason } from "@aquareum/api-client";
-import { Button, Sheet } from "@aquareum/ui";
+import type { CharacterReport, ReportReason } from "@livepeer/api-client";
+import { Button, Sheet } from "@livepeer/ui";
 import { useState } from "react";
 
 import { dateTime } from "../components/format";

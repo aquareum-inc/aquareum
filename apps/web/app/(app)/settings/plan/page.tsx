@@ -1,4 +1,4 @@
-import { DataSourceBadge, PlanSettings, SettingsLayout } from "@aquareum/user-app";
+import { DataSourceBadge, PlanSettings, SettingsLayout } from "@livepeer/user-app";
 import type { Metadata } from "next";
 
 import { buyCreditPackAction, buyCreditsAction, changePlanAction } from "@/lib/actions";

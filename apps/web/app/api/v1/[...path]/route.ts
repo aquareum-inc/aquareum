@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { EngineError, NotOffered, UnsupportedByProvider, quoteCredits } from "@aquareum/api-client";
+import { EngineError, NotOffered, UnsupportedByProvider, quoteCredits } from "@livepeer/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { devices } from "@/lib/devices";

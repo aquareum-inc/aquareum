@@ -1,8 +1,8 @@
 "use client";
 
-import type { CreditBalance, Money, Plan, PlanAndCredits } from "@aquareum/api-client";
-import { topUpCredits } from "@aquareum/api-client/provider";
-import { Badge, Button, Card, RollingNumber, Section, Sheet, cn } from "@aquareum/ui";
+import type { CreditBalance, Money, Plan, PlanAndCredits } from "@livepeer/api-client";
+import { topUpCredits } from "@livepeer/api-client/provider";
+import { Badge, Button, Card, RollingNumber, Section, Sheet, cn } from "@livepeer/ui";
 import { Check, Coins } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 

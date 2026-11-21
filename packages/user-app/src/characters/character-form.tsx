@@ -1,7 +1,7 @@
 "use client";
 
-import type { CharacterInput } from "@aquareum/api-client/types";
-import { Button, Field, Input, Page, Row, Section, Switch, Textarea } from "@aquareum/ui";
+import type { CharacterInput } from "@livepeer/api-client/types";
+import { Button, Field, Input, Page, Row, Section, Switch, Textarea } from "@livepeer/ui";
 import { useState, type FormEvent } from "react";
 
 export interface CharacterFormProps {

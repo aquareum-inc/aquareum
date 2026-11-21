@@ -1,4 +1,4 @@
-import { JobsView } from "@aquareum/operator-console";
+import { JobsView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { retryJobAction } from "@/lib/operator/actions";

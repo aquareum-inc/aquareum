@@ -133,7 +133,7 @@ ${operations.map(method).join("\n\n")}
 }
 `;
 
-const directory = path.join(root, "apps/ios/Aquareum/Generated");
+const directory = path.join(root, "apps/ios/Livepeer/Generated");
 mkdirSync(directory, { recursive: true });
 writeFileSync(path.join(directory, "Models.generated.swift"), models);
 writeFileSync(path.join(directory, "API.generated.swift"), client);

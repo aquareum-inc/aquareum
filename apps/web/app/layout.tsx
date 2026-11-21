@@ -1,7 +1,7 @@
 import "@fontsource-variable/inter";
 import "./globals.css";
 
-import { THEME_INIT_SCRIPT, ThemeProvider } from "@aquareum/ui";
+import { THEME_INIT_SCRIPT, ThemeProvider } from "@livepeer/ui";
 import { GeistMono } from "geist/font/mono";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";

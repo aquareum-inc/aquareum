@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ApiClient } from "@aquareum/api-client";
+import type { ApiClient } from "@livepeer/api-client";
 
 import { getSession } from "./auth/session";
 import { instance } from "./instance";

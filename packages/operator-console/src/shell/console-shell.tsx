@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandBadge, BrandWordmark, cn, useTheme, type Brand } from "@aquareum/ui";
+import { BrandBadge, BrandWordmark, cn, useTheme, type Brand } from "@livepeer/ui";
 import {
   Activity,
   ArrowLeft,

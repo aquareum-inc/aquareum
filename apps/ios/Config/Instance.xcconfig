@@ -1,8 +1,8 @@
-// What is fixed when the app is built: which instance it belongs to. `./aquareum mobile` writes this
+// What is fixed when the app is built: which instance it belongs to. `./livepeer mobile` writes this
 // file from instance.config.json. Everything else about the instance is read from it at run time.
 // These values point a development build at a local mock-only instance (`MOCK_ONLY=1 pnpm dev`).
 
 INSTANCE_NAME = Livepeer
-INSTANCE_BUNDLE_ID = app.aquareum.dev
+INSTANCE_BUNDLE_ID = org.livepeer.app.dev
 // `$()` keeps the two slashes from starting a comment.
 INSTANCE_URL = http:/$()/localhost:3100

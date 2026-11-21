@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { KnownActor, OperatorClient } from "@aquareum/api-client";
+import type { KnownActor, OperatorClient } from "@livepeer/api-client";
 
 /** Display names for actors: the provider's user name, else the engine's label, else the id. */
 export async function actorNames(client: OperatorClient, actors: KnownActor[]): Promise<Record<string, string>> {

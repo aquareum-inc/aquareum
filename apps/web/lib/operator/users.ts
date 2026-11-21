@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Allocation, DataSource, OperatorClient, Plan } from "@aquareum/api-client";
+import type { Allocation, DataSource, OperatorClient, Plan } from "@livepeer/api-client";
 import { joinUserRows, type JoinedUsers } from "./user-rows";
 
 /** The provider's people joined with their engine accounts, budgets and plans, and the engine accounts no one owns. */

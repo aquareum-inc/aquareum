@@ -1,4 +1,4 @@
-import { BillingView } from "@aquareum/operator-console";
+import { BillingView } from "@livepeer/operator-console";
 import type { Metadata } from "next";
 
 import { refundPaymentAction, updateBillingAction } from "@/lib/operator/actions";

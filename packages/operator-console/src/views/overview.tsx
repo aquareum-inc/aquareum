@@ -1,5 +1,5 @@
-import type { DataSource, EngineHealth, EngineJob, OverviewStats } from "@aquareum/api-client";
-import { cn, Tooltip } from "@aquareum/ui";
+import type { DataSource, EngineHealth, EngineJob, OverviewStats } from "@livepeer/api-client";
+import { cn, Tooltip } from "@livepeer/ui";
 import type { ReactNode } from "react";
 
 import { ago, count, dateTime, label, usd } from "../components/format";

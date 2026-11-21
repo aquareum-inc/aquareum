@@ -1,6 +1,6 @@
 # Capabilities and discovery on the Livepeer Network
 
-Research for aquareum, 17 November 2026. Everything here is read from the cloned repos under
+Research for livepeer, 17 November 2026. Everything here is read from the cloned repos under
 `.reference/` or from GET requests to the live engine. File paths are relative to the repo named in
 each heading. Orchestrator hostnames are redacted (shape kept), digests are shortened, and no token
 or wallet value appears.
@@ -859,7 +859,7 @@ gateway.
    group, model and profiles all sit behind `/v1/runners`, a credential and a second repository.
 2. **App names that are capabilities.** 16 of 26 live names are operator- or model-shaped
    (`live/sd-turbo`, `media/ffmpeg-trim-video`), so `app` → group lookup needs a fallback table that
-   aquareum would have to invent, which the brief rules out.
+   livepeer would have to invent, which the brief rules out.
 3. **Registry entries for the profiles actually in use**, above all `comfystream.live.v1`.
 4. **Capabilities the product needs that the list lacks:** video understanding or captioning,
    avatar or character sessions, stream delivery.
@@ -1285,7 +1285,7 @@ envelopes in section 4 and the profile IDs in section 6.
 3. Is there to be a list-all form of `/v1/runners`? It requires `app`, so reading every envelope
    costs one authenticated call per app.
 4. `/v1/runners` changed shape between the running build (`rate`, `rate_error`, `runner_id`) and
-   HEAD (`price_info`, `capacity_used`). Which will aquareum's engine run, and is the route stable?
+   HEAD (`price_info`, `capacity_used`). Which will livepeer's engine run, and is the route stable?
 5. No filter exists for mode, unit, group or model. Is client-side filtering the intended design?
 
 **Capability identity**
@@ -1325,7 +1325,7 @@ envelopes in section 4 and the profile IDs in section 6.
     capped (8 MiB `raw_body`, 16 MiB request). What is the intended path for video-sized inputs and
     outputs: `url` inputs the runner fetches, and `url` outputs with an expiry?
 17. Is there a delivery or playback story for `live-transcode` output (MPEG-TS on Trickle), or is
-    HLS packaging aquareum's to build?
+    HLS packaging livepeer's to build?
 
 **Pricing and display**
 

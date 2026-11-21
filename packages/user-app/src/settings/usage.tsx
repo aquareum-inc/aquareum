@@ -1,5 +1,5 @@
-import type { UsageEntry, UsageSummary } from "@aquareum/api-client";
-import { Badge, Card, EmptyState } from "@aquareum/ui";
+import type { UsageEntry, UsageSummary } from "@livepeer/api-client";
+import { Badge, Card, EmptyState } from "@livepeer/ui";
 import { ReceiptText } from "lucide-react";
 
 import { offeringLabel } from "../lib/offering";

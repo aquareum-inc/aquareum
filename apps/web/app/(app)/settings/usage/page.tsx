@@ -1,4 +1,4 @@
-import { DataSourceBadge, SettingsLayout, UsageSettings } from "@aquareum/user-app";
+import { DataSourceBadge, SettingsLayout, UsageSettings } from "@livepeer/user-app";
 import type { Metadata } from "next";
 
 import { api } from "@/lib/api";

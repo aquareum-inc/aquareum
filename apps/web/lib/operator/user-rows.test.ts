@@ -1,4 +1,4 @@
-import type { Allocation, KnownActor, ProviderUser } from "@aquareum/api-client";
+import type { Allocation, KnownActor, ProviderUser } from "@livepeer/api-client";
 import { describe, expect, it } from "vitest";
 
 import { joinUserRows } from "./user-rows";

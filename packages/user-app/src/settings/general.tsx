@@ -1,7 +1,7 @@
 "use client";
 
-import type { Preferences } from "@aquareum/api-client/types";
-import { Button, Chip, Row, Section, Sheet, Switch, useTheme, type ThemePreference } from "@aquareum/ui";
+import type { Preferences } from "@livepeer/api-client/types";
+import { Button, Chip, Row, Section, Sheet, Switch, useTheme, type ThemePreference } from "@livepeer/ui";
 import { useState } from "react";
 
 export interface GeneralSettingsProps {

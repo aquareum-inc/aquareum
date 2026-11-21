@@ -1,7 +1,7 @@
 "use client";
 
-import type { AppModel, GenerationRequest, Offering } from "@aquareum/api-client/types";
-import { Chip, EASE_OUT_EXPO, Popover, PopoverContent, PopoverTrigger, RollingNumber, Segmented } from "@aquareum/ui";
+import type { AppModel, GenerationRequest, Offering } from "@livepeer/api-client/types";
+import { Chip, EASE_OUT_EXPO, Popover, PopoverContent, PopoverTrigger, RollingNumber, Segmented } from "@livepeer/ui";
 import { Coins, SlidersHorizontal, WandSparkles } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 

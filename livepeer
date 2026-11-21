@@ -1,0 +1,3 @@
+#!/bin/sh
+# Runs the instance CLI from a checkout: ./livepeer setup --preset full
+exec node "$(dirname "$0")/packages/cli/bin/livepeer.mjs" "$@"

@@ -1,5 +1,5 @@
-import type { DataSource } from "@aquareum/api-client/types";
-import { cn } from "@aquareum/ui";
+import type { DataSource } from "@livepeer/api-client/types";
+import { cn } from "@livepeer/ui";
 
 export interface DataSourceBadgeProps {
   /** One entry per API function the screen read from. */

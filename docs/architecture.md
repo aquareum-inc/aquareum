@@ -9,7 +9,7 @@ packages/config             Instance config: JSON Schema, generated types, prese
 packages/ui                 Tokens, primitives, motion
 packages/user-app           User-app screens (chat, studio, characters, library, models, developers, settings)
 packages/operator-console   Operator screens
-packages/cli                `aquareum setup | doctor | upgrade`
+packages/cli                `livepeer setup | doctor | upgrade`
 deploy/                     Compose bundle, platform templates
 release.config.json         { org, repo, engine: { repo, ref } } — the one place the org and engine pin live
 ```
@@ -141,9 +141,9 @@ through `moderation().visible(userId)`; the console's Reports page decides repor
 
 `deploy/compose.yaml` references published images by `${REGISTRY}/${ORG}/...` tags read from
 `release.config.json`: app, engine (pinned ref), Clearinghouse Batteries, node remote signer, discovery.
-`aquareum setup --preset full|headless [--config file] [--json]` writes `.env` (generated secrets),
-`instance.config.json` and starts the bundle; it is idempotent. `aquareum doctor` checks engine, provider,
-config and keys, with exit codes. `aquareum upgrade` moves app and engine pins together. Because the engine
+`livepeer setup --preset full|headless [--config file] [--json]` writes `.env` (generated secrets),
+`instance.config.json` and starts the bundle; it is idempotent. `livepeer doctor` checks engine, provider,
+config and keys, with exit codes. `livepeer upgrade` moves app and engine pins together. Because the engine
 and Batteries publish no images today (engine request R6), the bundle builds them from pinned Git contexts
 until they do, and mock-only mode needs neither. The app keeps its own state (device sessions) in the
 `app-data` volume at `/data`.

@@ -1,6 +1,6 @@
 "use client";
 
-import { Page, TabNav } from "@aquareum/ui";
+import { Page, TabNav } from "@livepeer/ui";
 import type { ReactNode } from "react";
 
 import { useLink } from "../shell/link";

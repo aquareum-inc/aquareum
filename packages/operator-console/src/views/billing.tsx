@@ -1,7 +1,7 @@
 "use client";
 
-import type { BillingSettings, DataSource, Payment } from "@aquareum/api-client";
-import { Button, Sheet, Switch } from "@aquareum/ui";
+import type { BillingSettings, DataSource, Payment } from "@livepeer/api-client";
+import { Button, Sheet, Switch } from "@livepeer/ui";
 import { useState } from "react";
 
 import { dateTime, usd } from "../components/format";

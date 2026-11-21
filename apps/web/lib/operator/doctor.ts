@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { SystemCheck } from "@aquareum/operator-console";
+import type { SystemCheck } from "@livepeer/operator-console";
 
 import { env } from "../env";
 import { instance } from "../instance";
@@ -18,7 +18,7 @@ async function probe(url: URL, token?: string): Promise<number> {
   }
 }
 
-/** The same checks as `aquareum doctor`, run from inside the app. Never returns a secret. */
+/** The same checks as `livepeer doctor`, run from inside the app. Never returns a secret. */
 export async function runDoctor(): Promise<SystemCheck[]> {
   const checks: SystemCheck[] = [];
   const add = (name: string, ok: boolean, detail: string, fix?: string) => checks.push({ name, ok, detail, ...(fix && !ok ? { fix } : {}) });

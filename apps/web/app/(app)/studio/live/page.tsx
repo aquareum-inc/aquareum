@@ -1,6 +1,6 @@
-import type { LiveDestination, LiveLook } from "@aquareum/api-client";
-import { capabilitiesFor, filterCapabilities } from "@aquareum/config";
-import { DataSourceBadge } from "@aquareum/user-app";
+import type { LiveDestination, LiveLook } from "@livepeer/api-client";
+import { capabilitiesFor, filterCapabilities } from "@livepeer/config";
+import { DataSourceBadge } from "@livepeer/user-app";
 import type { Metadata } from "next";
 
 import { Live } from "@/components/live";

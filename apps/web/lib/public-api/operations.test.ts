@@ -1,6 +1,6 @@
-import { MOCK_ONLY_DEMO_KEY, quoteCredits, createApiClient, createMockProvider, createOperatorClient, type DeviceSession, type InstanceDescription } from "@aquareum/api-client";
-import { describePrivacy } from "@aquareum/user-app/privacy";
-import { describeStudio } from "@aquareum/user-app/studio-mediums";
+import { MOCK_ONLY_DEMO_KEY, quoteCredits, createApiClient, createMockProvider, createOperatorClient, type DeviceSession, type InstanceDescription } from "@livepeer/api-client";
+import { describePrivacy } from "@livepeer/user-app/privacy";
+import { describeStudio } from "@livepeer/user-app/studio-mediums";
 import { describe, expect, it, vi } from "vitest";
 
 import { memoryStore } from "../data/store";
@@ -17,7 +17,7 @@ const instance: InstanceDescription = {
   logo: { symbol: null, wordmark: null, tint: true },
   theme: { dark: {}, light: {} },
   surfaces: { app: true, api: true, mcp: true, mobile: true },
-  mobile: { ios: { bundle_id: "app.aquareum.dev", minimum_version: null }, android: null },
+  mobile: { ios: { bundle_id: "org.livepeer.app.dev", minimum_version: null }, android: null },
   sign_in: { methods: ["email"], sign_up: "open" },
   content: { characters: true, adult_content: false },
   home: { background_image: null, background_poster: null, background_video: null, aurora: false },
