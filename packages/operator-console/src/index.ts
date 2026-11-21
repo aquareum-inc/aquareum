@@ -10,4 +10,5 @@ export { CapabilitiesView, type CapabilitiesViewProps, type CapabilityRow } from
 export { ComputeView, type ComputeViewProps } from "./views/compute";
 export { SettingsView, type InstanceSettings, type SettingsViewProps } from "./views/settings";
 export { KeysView, type KeysViewProps } from "./views/keys";
+export { ReportsView, type ReportsViewProps } from "./views/reports";
 export { SystemView, type SystemCheck, type SystemViewProps } from "./views/system";

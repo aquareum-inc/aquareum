@@ -5,7 +5,7 @@ import { createBatteriesProvider, createOperatorClient, mockProvider, type Opera
 import { getSession } from "../auth/session";
 import { env } from "../env";
 import { instance } from "../instance";
-import { configMarkupStore } from "./settings";
+import { configCapabilityStore } from "./settings";
 
 export function pricing() {
   const config = instance().pricing;
@@ -29,9 +29,14 @@ export function paymentProvider(): PaymentProvider {
  * read and action is guarded here as well as in the proxy and the layout.
  */
 export async function operatorApi(): Promise<OperatorClient> {
+  await requireOperator();
+  return buildOperatorClient();
+}
+
+/** Refuses anyone who isn't a signed-in operator. */
+export async function requireOperator(): Promise<void> {
   const session = await getSession();
   if (session?.role !== "operator") throw new Error("Operator role required");
-  return buildOperatorClient();
 }
 
 /** Builds the operator client. Callers must have checked the operator role first. */
@@ -45,6 +50,6 @@ export function buildOperatorClient(): OperatorClient {
     provider: paymentProvider(),
     env: mockOnly ? { MOCK_ONLY: mockOnly } : {},
     pricing: pricing(),
-    markups: configMarkupStore(),
+    capabilities: configCapabilityStore(),
   });
 }

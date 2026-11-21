@@ -93,6 +93,56 @@
         "mcp": {
           "type": "boolean",
           "description": "The MCP server."
+        },
+        "mobile": {
+          "type": "boolean",
+          "default": false,
+          "description": "The native iOS and Android apps. Off, the instance issues no device sessions and refuses requests that carry one."
+        }
+      }
+    },
+    "mobile": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The native apps built for this instance. Sign-in hands a finished session only to the apps named here.",
+      "properties": {
+        "ios": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "bundleId"
+          ],
+          "properties": {
+            "bundleId": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9-]*(\\.[A-Za-z0-9-]+)+$",
+              "description": "The iOS app's bundle identifier. Sign-in returns to <bundleId>://auth."
+            },
+            "minimumVersion": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Older builds are asked to update."
+            }
+          }
+        },
+        "android": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicationId"
+          ],
+          "properties": {
+            "applicationId": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+$",
+              "description": "The Android app's application id. Sign-in returns to <applicationId>://auth."
+            },
+            "minimumVersion": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Older builds are asked to update."
+            }
+          }
         }
       }
     },

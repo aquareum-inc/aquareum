@@ -14,6 +14,7 @@ PROJECT SETUP, DATA and RULES, reproduced below so they load every session.
    - `docs/data-sources.md` — every API function, live or mocked. Keep it current.
    - `docs/ui-actions.md` — every UI action and the API function behind it. Keep it current.
    - `docs/engine-requests.md` — requests and open questions for Mike (engine maintainer).
+   - `docs/mobile/plan.md` — the native iOS and Android apps: scope, slices, API, sign-in, store rules.
 3. Reference clones of the engine, console, node, Clearinghouse Batteries and Explorer live in `.reference/`
    (git-ignored). They are read-only reference material; never copy engine code into this repo.
 
@@ -27,6 +28,28 @@ PROJECT SETUP, DATA and RULES, reproduced below so they load every session.
 - Ask before running any paid job against the live engine. Read-only calls are fine.
 - The GitHub organisation name lives in one config value (`org` in `release.config.json`). Never hardcode it in
   code, docs or image tags.
+
+## Native apps (from `docs/mobile/plan.md`)
+
+- `apps/ios` (Swift, SwiftUI) and `apps/android` (Kotlin, Compose) are fully native. No React Native,
+  Flutter, Kotlin Multiplatform or webviews for product UI.
+- They are clients of an instance's `/api/v1` and nothing else. They never call the engine or a provider, and
+  no builder key, reader token or admin token ever reaches a device.
+- No mock layer in the apps: development, tests and CI use a build pointed at an instance started with
+  `MOCK_ONLY=1`.
+- Every action in the apps maps to an operation in `apps/web/lib/public-api/operations.ts`. Add the
+  operation first, with its `output`, then run `corepack pnpm mobile:generate`. Keep the Mobile columns in
+  `docs/ui-actions.md` and `docs/data-sources.md` current.
+- Never edit generated files (`apps/ios/Aquareum/Generated`, `apps/android/**/generated`) or retype a token
+  value by hand.
+- A build belongs to one instance: only name, icon, identifier and instance URL are set at build time.
+  Theme, sign-in methods, features and content settings come from `get_instance` at run time.
+- For each slice: iOS first, then Android from the same spec, using the iOS build as a behavioural reference,
+  not a transliteration. Build and run before saying anything works. Screenshot every screen in dark and
+  light into `docs/screenshots/mobile/` and review against `docs/design-brief.md`. Log each mobile design
+  decision in `docs/design-proposals.md`.
+- Sign-in, purchasing and store content rules are decided in the plan before they are built. Don't build
+  purchasing.
 
 ## Project setup
 

@@ -1,0 +1,80 @@
+name: Mobile iOS
+
+# The iOS app, built and tested against a mock-only instance (docs/mobile/plan.md section 14).
+# Not a required check until it is stable.
+#
+# macOS minutes count ten times against the plan and a fresh simulator takes minutes to boot, so this runs only
+# when it's worth it: when a pull request that touches the iOS app (or what it shares with Android) is opened or
+# marked ready for review, and when asked, by adding the run-ios label or starting it by hand. Not on every push:
+# changes are built and tested on a simulator locally before they're pushed. Not after merging either.
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, labeled]
+    paths:
+      - "apps/ios/**"
+      - "packages/mobile-codegen/**"
+      - "docs/mobile/openapi.json"
+      - "docs/mobile/dev.instance.config.json"
+      - "apps/web/lib/public-api/**"
+      - ".github/workflows/mobile-ios.yml"
+  workflow_dispatch:
+
+# Queued, not cancelled: a label that doesn't ask for a run would otherwise cancel one that's under way.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  MOCK_ONLY: "1"
+  INSTANCE_CONFIG: docs/mobile/dev.instance.config.json
+
+jobs:
+  ios:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'run-ios') ||
+      (github.event.action != 'labeled' && !github.event.pull_request.draft)
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      # A fresh simulator takes minutes to boot, far longer than the build: start it first, so it boots while
+      # everything else gets ready.
+      - name: Boot a simulator
+        run: |
+          SIMULATOR=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          echo "SIMULATOR=$SIMULATOR" >> "$GITHUB_ENV"
+          xcrun simctl boot "$SIMULATOR"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      # Started now and waited for just before the tests, so the build runs while it starts.
+      - name: Start a mock-only instance
+        run: |
+          export SESSION_SECRET="$(openssl rand -hex 32)"
+          nohup pnpm dev > instance.log 2>&1 &
+      # The instance compiles each route the first time it's asked for: ask now, during the build, so the tests
+      # don't wait for it. Sign-in's start and callback, then the API.
+      - name: Warm the instance
+        run: |
+          (curl -fsS --retry 60 --retry-delay 2 --retry-all-errors http://localhost:3100/api/v1/instance > /dev/null
+           curl -sL -o /dev/null -c cookies -b cookies "http://localhost:3100/auth/start?method=email&email=adam@example.test&client=ios&challenge=$(openssl rand -hex 22 | cut -c1-43)&state=warm" || true
+          ) > /dev/null 2>&1 &
+      - name: Metal toolchain, for the home screen's shader
+        run: xcodebuild -downloadComponent MetalToolchain
+      # The build doesn't need the simulator, so it runs while the simulator finishes booting.
+      - name: Build
+        working-directory: apps/ios
+        run: xcodebuild -project Aquareum.xcodeproj -scheme AquareumAllTests -destination "platform=iOS Simulator,id=$SIMULATOR" build-for-testing
+      # Unit and UI tests in one pass: Xcode starts up and launches the tests once.
+      - name: Unit and UI tests
+        working-directory: apps/ios
+        run: |
+          curl -fsS --retry 60 --retry-delay 2 --retry-all-errors http://localhost:3100/api/v1/instance > /dev/null
+          xcrun simctl bootstatus "$SIMULATOR" -b > /dev/null
+          xcodebuild -project Aquareum.xcodeproj -scheme AquareumAllTests -destination "platform=iOS Simulator,id=$SIMULATOR" test-without-building
+      - name: Instance log
+        if: failure()
+        run: tail -n 200 instance.log

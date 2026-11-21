@@ -4,8 +4,10 @@ import type {
   ApiKey,
   CapabilityRun,
   Character,
+  CharacterBlock,
   CharacterCall,
   CharacterInput,
+  CharacterReport,
   Conversation,
   CreatedApiKey,
   CreditBalance,
@@ -22,6 +24,7 @@ import type {
   Money,
   Plan,
   Preferences,
+  ReportReason,
   SendMessageInput,
   VideoAnalysis,
 } from "@aquareum/api-client";
@@ -29,8 +32,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { api } from "./api";
-import { getSession } from "./auth/session";
+import { clearSession, getSession } from "./auth/session";
 import { adultContent, charactersEnabled } from "./content";
+import { devices } from "./devices";
+import { moderation } from "./moderation";
 
 /** Every action is a signed-in user's call to one API client function. A guest is sent to sign in. */
 async function client() {
@@ -72,6 +77,47 @@ export async function createCharacterAction(input: CharacterInput): Promise<Char
   const { data } = await (await client()).createCharacter(input);
   revalidatePath("/characters");
   return data;
+}
+
+/** A shared character someone else made: what can be reported or blocked. */
+async function sharedCharacter(slug: string): Promise<{ userId: string; character: Character }> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  const character = (await (await api()).getCharacter(slug)).data;
+  if (!character || character.mine || !moderation().visible(session.userId)(character)) throw new Error("Character not found");
+  return { userId: session.userId, character };
+}
+
+/** Sends a report of a shared character to the instance's operator (`report_character`). */
+export async function reportCharacterAction(slug: string, reason: ReportReason, note: string | null): Promise<CharacterReport> {
+  const { userId, character } = await sharedCharacter(slug);
+  return moderation().report(userId, character, reason, note?.trim().slice(0, 500) || null);
+}
+
+/** Hides a shared character and everything by its author from the person (`block_character`). */
+export async function blockCharacterAction(slug: string): Promise<CharacterBlock> {
+  const { userId, character } = await sharedCharacter(slug);
+  const blocked = moderation().block(userId, character);
+  revalidatePath("/characters");
+  return blocked;
+}
+
+/** Deletes the signed-in person's account (`delete_account`): their phones are signed out, their blocks forgotten. */
+export async function deleteAccountAction(): Promise<void> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  await (await api()).deleteAccount();
+  devices().revokeAll(session.userId);
+  moderation().forget(session.userId);
+  await clearSession();
+  redirect("/");
+}
+
+/** Signs one of the person's phones or tablets out (`revoke_device`). */
+export async function revokeDeviceAction(id: string): Promise<boolean> {
+  const session = await getSession();
+  if (!session) redirect("/sign-in");
+  return devices().revoke(session.userId, id);
 }
 
 export async function createApiKeyAction(label: string): Promise<CreatedApiKey> {
@@ -116,7 +162,8 @@ export async function listCastableCharactersAction(): Promise<Character[]> {
     api.listCharacters({ scope: "public", includeMature: shown }),
   ]);
   const own = new Set(mine.data.map((entry) => entry.slug));
-  return [...mine.data, ...shared.data.filter((entry) => !own.has(entry.slug))];
+  const visible = moderation().visible((await getSession())?.userId ?? null);
+  return [...mine.data, ...shared.data.filter((entry) => !own.has(entry.slug))].filter(visible);
 }
 
 export async function analyseVideoAction(input: { source: string; question: string }): Promise<VideoAnalysis> {

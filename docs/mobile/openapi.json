@@ -1,0 +1,4154 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Aquareum instance API",
+    "version": "1",
+    "description": "Everything the user app can do on an instance. Generated from apps/web/lib/public-api/operations.ts; do not edit."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "/instance": {
+      "get": {
+        "operationId": "get_instance",
+        "summary": "Describe this instance: its name, logo and theme, what it serves, how to sign in and its content settings.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceDescription"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/device": {
+      "post": {
+        "operationId": "create_device_session",
+        "summary": "Native apps: collect a finished sign-in with the one-time code from the sign-in callback and the PKCE verifier. Answers with a device session token, shown once.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "The code from the sign-in callback"
+                  },
+                  "verifier": {
+                    "type": "string",
+                    "description": "The PKCE verifier whose challenge started the sign-in"
+                  },
+                  "platform": {
+                    "enum": [
+                      "ios",
+                      "android"
+                    ]
+                  },
+                  "device_name": {
+                    "type": "string",
+                    "description": "The device's own name, shown in the list of devices"
+                  }
+                },
+                "required": [
+                  "code",
+                  "verifier",
+                  "platform"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceToken"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "end_device_session",
+        "summary": "Native apps: sign this device out by ending the device session making the request.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "operationId": "get_me",
+        "summary": "The signed-in person: their name, email and credit balance.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_account",
+        "summary": "Delete the signed-in person's account, on their own request: their phones are signed out and their blocks forgotten. This can't be undone.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices": {
+      "get": {
+        "operationId": "list_devices",
+        "summary": "List the phones and tablets signed in to the person's account, most recently used first.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceSession"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{id}": {
+      "delete": {
+        "operationId": "revoke_device",
+        "summary": "Sign one of the person's devices out. The app on it returns to signed out on its next request.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Device session id, from list_devices"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/starters": {
+      "get": {
+        "operationId": "list_prompt_starters",
+        "summary": "List the starting points shown on Home, each with example requests.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PromptStarter"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/showcase": {
+      "get": {
+        "operationId": "list_showcase",
+        "summary": "List the examples in the instance's gallery, each with the request that made it.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShowcaseItem"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-models": {
+      "get": {
+        "operationId": "list_agent_models",
+        "summary": "List the language models the agent can run on, for the model menu.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentModel"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-models/menu": {
+      "get": {
+        "operationId": "list_agent_model_menu",
+        "summary": "List the agent's model menu as the interface shows it: one row per language model, named and described, with the app to send as agent_model. Hidden when there are fewer than two rows.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentModelEntry"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offerings/labels": {
+      "get": {
+        "operationId": "list_capability_labels",
+        "summary": "List the readable name of each capability on offer and each model the agent can run on, as the interface shows it, with the model that does the work when known.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CapabilityLabel"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/offerings": {
+      "get": {
+        "operationId": "list_capabilities",
+        "summary": "List the capabilities discovered on the network that this instance offers.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Offering"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/run": {
+      "post": {
+        "operationId": "run_capability",
+        "summary": "Run any discovered capability with a request body of your own.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "app": {
+                    "type": "string",
+                    "description": "Capability name from list_capabilities"
+                  },
+                  "request": {
+                    "type": "object",
+                    "description": "The request body for the capability"
+                  }
+                },
+                "required": [
+                  "app"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityRun"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/studio": {
+      "get": {
+        "operationId": "list_studio_mediums",
+        "summary": "List the studio's mediums (video, image, audio) as the interface shows them: each one's modes, with the capability each mode runs and whether it is on offer, and its shapes, lengths and resolutions.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudioMedium"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generations/quote": {
+      "get": {
+        "operationId": "quote_generation",
+        "summary": "What one result of a generation would cost in credits, before starting it.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "video",
+                "image",
+                "audio"
+              ]
+            }
+          },
+          {
+            "name": "app",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Capability to use"
+            }
+          },
+          {
+            "name": "duration_seconds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "720p",
+                "1080p",
+                null
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generations": {
+      "post": {
+        "operationId": "create_generation",
+        "summary": "Generate a video, image or audio clip. Returns a job to poll with get_generation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "video",
+                      "image",
+                      "audio"
+                    ]
+                  },
+                  "app": {
+                    "type": "string",
+                    "description": "Capability to use, e.g. text-to-video"
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "description": "What to make"
+                  },
+                  "aspect": {
+                    "enum": [
+                      "16:9",
+                      "9:16",
+                      "1:1"
+                    ],
+                    "default": "16:9"
+                  },
+                  "duration_seconds": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "resolution": {
+                    "enum": [
+                      "720p",
+                      "1080p",
+                      null
+                    ]
+                  },
+                  "negative_prompt": {
+                    "type": "string",
+                    "description": "What to leave out"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "app",
+                  "prompt"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Generation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generations/{id}": {
+      "get": {
+        "operationId": "get_generation",
+        "summary": "Check a generation's state and progress.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Generation id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Generation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations": {
+      "get": {
+        "operationId": "list_conversations",
+        "summary": "List the user's conversations with the agent, newest first.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_conversation",
+        "summary": "Start a conversation with the agent. It plans the job, calls capabilities and reports each step.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "The request"
+                  },
+                  "app": {
+                    "type": "string",
+                    "description": "Optional capability to use"
+                  },
+                  "aspect": {
+                    "enum": [
+                      "16:9",
+                      "9:16",
+                      "1:1"
+                    ],
+                    "default": "16:9"
+                  },
+                  "duration_seconds": {
+                    "type": "number",
+                    "default": 5
+                  },
+                  "attachment_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Library item ids to work from"
+                  },
+                  "agent_model": {
+                    "type": "string",
+                    "description": "Language model to run the agent, from list_agent_models; leave out to let the agent choose"
+                  },
+                  "character_slug": {
+                    "type": "string",
+                    "description": "A character to put on screen"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{id}": {
+      "get": {
+        "operationId": "get_conversation",
+        "summary": "Read a conversation, including the agent's steps, results and any video analysis.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_conversation",
+        "summary": "Delete a conversation. Its shots stay in the library. This can't be undone.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{id}/messages": {
+      "post": {
+        "operationId": "send_message",
+        "summary": "Send a follow-up message in a conversation.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Conversation id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "The message"
+                  },
+                  "app": {
+                    "type": "string",
+                    "description": "Optional capability to use"
+                  },
+                  "aspect": {
+                    "enum": [
+                      "16:9",
+                      "9:16",
+                      "1:1"
+                    ],
+                    "default": "16:9"
+                  },
+                  "duration_seconds": {
+                    "type": "number",
+                    "default": 5
+                  },
+                  "attachment_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "agent_model": {
+                    "type": "string",
+                    "description": "Language model to run the agent; leave out to let the agent choose"
+                  },
+                  "character_slug": {
+                    "type": "string",
+                    "description": "A character to put on screen"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/library": {
+      "get": {
+        "operationId": "search_library",
+        "summary": "Search the user's media by what is in it: subjects, places, actions, tags.",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "What to look for"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "video",
+                "image",
+                "audio"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaItem"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/library/{id}": {
+      "delete": {
+        "operationId": "delete_media",
+        "summary": "Delete an item from the library. This can't be undone.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Library item id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/understand": {
+      "post": {
+        "operationId": "understand_video",
+        "summary": "Ask about a video: summarise it, find moments, answer a question.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "description": "A URL or a library item id"
+                  },
+                  "question": {
+                    "type": "string",
+                    "description": "What to find out"
+                  }
+                },
+                "required": [
+                  "source",
+                  "question"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoAnalysis"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/characters": {
+      "get": {
+        "operationId": "list_characters",
+        "summary": "List characters to cast in a scene: the person's own, then those shared on the instance. Characters for adults only aren't listed.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Filter by name, role or subject"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Character"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_character",
+        "summary": "Create a character to cast in scenes. It is private unless shared with everyone on the instance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "description": "Their name"
+                  },
+                  "tagline": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "description": "One line about them, shown under their name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "How they look, move and speak, and what they care about"
+                  },
+                  "greeting": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "description": "The first thing they say in a new conversation"
+                  },
+                  "visibility": {
+                    "enum": [
+                      "private",
+                      "public"
+                    ],
+                    "default": "private"
+                  }
+                },
+                "required": [
+                  "name",
+                  "description",
+                  "greeting"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Character"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/characters/{slug}": {
+      "get": {
+        "operationId": "get_character",
+        "summary": "One character: who they are, how they open and who made them.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The character's slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Character"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/characters/{slug}/report": {
+      "post": {
+        "operationId": "report_character",
+        "summary": "Report a shared character to the instance's operator, with a reason.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The character's slug"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "enum": [
+                      "sexual",
+                      "hateful",
+                      "violent",
+                      "impersonation",
+                      "spam",
+                      "other"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Anything to add, in your own words"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterReport"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/characters/{slug}/block": {
+      "post": {
+        "operationId": "block_character",
+        "summary": "Block a shared character: it, and everything else by its author, is hidden from the person from now on.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The character's slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterBlock"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account": {
+      "get": {
+        "operationId": "get_account",
+        "summary": "The user's plan, the plans and credit packs on offer, and what the payment provider supports.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanAndCredits"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/preferences": {
+      "get": {
+        "operationId": "get_preferences",
+        "summary": "The user's settings: saving conversations, asking before spending, default shape and length, and adult content.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "update_preferences",
+        "summary": "Change some of the user's settings. Adult content and the age confirmation can only be changed on the web, never from a phone.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "saveChats": {
+                    "type": "boolean",
+                    "description": "Keep conversations"
+                  },
+                  "confirmBeforeSpending": {
+                    "type": "boolean",
+                    "description": "Ask before spending credits in chat"
+                  },
+                  "enterSends": {
+                    "type": "boolean",
+                    "description": "Enter sends a message on the web"
+                  },
+                  "completionNotifications": {
+                    "type": "boolean",
+                    "description": "Say when a render finishes"
+                  },
+                  "defaultAspect": {
+                    "enum": [
+                      "16:9",
+                      "9:16",
+                      "1:1"
+                    ]
+                  },
+                  "defaultDuration": {
+                    "type": "number",
+                    "description": "Default length in seconds: 5, 10 or 15"
+                  },
+                  "ageConfirmed": {
+                    "type": "boolean",
+                    "description": "Confirmed to be 18 or over (web only)"
+                  },
+                  "adultContent": {
+                    "type": "boolean",
+                    "description": "Show adult content (web only)"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/privacy": {
+      "get": {
+        "operationId": "get_privacy",
+        "summary": "Who can see a job on this instance: the instance operator and the compute operator, for each way of running it.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyDescription"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/balance": {
+      "get": {
+        "operationId": "get_balance",
+        "summary": "The user's credit balance and budget.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditBalance"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usage": {
+      "get": {
+        "operationId": "get_usage",
+        "summary": "What the user has spent, by capability, and recent jobs.",
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions": {
+      "post": {
+        "operationId": "open_session",
+        "summary": "Open a real-time session, such as a live restyle of a camera. It stays open and is billed by the second until closed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "app": {
+                    "type": "string",
+                    "description": "A persistent capability, e.g. live-video-to-video"
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "description": "The look or instruction"
+                  },
+                  "destination_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "record": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "app",
+                  "prompt"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}": {
+      "patch": {
+        "operationId": "update_session",
+        "summary": "Change a running session's prompt without closing it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Session id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "description": "The new look or instruction"
+                  }
+                },
+                "required": [
+                  "prompt"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "close_session",
+        "summary": "Close a real-time session.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Session id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid bearer token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "The request was refused or failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An API key or a device session token. Operations marked with empty security answer without one."
+      }
+    },
+    "schemas": {
+      "AgentModel": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string",
+            "description": "The model's id, e.g. `qwen3.8-27b`."
+          },
+          "context_tokens": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "busy": {
+            "type": "boolean",
+            "description": "No runner is free right now, so a job would queue."
+          }
+        },
+        "required": [
+          "app",
+          "model",
+          "context_tokens",
+          "busy"
+        ],
+        "additionalProperties": false,
+        "description": "A language model the agent can run on: one app serving it, with what the menu needs to show."
+      },
+      "AgentModelEntry": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string",
+            "description": "The app to send as `agent_model`: the copy with a runner free and the most context."
+          },
+          "also": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Other apps serving the same model."
+          },
+          "name": {
+            "type": "string",
+            "description": "The model's readable name, \"Qwen3.8 27B\"."
+          },
+          "description": {
+            "type": "string",
+            "description": "What sets it apart, \"128K context\"."
+          },
+          "busy": {
+            "type": "boolean",
+            "description": "No runner is free right now, so a job would queue."
+          }
+        },
+        "required": [
+          "app",
+          "also",
+          "name",
+          "description",
+          "busy"
+        ],
+        "additionalProperties": false,
+        "description": "One row of the agent's model menu: a language model, however many apps serve it. Named by the same rules as the web's menu, so every client lists models the same way."
+      },
+      "CapabilityLabel": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is: \"Text to video\", or a language model's name."
+          },
+          "work": {
+            "type": "string",
+            "description": "How it reads where it did a piece of work, with its model when known: \"Text to image · FLUX.2 klein 4B\"."
+          }
+        },
+        "required": [
+          "app",
+          "name",
+          "work"
+        ],
+        "additionalProperties": false,
+        "description": "How a discovered app reads in the interface, so every client names it the same way."
+      },
+      "CapabilityRun": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "request": {},
+          "response": {},
+          "status": {
+            "type": "number"
+          },
+          "elapsed_ms": {
+            "type": "number"
+          },
+          "credits_charged": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "app",
+          "request",
+          "response",
+          "status",
+          "elapsed_ms",
+          "credits_charged"
+        ],
+        "additionalProperties": false
+      },
+      "Character": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "greeting": {
+            "type": "string",
+            "description": "How the character opens a conversation."
+          },
+          "author": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "private",
+              "public"
+            ]
+          },
+          "mature": {
+            "type": "boolean"
+          },
+          "calls": {
+            "type": "boolean",
+            "description": "Can take a live voice or video call."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": "number"
+          },
+          "chats": {
+            "type": "number"
+          },
+          "mine": {
+            "type": "boolean"
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A portrait, when there is one. Without one, `artwork` stands in with the name's initial."
+          },
+          "artwork": {
+            "$ref": "#/components/schemas/MockArtwork"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "tagline",
+          "description",
+          "greeting",
+          "author",
+          "visibility",
+          "mature",
+          "calls",
+          "tags",
+          "rating",
+          "chats",
+          "mine",
+          "image",
+          "artwork"
+        ],
+        "additionalProperties": false
+      },
+      "MockArtwork": {
+        "type": "object",
+        "properties": {
+          "hues": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "seed": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "hues",
+          "seed"
+        ],
+        "additionalProperties": false,
+        "description": "Stand-in artwork for mocked media, until real outputs exist."
+      },
+      "CharacterBlock": {
+        "type": "object",
+        "properties": {
+          "character_slug": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_slug",
+          "author"
+        ],
+        "additionalProperties": false,
+        "description": "A character someone blocked: it, and everything else by its author, is hidden from them."
+      },
+      "CharacterReport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "character_slug": {
+            "type": "string"
+          },
+          "character_name": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReportReason"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the person added in their own words."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "dismissed",
+              "hidden"
+            ],
+            "description": "Open until the operator acts: dismissed leaves the character up; hidden takes it off the instance."
+          }
+        },
+        "required": [
+          "id",
+          "character_slug",
+          "character_name",
+          "author",
+          "reason",
+          "note",
+          "created_at",
+          "state"
+        ],
+        "additionalProperties": false,
+        "description": "A report of a public character, as the operator reviews it. Who reported it is kept, never shown."
+      },
+      "ReportReason": {
+        "type": "string",
+        "enum": [
+          "sexual",
+          "hateful",
+          "violent",
+          "impersonation",
+          "spam",
+          "other"
+        ],
+        "description": "Why someone reported a character."
+      },
+      "Conversation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "messages",
+          "title",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "Message": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/UserMessage"
+          },
+          {
+            "$ref": "#/components/schemas/AgentMessage"
+          }
+        ]
+      },
+      "UserMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "const": "user"
+          },
+          "text": {
+            "type": "string"
+          },
+          "cast": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterCast"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The character the message asked to put on screen, if any."
+          },
+          "agent_model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The language model the user picked to run the agent; `null` was Auto."
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "text",
+          "cast",
+          "agent_model",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "CharacterCast": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A portrait, when there is one. Without one, `artwork` stands in with the name's initial."
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "image"
+        ],
+        "additionalProperties": false,
+        "description": "Who a request puts on screen: just enough of a character to show and to start a shot from."
+      },
+      "AgentMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "const": "agent"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "working",
+              "done"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentStep"
+            }
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reply, once the agent has finished."
+          },
+          "generation_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Generations produced in this turn; each can be opened in the studio."
+          },
+          "analysis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoAnalysis"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when the turn analysed a video."
+          },
+          "elapsed_ms": {
+            "type": "number"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "role",
+          "state",
+          "steps",
+          "text",
+          "generation_ids",
+          "analysis",
+          "elapsed_ms",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "AgentStep": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "plan",
+              "tool",
+              "review"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "app": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The capability called, for tool and review steps."
+          },
+          "state": {
+            "$ref": "#/components/schemas/AgentStepState"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "detail",
+          "app",
+          "state"
+        ],
+        "additionalProperties": false,
+        "description": "One thing the agent did: a decision, a tool call against a capability, or a review of its own output."
+      },
+      "AgentStepState": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "running",
+          "done"
+        ]
+      },
+      "VideoAnalysis": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "moments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VideoMoment"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "moments",
+          "tags"
+        ],
+        "additionalProperties": false
+      },
+      "VideoMoment": {
+        "type": "object",
+        "properties": {
+          "at_seconds": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at_seconds",
+          "label"
+        ],
+        "additionalProperties": false,
+        "description": "A moment an understanding capability found in a video."
+      },
+      "ConversationSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "CreditBalance": {
+        "type": "object",
+        "properties": {
+          "credits": {
+            "type": "number"
+          },
+          "allowance": {
+            "$ref": "#/components/schemas/BudgetSummary"
+          }
+        },
+        "required": [
+          "credits",
+          "allowance"
+        ],
+        "additionalProperties": false,
+        "description": "A user's balance in credits: their allocation's available amount after the instance's markup rule."
+      },
+      "BudgetSummary": {
+        "type": "object",
+        "properties": {
+          "granted": {
+            "type": "string"
+          },
+          "spent": {
+            "type": "string"
+          },
+          "available": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "granted",
+          "spent",
+          "available",
+          "currency"
+        ],
+        "additionalProperties": false,
+        "description": "A user's budget in the provider's currency: what was granted, spent and is left."
+      },
+      "Deleted": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ],
+        "additionalProperties": false,
+        "description": "The answer to a delete."
+      },
+      "DeviceSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The device's own name, as it reported it (\"Adam's iPhone\")."
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "last_used_at": {
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "The session making this request."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "platform",
+          "created_at",
+          "last_used_at",
+          "current"
+        ],
+        "additionalProperties": false,
+        "description": "A phone or tablet signed in to the instance with its own revocable session."
+      },
+      "DeviceToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "device": {
+            "$ref": "#/components/schemas/DeviceSession"
+          }
+        },
+        "required": [
+          "token",
+          "device"
+        ],
+        "additionalProperties": false,
+        "description": "A new device session. The token is shown once; the instance keeps only a keyed hash of it."
+      },
+      "Generation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/GenerationState"
+          },
+          "progress": {
+            "type": "number"
+          },
+          "request": {
+            "$ref": "#/components/schemas/GenerationRequest"
+          },
+          "credits_charged": {
+            "type": "number"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "artwork": {
+            "$ref": "#/components/schemas/MockArtwork"
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "progress",
+          "request",
+          "credits_charged",
+          "created_at",
+          "artwork"
+        ],
+        "additionalProperties": false,
+        "description": "An async generation job. Mocked: the engine's async jobs return 501 today."
+      },
+      "GenerationState": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed"
+        ]
+      },
+      "GenerationRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/MediaKind"
+          },
+          "app": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "aspect": {
+            "type": "string",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1"
+            ]
+          },
+          "duration_seconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Video and audio only."
+          },
+          "resolution": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "720p",
+              "1080p",
+              null
+            ],
+            "description": "Video only."
+          },
+          "negative_prompt": {
+            "type": "string"
+          },
+          "first_frame": {
+            "type": "string",
+            "description": "Image-to-video only: the image the shot starts from, such as a character's portrait."
+          }
+        },
+        "required": [
+          "kind",
+          "app",
+          "prompt",
+          "aspect",
+          "duration_seconds",
+          "resolution"
+        ],
+        "additionalProperties": false
+      },
+      "MediaKind": {
+        "type": "string",
+        "enum": [
+          "video",
+          "image",
+          "audio"
+        ]
+      },
+      "InstanceDescription": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "object",
+            "properties": {
+              "symbol": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "A square mark, or null to set the name's first letter in type."
+              },
+              "wordmark": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The full logo, or null to set the name in type."
+              },
+              "tint": {
+                "type": "boolean",
+                "description": "Draw the marks in the text colour, using only their shape."
+              }
+            },
+            "required": [
+              "symbol",
+              "wordmark",
+              "tint"
+            ],
+            "additionalProperties": false
+          },
+          "theme": {
+            "type": "object",
+            "properties": {
+              "dark": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "light": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "dark",
+              "light"
+            ],
+            "additionalProperties": false,
+            "description": "Overrides for colour tokens, per theme, keyed by token name (\"primary\"). Tokens not listed keep their default."
+          },
+          "surfaces": {
+            "type": "object",
+            "properties": {
+              "app": {
+                "type": "boolean"
+              },
+              "api": {
+                "type": "boolean"
+              },
+              "mcp": {
+                "type": "boolean"
+              },
+              "mobile": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "app",
+              "api",
+              "mcp",
+              "mobile"
+            ],
+            "additionalProperties": false
+          },
+          "mobile": {
+            "type": "object",
+            "properties": {
+              "ios": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "bundle_id": {
+                        "type": "string"
+                      },
+                      "minimum_version": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "bundle_id",
+                      "minimum_version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "android": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "application_id": {
+                        "type": "string"
+                      },
+                      "minimum_version": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "application_id",
+                      "minimum_version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "ios",
+              "android"
+            ],
+            "additionalProperties": false,
+            "description": "The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in."
+          },
+          "sign_in": {
+            "type": "object",
+            "properties": {
+              "methods": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SignInMethodName"
+                }
+              },
+              "sign_up": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "invite",
+                  "closed"
+                ]
+              }
+            },
+            "required": [
+              "methods",
+              "sign_up"
+            ],
+            "additionalProperties": false
+          },
+          "content": {
+            "type": "object",
+            "properties": {
+              "characters": {
+                "type": "boolean"
+              },
+              "adult_content": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "characters",
+              "adult_content"
+            ],
+            "additionalProperties": false
+          },
+          "home": {
+            "type": "object",
+            "properties": {
+              "background_image": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "background_poster": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "background_video": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "aurora": {
+                "type": "boolean",
+                "description": "Draw a live aurora over the background image."
+              }
+            },
+            "required": [
+              "background_image",
+              "background_poster",
+              "background_video",
+              "aurora"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "api_version",
+          "name",
+          "logo",
+          "theme",
+          "surfaces",
+          "mobile",
+          "sign_in",
+          "content",
+          "home"
+        ],
+        "additionalProperties": false,
+        "description": "What a client needs to know about an instance before anyone signs in: how it looks, what it serves and how to sign in. Read from the instance config, so there is no engine call behind it. URLs are absolute and theme colours are sRGB hex, so a client that can't read CSS can use them as they are."
+      },
+      "SignInMethodName": {
+        "type": "string",
+        "enum": [
+          "email",
+          "passkey",
+          "google",
+          "apple",
+          "discord",
+          "coinbase",
+          "wallet"
+        ],
+        "description": "A way to sign in that an instance can offer."
+      },
+      "LiveSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "app": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "live",
+              "ended"
+            ]
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "destination_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recording": {
+            "type": "boolean"
+          },
+          "started_at": {
+            "type": "string"
+          },
+          "recording_media_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set when the session ended and was recorded."
+          }
+        },
+        "required": [
+          "id",
+          "app",
+          "state",
+          "prompt",
+          "destination_ids",
+          "recording",
+          "started_at",
+          "recording_media_id"
+        ],
+        "additionalProperties": false
+      },
+      "Me": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "balance": {
+            "$ref": "#/components/schemas/CreditBalance"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "balance"
+        ],
+        "additionalProperties": false,
+        "description": "The signed-in user, as the account menu shows them."
+      },
+      "MediaItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MediaKind"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "generation",
+              "upload",
+              "recording"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "description": "Automatic description, from a video understanding capability."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "app": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prompt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "aspect": {
+            "type": "string",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1"
+            ]
+          },
+          "duration_seconds": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A still of the media, when there is one. Tiles without one show `artwork`."
+          },
+          "artwork": {
+            "$ref": "#/components/schemas/MockArtwork"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "source",
+          "title",
+          "description",
+          "tags",
+          "app",
+          "prompt",
+          "aspect",
+          "duration_seconds",
+          "created_at",
+          "image",
+          "artwork"
+        ],
+        "additionalProperties": false,
+        "description": "Something in the user's library: an upload or a generation, with what the product understood about it."
+      },
+      "Offering": {
+        "type": "object",
+        "properties": {
+          "app": {
+            "type": "string"
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InteractionMode"
+            }
+          },
+          "rate_low": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rate_high": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatePoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rate_status": {
+            "type": "string"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "runner_count": {
+            "type": "number"
+          },
+          "ready_count": {
+            "type": "number"
+          },
+          "observed_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "app",
+          "modes",
+          "rate_low",
+          "rate_high",
+          "rate_status",
+          "stale",
+          "runner_count",
+          "ready_count",
+          "observed_at"
+        ],
+        "additionalProperties": false,
+        "description": "One row of `GET /v1/offerings`. Identity is (app, currency, unit)."
+      },
+      "InteractionMode": {
+        "type": "string",
+        "enum": [
+          "single-shot",
+          "persistent"
+        ],
+        "description": "Types shaped on the engine's real responses (livepeer-builder `GET /v1/offerings`, `GET /v1/allowance`). See docs/research/engine.md. Amounts are decimal strings."
+      },
+      "RatePoint": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "price_usd": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "observed_at": {
+            "type": "string"
+          },
+          "observed_by": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "unit",
+          "price_usd",
+          "source",
+          "observed_at",
+          "observed_by"
+        ],
+        "additionalProperties": false
+      },
+      "PlanAndCredits": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Plan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            }
+          },
+          "packs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreditPack"
+            }
+          },
+          "top_up": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "$ref": "#/components/schemas/Money"
+                  },
+                  "max": {
+                    "$ref": "#/components/schemas/Money"
+                  },
+                  "credits_per_usd": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max",
+                  "credits_per_usd"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Top-ups of the user's own amount, or null when the provider can't take them or the operator turned them off."
+          },
+          "provider": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "features": {
+                "$ref": "#/components/schemas/ProviderFeatures"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "features"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "plan",
+          "plans",
+          "packs",
+          "top_up",
+          "provider"
+        ],
+        "additionalProperties": false,
+        "description": "The signed-in user's plan, what they could change to, and what the provider supports."
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ]
+          },
+          "allowance": {
+            "$ref": "#/components/schemas/PlanAllowance"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "markup": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Multiplier on wholesale cost for subscribers; null uses the instance default."
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price",
+          "interval",
+          "allowance",
+          "features",
+          "markup",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "Money": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Decimal string, as the engine and providers report amounts."
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "additionalProperties": false,
+        "description": "The payment and identity provider behind the engine, in the engine's terms: grants fund allocations, an allocation is a user's budget, usage is what was spent, a plan is the provider's plan. Nothing here is a second ledger: every amount is read from the provider."
+      },
+      "PlanAllowance": {
+        "type": "object",
+        "properties": {
+          "credits": {
+            "type": "number",
+            "description": "Credits included each period."
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ]
+          },
+          "rollover_months": {
+            "type": "number",
+            "description": "Months unused credits carry forward; 0 means they expire."
+          }
+        },
+        "required": [
+          "credits",
+          "period",
+          "rollover_months"
+        ],
+        "additionalProperties": false
+      },
+      "CreditPack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "number"
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "popular": {
+            "type": "boolean",
+            "description": "Shown first and marked to users. At most one pack is."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Offered to users. Packs are withdrawn rather than deleted, so past purchases still name them."
+          }
+        },
+        "required": [
+          "id",
+          "credits",
+          "price",
+          "popular",
+          "active"
+        ],
+        "additionalProperties": false,
+        "description": "A one-off top-up the provider sells at a fixed price. Buying one adds to the user's allocation."
+      },
+      "ProviderFeatures": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "boolean"
+          },
+          "grants": {
+            "type": "boolean"
+          },
+          "plans": {
+            "type": "boolean"
+          },
+          "allowances": {
+            "type": "boolean"
+          },
+          "credit_packs": {
+            "type": "boolean"
+          },
+          "custom_top_up": {
+            "type": "boolean",
+            "description": "Top-ups of an amount the user chooses."
+          },
+          "invoices": {
+            "type": "boolean"
+          },
+          "oidc": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "users",
+          "grants",
+          "plans",
+          "allowances",
+          "credit_packs",
+          "custom_top_up",
+          "invoices",
+          "oidc"
+        ],
+        "additionalProperties": false,
+        "description": "What the connected provider can do, so the UI can say so instead of failing."
+      },
+      "Preferences": {
+        "type": "object",
+        "properties": {
+          "ageConfirmed": {
+            "type": "boolean",
+            "description": "Confirmed to be 18 or over. Required before adult content can be switched on."
+          },
+          "adultContent": {
+            "type": "boolean"
+          },
+          "saveChats": {
+            "type": "boolean"
+          },
+          "confirmBeforeSpending": {
+            "type": "boolean"
+          },
+          "enterSends": {
+            "type": "boolean"
+          },
+          "completionNotifications": {
+            "type": "boolean"
+          },
+          "defaultAspect": {
+            "type": "string",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1"
+            ]
+          },
+          "defaultDuration": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "ageConfirmed",
+          "adultContent",
+          "saveChats",
+          "confirmBeforeSpending",
+          "enterSends",
+          "completionNotifications",
+          "defaultAspect",
+          "defaultDuration"
+        ],
+        "additionalProperties": false
+      },
+      "PrivacyDescription": {
+        "type": "object",
+        "properties": {
+          "retains_chats": {
+            "type": "boolean",
+            "description": "Whether the instance keeps prompts and outputs on its servers."
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrivacyTier"
+            }
+          }
+        },
+        "required": [
+          "retains_chats",
+          "tiers"
+        ],
+        "additionalProperties": false,
+        "description": "How this instance treats what people make, in plain words."
+      },
+      "PrivacyTier": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set when the tier isn't plainly available, such as \"Planned, not available\"."
+          },
+          "summary": {
+            "type": "string"
+          },
+          "instance_sees": {
+            "type": "string"
+          },
+          "compute_sees": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "summary",
+          "instance_sees",
+          "compute_sees"
+        ],
+        "additionalProperties": false,
+        "description": "Who can see a job, per way of running the instance. The same words on every surface."
+      },
+      "PromptStarter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "app": {
+            "type": "string"
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "app",
+          "examples"
+        ],
+        "additionalProperties": false
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "credits": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "credits"
+        ],
+        "additionalProperties": false,
+        "description": "What one result of a draft would cost."
+      },
+      "ShowcaseItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/MediaKind"
+          },
+          "app": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "aspect": {
+            "type": "string",
+            "enum": [
+              "16:9",
+              "9:16",
+              "1:1"
+            ]
+          },
+          "duration_seconds": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A still of the result, when there is one. Tiles without one show `artwork`."
+          },
+          "artwork": {
+            "$ref": "#/components/schemas/MockArtwork"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "app",
+          "title",
+          "prompt",
+          "aspect",
+          "duration_seconds",
+          "image",
+          "artwork"
+        ],
+        "additionalProperties": false,
+        "description": "An example in the instance's gallery. Instance content; no engine endpoint."
+      },
+      "StudioMedium": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/MediaKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "aspects": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "16:9",
+                    "9:16",
+                    "1:1"
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolutions": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "720p",
+                    "1080p"
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompt_limit": {
+            "type": "number"
+          },
+          "max_variants": {
+            "type": "number",
+            "description": "How many results one Generate can make at once."
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudioMode"
+            }
+          },
+          "empty": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "body": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "title",
+              "body"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "aspects",
+          "resolutions",
+          "prompt_limit",
+          "max_variants",
+          "modes",
+          "empty"
+        ],
+        "additionalProperties": false,
+        "description": "A studio medium as the interface shows it: its modes, its settings and what its empty stage says."
+      },
+      "StudioMode": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "placeholder": {
+            "type": "string"
+          },
+          "words_placeholder": {
+            "type": "string",
+            "description": "The placeholder for clients that can't add this mode's inputs yet."
+          },
+          "app": {
+            "type": "string",
+            "description": "The capability a draft in this mode runs: one on offer, or the usual one when none is."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Some compute operator offers it right now; without one, Generate stays off."
+          },
+          "durations": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The inputs the mode takes beside the words, such as \"First frame\"."
+          },
+          "needs_input": {
+            "type": "boolean",
+            "description": "The mode only makes sense with an input (a source to edit, references to follow)."
+          }
+        },
+        "required": [
+          "value",
+          "label",
+          "placeholder",
+          "words_placeholder",
+          "app",
+          "available",
+          "durations",
+          "inputs",
+          "needs_input"
+        ],
+        "additionalProperties": false,
+        "description": "One way of working in a studio medium, resolved against what the network offers right now."
+      },
+      "Usage": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/UsageSummary"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsageEntry"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "entries"
+        ],
+        "additionalProperties": false,
+        "description": "What a user has spent: totals by capability, and their recent jobs."
+      },
+      "UsageSummary": {
+        "type": "object",
+        "properties": {
+          "credits": {
+            "type": "number"
+          },
+          "wholesale": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "jobs": {
+            "type": "number"
+          },
+          "by_app": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "app": {
+                  "type": "string"
+                },
+                "credits": {
+                  "type": "number"
+                },
+                "jobs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "app",
+                "credits",
+                "jobs"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "credits",
+          "wholesale",
+          "jobs",
+          "by_app"
+        ],
+        "additionalProperties": false
+      },
+      "UsageEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "app": {
+            "type": "string"
+          },
+          "wholesale": {
+            "$ref": "#/components/schemas/Money",
+            "description": "What the network charged."
+          },
+          "credits": {
+            "type": "number",
+            "description": "What the user was charged, in credits."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "delivered",
+              "failed_after_payment",
+              "pending"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "app",
+          "wholesale",
+          "credits",
+          "status",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "number"
+              },
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "description": "A stable reason a client can act on: signed_out, mobile_off, account_required, sign_in_expired."
+              }
+            },
+            "required": [
+              "status",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { resolveSource } from "./data-sources";
+import { isMockOnly, resolveSource } from "./data-sources";
 import { agentModelsFrom, isLanguageApp } from "./runner-model";
 import { listOfferingsLive, type EngineConfig } from "./live/engine";
 import { createStoredKey, listStoredKeys, readStoredPreferences, revokeStoredKey, runStoredCapability, updateStoredPreferences, verifyStoredKey } from "./mock/account";
@@ -75,6 +75,9 @@ import type {
   VideoAnalysis,
 } from "./types";
 
+/** The one key a mock-only instance accepts without it having been created. Never valid on a real instance. */
+export const MOCK_ONLY_DEMO_KEY = "lpk_mock_only_demo_key";
+
 export * from "./types";
 export * from "./provider";
 export { DATA_SOURCES, isMockOnly, resolveSource, type ApiFunctionName } from "./data-sources";
@@ -92,13 +95,19 @@ export interface Sourced<T> {
 }
 
 /** The signed-in user's plan, what they could change to, and what the provider supports. */
-export interface Account {
+export interface PlanAndCredits {
   plan: Plan | null;
   plans: Plan[];
   packs: CreditPack[];
   /** Top-ups of the user's own amount, or null when the provider can't take them or the operator turned them off. */
   top_up: { min: Money; max: Money; credits_per_usd: number } | null;
   provider: { id: string; name: string; features: ProviderFeatures };
+}
+
+/** What a user has spent: totals by capability, and their recent jobs. */
+export interface Usage {
+  summary: UsageSummary;
+  entries: UsageEntry[];
 }
 
 export interface ApiClient {
@@ -126,12 +135,12 @@ export interface ApiClient {
   createCharacter(input: CharacterInput): Promise<Sourced<Character>>;
 
   getCreditBalance(): Promise<Sourced<CreditBalance>>;
-  getAccount(): Promise<Sourced<Account>>;
+  getAccount(): Promise<Sourced<PlanAndCredits>>;
   buyCreditPack(packId: string): Promise<Sourced<CreditBalance>>;
   /** A one-off top-up of an amount the user chooses, within the operator's limits. */
   buyCredits(amount: Money): Promise<Sourced<CreditBalance>>;
   changePlan(planId: string | null): Promise<Sourced<Plan | null>>;
-  getUsage(): Promise<Sourced<{ summary: UsageSummary; entries: UsageEntry[] }>>;
+  getUsage(): Promise<Sourced<Usage>>;
 
   listApiKeys(): Promise<Sourced<ApiKey[]>>;
   createApiKey(label: string): Promise<Sourced<CreatedApiKey>>;
@@ -140,6 +149,8 @@ export interface ApiClient {
   verifyApiKey(secret: string): Promise<Sourced<ApiKey | null>>;
 
   getPreferences(): Promise<Sourced<Preferences>>;
+  /** Deletes the signed-in user's account with the identity provider, on their own request. */
+  deleteAccount(): Promise<Sourced<boolean>>;
   updatePreferences(patch: Partial<Preferences>): Promise<Sourced<Preferences>>;
 
   analyseVideo(input: { source: string; question: string }): Promise<Sourced<VideoAnalysis>>;
@@ -173,6 +184,19 @@ export interface ApiClientOptions {
   user?: { id: string; name: string };
   provider?: PaymentProvider;
   pricing?: MarkupRule;
+  /**
+   * Whether the instance offers a capability, as its operator has set. What it doesn't offer is left out of every
+   * listing and refused when asked for by name. Defaults to everything on the network.
+   */
+  offers?: (app: string) => boolean;
+}
+
+/** A capability the instance doesn't offer was asked for by name. */
+export class NotOffered extends Error {
+  constructor(readonly app: string) {
+    super(`${app} isn't offered here.`);
+    this.name = "NotOffered";
+  }
 }
 
 const DEFAULT_PRICING: MarkupRule = { creditsPerUsd: 100, default: 1.3 };
@@ -194,6 +218,11 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   const pricing = options.pricing ?? DEFAULT_PRICING;
   const provider = options.provider ?? mockProvider();
   const mock = <T>(data: T): Sourced<T> => ({ data, source: "mock" });
+  const offers = options.offers ?? (() => true);
+  const offered = <T extends { app: string }>(list: Sourced<T[]>): Sourced<T[]> => ({ ...list, data: list.data.filter((entry) => offers(entry.app)) });
+  const mustOffer = (app: string | null | undefined): void => {
+    if (app && !offers(app)) throw new NotOffered(app);
+  };
 
   const balance = async (): Promise<CreditBalance> => {
     const allocation = await provider.budgets.getAllocation(user.id);
@@ -217,20 +246,21 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
         const offerings = await listOfferingsLive(engine);
         const languageApps = [...new Set(offerings.map((offering) => offering.app).filter(isLanguageApp))];
         const models = options.describeApps ? await options.describeApps(languageApps) : [];
-        return { data: agentModelsFrom(offerings, models), source: "live" };
+        return offered({ data: agentModelsFrom(offerings, models), source: "live" });
       }
       await latency(80, 200);
-      return mock(MOCK_AGENT_MODELS.map((model) => ({ ...model })));
+      return offered(mock(MOCK_AGENT_MODELS.map((model) => ({ ...model }))));
     },
 
     async listOfferings() {
       if (resolveSource("listOfferings", env) === "live" && engine) {
-        return { data: await listOfferingsLive(engine), source: "live" };
+        return offered({ data: await listOfferingsLive(engine), source: "live" });
       }
       await latency();
-      return mock(MOCK_OFFERINGS);
+      return offered(mock(MOCK_OFFERINGS));
     },
     async runCapability(app, request) {
+      mustOffer(app);
       await latency(500, 900);
       return mock(runStoredCapability(app, request));
     },
@@ -244,6 +274,7 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     },
 
     async createGeneration(request) {
+      mustOffer(request.app);
       await latency(240, 480);
       return mock(createStoredGeneration(request));
     },
@@ -263,10 +294,14 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       return mock(readStoredConversation(id));
     },
     async createConversation(input) {
+      mustOffer(input.app);
+      mustOffer(input.agent_model);
       await latency(200, 380);
       return mock(createStoredConversation(input));
     },
     async sendMessage(conversationId, input) {
+      mustOffer(input.app);
+      mustOffer(input.agent_model);
       await latency(200, 380);
       return mock(sendStoredMessage(conversationId, input));
     },
@@ -369,9 +404,19 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     },
 
     async verifyApiKey(secret) {
+      // Mock-only instances accept one documented key, so tests, CI and development builds of the native
+      // apps can call the API without a sign-in. It is refused whenever the instance isn't mock-only.
+      if (isMockOnly(env) && secret === MOCK_ONLY_DEMO_KEY) {
+        return mock({ id: "key_mock_only_demo", label: "Mock-only demo key", prefix: MOCK_ONLY_DEMO_KEY.slice(0, 8), created_at: "2026-11-19T00:00:00Z", last_used_at: null, status: "active" });
+      }
       return mock(verifyStoredKey(secret));
     },
 
+    async deleteAccount() {
+      await latency(300, 500);
+      await provider.identity.deleteUser(user.id);
+      return mock(true);
+    },
     async getPreferences() {
       await latency(60, 120);
       return mock(readStoredPreferences(user.id));

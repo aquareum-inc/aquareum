@@ -1,5 +1,5 @@
 import { MOCK_OFFERINGS } from "../mock/offerings";
-import type { AccessKey, BillingSettings, CapabilitySetting, CostClass, CostSummary, EngineHealth, EngineJob, Fees, KnownActor, Payment, Runner } from "./types";
+import type { AccessKey, BillingSettings, CostClass, CostSummary, EngineHealth, EngineJob, Fees, KnownActor, Payment, Runner } from "./types";
 
 const USERS = ["usr_demo_adam", "usr_demo_sam", "usr_demo_ines", "usr_demo_tomas", "usr_demo_priya"];
 const NAMES: Record<string, string> = {
@@ -231,21 +231,7 @@ export function mockUpdateBilling(patch: Partial<BillingSettings>): BillingSetti
   return mockBilling();
 }
 
-/** A capability's switch and surfaces. Its markup isn't kept here: it's in the instance's pricing (see MarkupStore). */
-type CapabilityState = Omit<CapabilitySetting, "app" | "markup">;
-const capabilitySettings = new Map<string, CapabilityState>();
 const blocked = new Set<string>();
-
-export function mockCapabilitySetting(app: string): CapabilityState {
-  return { ...(capabilitySettings.get(app) ?? { enabled: true, surfaces: null }) };
-}
-
-export function mockUpdateCapability(app: string, patch: Partial<CapabilityState>): CapabilityState {
-  const next = { ...mockCapabilitySetting(app), ...patch };
-  capabilitySettings.set(app, next);
-  return { ...next };
-}
-
 export const mockIsBlocked = (orchestrator: string) => blocked.has(orchestrator);
 export function mockSetBlocked(orchestrator: string, value: boolean): void {
   if (value) blocked.add(orchestrator);

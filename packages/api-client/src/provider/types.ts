@@ -129,6 +129,8 @@ export interface PaymentProvider {
     getUser(id: string): Promise<ProviderUser | null>;
     setUserStatus(id: string, status: ProviderUser["status"]): Promise<ProviderUser>;
     setUserRole(id: string, role: ProviderUser["role"]): Promise<ProviderUser>;
+    /** Deletes a user and closes their allocation, on their own request. App stores require it (engine question Q14). */
+    deleteUser(id: string): Promise<void>;
   };
 
   budgets: {

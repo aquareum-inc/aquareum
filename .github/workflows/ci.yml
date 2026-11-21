@@ -18,6 +18,8 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - name: Generated native code is current
+        run: pnpm mobile:generate && git diff --exit-code -- docs/mobile/openapi.json apps/ios/Aquareum/Generated apps/android
       - run: pnpm test
       - run: pnpm build
 

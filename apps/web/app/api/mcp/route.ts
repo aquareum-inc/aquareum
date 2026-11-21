@@ -1,12 +1,20 @@
+import { quoteCredits } from "@aquareum/api-client";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { devices } from "@/lib/devices";
+import { moderation } from "@/lib/moderation";
 import { instance } from "@/lib/instance";
-import { authenticate } from "@/lib/public-api/auth";
-import { OPERATIONS } from "@/lib/public-api/operations";
+import { authenticate, type Caller } from "@/lib/public-api/auth";
+import { describeInstance, requestOrigin } from "@/lib/public-api/instance";
+import { agentModelMenu, capabilityLabels, privacyDescription, studioMediums } from "@/lib/public-api/labels";
+import { ApiError, OPERATIONS } from "@/lib/public-api/operations";
 
 export const dynamic = "force-dynamic";
 
 const PROTOCOL = "2025-06-18";
+
+/** The operations offered as tools: all of them except the native apps' sign-in plumbing. */
+const TOOLS = OPERATIONS.filter((operation) => operation.mcp !== false);
 
 interface RpcRequest {
   jsonrpc: "2.0";
@@ -23,7 +31,13 @@ const failure = (id: RpcRequest["id"], code: number, message: string) => ({ json
  * API, so an agent can do what the interface can.
  */
 export async function POST(request: NextRequest) {
-  const caller = await authenticate(request);
+  let caller: Caller | null;
+  try {
+    caller = await authenticate(request);
+  } catch (cause) {
+    if (!(cause instanceof ApiError)) throw cause;
+    caller = null;
+  }
   if (!caller) {
     return NextResponse.json(failure(null, -32001, "Send an API key as a bearer token."), { status: 401, headers: { "WWW-Authenticate": "Bearer" } });
   }
@@ -53,14 +67,14 @@ export async function POST(request: NextRequest) {
     case "tools/list":
       return NextResponse.json(
         result(rpc.id, {
-          tools: OPERATIONS.filter((operation) => !operation.operator || caller.operator).map(({ name, description, input }) => ({ name, description, inputSchema: input })),
+          tools: TOOLS.filter((operation) => !operation.operator || caller.operator).map(({ name, description, input }) => ({ name, description, inputSchema: input })),
         }),
       );
     case "tools/call": {
-      const operation = OPERATIONS.find((entry) => entry.name === rpc.params?.name);
+      const operation = TOOLS.find((entry) => entry.name === rpc.params?.name);
       if (!operation) return NextResponse.json(failure(rpc.id, -32602, `Unknown tool: ${String(rpc.params?.name)}`));
       try {
-        const value = await operation.run(caller, (rpc.params?.arguments as Record<string, unknown> | undefined) ?? {});
+        const value = await operation.run({ ...caller, devices: devices(), moderation: moderation(), instance: describeInstance(requestOrigin(request)), labels: capabilityLabels, agentModelMenu, studioMediums, privacy: privacyDescription, quote: quoteCredits }, (rpc.params?.arguments as Record<string, unknown> | undefined) ?? {});
         return NextResponse.json(result(rpc.id, { content: [{ type: "text", text: JSON.stringify(value, null, 2) }], structuredContent: Array.isArray(value) ? { items: value } : value }));
       } catch (cause) {
         return NextResponse.json(result(rpc.id, { isError: true, content: [{ type: "text", text: cause instanceof Error ? cause.message : "The tool failed." }] }));

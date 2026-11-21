@@ -26,7 +26,8 @@ generated from the schema). Environment variables hold secrets and the engine UR
 ```
 name, logo { symbol, wordmark, tint }, theme { tokens... }            branding
 engine { url }                                                  (overridable by ENGINE_URL)
-surfaces { app, console, api, mcp }                             booleans
+surfaces { app, console, api, mcp, mobile }                     booleans; mobile is off in both presets
+mobile { ios { bundleId, minimumVersion }, android { applicationId, minimumVersion } }   the apps built for it
 capabilities { allow: string[], block: string[] }               glob rules on discovered app names
 capabilityOverrides { [app]: { surfaces?, enabled?, label? } }
 auth { provider: "mock" | "oidc", oidc { issuer, clientId } , signUp: "open" | "invite" | "closed" }
@@ -119,6 +120,23 @@ AES-256-GCM sealed, httpOnly, SameSite=Lax cookie keyed by `SESSION_SECRET`, hol
 builder key. `BUILDER_API_KEY` is a dev shortcut. The mock provider and role switcher exist in dev only.
 `/operator/*` is guarded in `proxy.ts` and again in the layout.
 
+The native apps sign in through the same `/auth/start` and `/auth/callback`, opened in the system's auth
+session with `client`, a PKCE `challenge` and their own `state`. The callback sets no cookie for them: it
+redirects to `<bundle id>://auth` with a 60-second one-time code, only for an app named in the config's
+`mobile` block. The app exchanges the code and its verifier at `POST /api/v1/auth/device` for a device session
+(`aqd_…`, always the `user` role), sent as a bearer token. Sessions live in `apps/web/lib/devices` behind a
+`DeviceSessionStore` (a JSON file in `DATA_DIR` for now), stored as an HMAC keyed with `SESSION_SECRET`. They
+end after 90 days unused, on sign-out or revocation, when the user is suspended, or when `SESSION_SECRET`
+changes. With `surfaces.mobile` off, a device session gets 403 `mobile_off`. Sign-in addresses are built from
+the configured domain, or else the address the request came in on, so a phone reaching a development server
+at another address comes back to it.
+
+State the instance keeps itself lives in `apps/web/lib/data`: a `StateStore` interface and a JSON file in
+`DATA_DIR` behind it, until the instance has a database. Device sessions use it, and so does
+`apps/web/lib/moderation`: reports of shared characters, what each person blocked, and what the operator took
+down. Every character read (`list_characters`, `get_character`, the web's pages and Home's cast) filters
+through `moderation().visible(userId)`; the console's Reports page decides reports.
+
 ## Self-hosting
 
 `deploy/compose.yaml` references published images by `${REGISTRY}/${ORG}/...` tags read from
@@ -127,7 +145,8 @@ builder key. `BUILDER_API_KEY` is a dev shortcut. The mock provider and role swi
 `instance.config.json` and starts the bundle; it is idempotent. `aquareum doctor` checks engine, provider,
 config and keys, with exit codes. `aquareum upgrade` moves app and engine pins together. Because the engine
 and Batteries publish no images today (engine request R6), the bundle builds them from pinned Git contexts
-until they do, and mock-only mode needs neither.
+until they do, and mock-only mode needs neither. The app keeps its own state (device sessions) in the
+`app-data` volume at `/data`.
 
 ## Live versus mocked (summary; full table in `docs/data-sources.md`)
 

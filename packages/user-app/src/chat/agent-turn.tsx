@@ -1,11 +1,13 @@
 "use client";
 
 import type { AgentMessage, AgentStep, AppModel, Generation, VideoMoment } from "@aquareum/api-client/types";
-import { BrandSymbol, EASE_OUT_EXPO, cn } from "@aquareum/ui";
+import { EASE_OUT_EXPO, cn } from "@aquareum/ui";
 import { Check, ChevronDown, Clapperboard, Eye, ListTree, Wrench } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { ThinkingOrb } from "thinking-orbs";
 
+import { agentOrbState } from "../lib/agent-orb";
 import { workLabel } from "../lib/capability-menu";
 import { GenerationTile } from "../studio/generation-tile";
 
@@ -72,8 +74,9 @@ export function AgentTurn({ message, generations, models, onOpenInStudio, onOpen
 
   return (
     <div className="flex gap-3">
-      <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full border border-hairline text-foreground">
-        <BrandSymbol className="h-3 w-auto" />
+      {/* The agent's orb: it shows what kind of work is happening, and holds still once the turn is done. */}
+      <span className="mt-1 inline-flex size-7 shrink-0 items-center justify-center">
+        <ThinkingOrb state={working ? agentOrbState(running) : "breathing"} paused={!working} size={20} aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
         <button

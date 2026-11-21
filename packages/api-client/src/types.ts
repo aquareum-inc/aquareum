@@ -251,6 +251,46 @@ export interface CharacterInput {
   mature: boolean;
 }
 
+/** Who can see a job, per way of running the instance. The same words on every surface. */
+export interface PrivacyTier {
+  name: string;
+  /** Set when the tier isn't plainly available, such as "Planned, not available". */
+  status: string | null;
+  summary: string;
+  instance_sees: string;
+  compute_sees: string;
+}
+
+/** How this instance treats what people make, in plain words. */
+export interface PrivacyDescription {
+  /** Whether the instance keeps prompts and outputs on its servers. */
+  retains_chats: boolean;
+  tiers: PrivacyTier[];
+}
+
+/** Why someone reported a character. */
+export type ReportReason = "sexual" | "hateful" | "violent" | "impersonation" | "spam" | "other";
+
+/** A report of a public character, as the operator reviews it. Who reported it is kept, never shown. */
+export interface CharacterReport {
+  id: string;
+  character_slug: string;
+  character_name: string;
+  author: string;
+  reason: ReportReason;
+  /** What the person added in their own words. */
+  note: string | null;
+  created_at: string;
+  /** Open until the operator acts: dismissed leaves the character up; hidden takes it off the instance. */
+  state: "open" | "dismissed" | "hidden";
+}
+
+/** A character someone blocked: it, and everything else by its author, is hidden from them. */
+export interface CharacterBlock {
+  character_slug: string;
+  author: string;
+}
+
 export interface ApiKey {
   id: string;
   label: string;
@@ -372,4 +412,135 @@ export interface LiveHealth {
   dropped_frames: number;
   /** Camera to restyled output. */
   latency_ms: number;
+}
+
+/** A way to sign in that an instance can offer. */
+export type SignInMethodName = "email" | "passkey" | "google" | "apple" | "discord" | "coinbase" | "wallet";
+
+/**
+ * What a client needs to know about an instance before anyone signs in: how it looks, what it serves and
+ * how to sign in. Read from the instance config, so there is no engine call behind it. URLs are absolute
+ * and theme colours are sRGB hex, so a client that can't read CSS can use them as they are.
+ */
+export interface InstanceDescription {
+  api_version: string;
+  name: string;
+  logo: {
+    /** A square mark, or null to set the name's first letter in type. */
+    symbol: string | null;
+    /** The full logo, or null to set the name in type. */
+    wordmark: string | null;
+    /** Draw the marks in the text colour, using only their shape. */
+    tint: boolean;
+  };
+  /** Overrides for colour tokens, per theme, keyed by token name ("primary"). Tokens not listed keep their default. */
+  theme: { dark: Record<string, string>; light: Record<string, string> };
+  surfaces: { app: boolean; api: boolean; mcp: boolean; mobile: boolean };
+  /** The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in. */
+  mobile: {
+    ios: { bundle_id: string; minimum_version: string | null } | null;
+    android: { application_id: string; minimum_version: string | null } | null;
+  };
+  sign_in: { methods: SignInMethodName[]; sign_up: "open" | "invite" | "closed" };
+  content: { characters: boolean; adult_content: boolean };
+  home: {
+    background_image: string | null;
+    background_poster: string | null;
+    background_video: string | null;
+    /** Draw a live aurora over the background image. */
+    aurora: boolean;
+  };
+}
+
+/** The signed-in user, as the account menu shows them. */
+export interface Me {
+  id: string;
+  name: string;
+  email: string | null;
+  balance: CreditBalance;
+}
+
+/** A phone or tablet signed in to the instance with its own revocable session. */
+export interface DeviceSession {
+  id: string;
+  /** The device's own name, as it reported it ("Adam's iPhone"). */
+  name: string;
+  platform: "ios" | "android";
+  created_at: string;
+  last_used_at: string;
+  /** The session making this request. */
+  current: boolean;
+}
+
+/** A new device session. The token is shown once; the instance keeps only a keyed hash of it. */
+export interface DeviceToken {
+  token: string;
+  device: DeviceSession;
+}
+
+/**
+ * One row of the agent's model menu: a language model, however many apps serve it. Named by the same rules
+ * as the web's menu, so every client lists models the same way.
+ */
+export interface AgentModelEntry {
+  /** The app to send as `agent_model`: the copy with a runner free and the most context. */
+  app: string;
+  /** Other apps serving the same model. */
+  also: string[];
+  /** The model's readable name, "Qwen3.8 27B". */
+  name: string;
+  /** What sets it apart, "128K context". */
+  description: string;
+  /** No runner is free right now, so a job would queue. */
+  busy: boolean;
+}
+
+/** One way of working in a studio medium, resolved against what the network offers right now. */
+export interface StudioMode {
+  value: string;
+  label: string;
+  placeholder: string;
+  /** The placeholder for clients that can't add this mode's inputs yet. */
+  words_placeholder: string;
+  /** The capability a draft in this mode runs: one on offer, or the usual one when none is. */
+  app: string;
+  /** Some compute operator offers it right now; without one, Generate stays off. */
+  available: boolean;
+  durations: number[] | null;
+  /** The inputs the mode takes beside the words, such as "First frame". */
+  inputs: string[];
+  /** The mode only makes sense with an input (a source to edit, references to follow). */
+  needs_input: boolean;
+}
+
+/** A studio medium as the interface shows it: its modes, its settings and what its empty stage says. */
+export interface StudioMedium {
+  kind: MediaKind;
+  label: string;
+  aspects: Array<"16:9" | "9:16" | "1:1"> | null;
+  resolutions: Array<"720p" | "1080p"> | null;
+  prompt_limit: number;
+  /** How many results one Generate can make at once. */
+  max_variants: number;
+  modes: StudioMode[];
+  empty: { title: string; body: string };
+}
+
+/** What one result of a draft would cost. */
+export interface Quote {
+  credits: number;
+}
+
+/** The answer to a delete. */
+export interface Deleted {
+  deleted: boolean;
+}
+
+/** How a discovered app reads in the interface, so every client names it the same way. */
+export interface CapabilityLabel {
+  app: string;
+  /** What it is: "Text to video", or a language model's name. */
+  name: string;
+  /** How it reads where it did a piece of work, with its model when known: "Text to image · FLUX.2 klein 4B". */
+  work: string;
 }

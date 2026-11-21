@@ -64,6 +64,8 @@ between the user and operator roles. Neither is ever shown to end users.
 
 ```
 apps/web                  Next.js host: routes, sessions, role guard, /api/v1, /api/mcp, /api/health
+apps/ios                  Native iOS app (Swift, SwiftUI): a client of an instance's /api/v1
+apps/android              Native Android app (Kotlin, Compose): a client of an instance's /api/v1
 packages/api-client       Types and one function per operation (live + mock), data-source map
 packages/config           Instance config schema, generated types, presets, capability and surface rules
 packages/ui               Theme tokens, primitives, motion
@@ -74,6 +76,34 @@ deploy/                   Compose bundle and deploy templates
 docs/                     Brief, research, design brief, route map, architecture, data sources
 release.config.json       The GitHub organisation, registry and pinned engine/provider/signer versions
 ```
+
+## Native apps
+
+iOS (`apps/ios`, Swift and SwiftUI) and Android (`apps/android`, Kotlin and Compose) are native clients of an
+instance's `/api/v1`. They are opt-in for operators: `./aquareum setup` never builds them, and an operator
+who wants them builds and publishes their own. The plan, and what is built so far, is in
+`docs/mobile/plan.md`.
+
+A build belongs to one instance. `apps/ios/Config/Instance.xcconfig` holds the only build-time values (name,
+bundle identifier, instance URL); theme, sign-in methods and features come from the instance at run time.
+
+Phones are a surface an operator switches on (`surfaces.mobile`, off in both presets), naming the apps built
+for the instance in `mobile.ios.bundleId` and `mobile.android.applicationId`: sign-in hands a session only to
+those. The apps sign in in the system's own browser session and get a revocable device session of their own;
+the instance keeps sessions, and reports and blocks of shared characters, in `DATA_DIR` (`.data` in
+development, a volume in Docker).
+
+```bash
+# an instance with the apps switched on, for the apps to talk to, on :3100
+MOCK_ONLY=1 INSTANCE_CONFIG=docs/mobile/dev.instance.config.json corepack pnpm dev
+open apps/ios/Aquareum.xcodeproj              # then Run, on any iOS 18+ simulator
+(cd apps/android && ./gradlew :app:installDebug)   # onto a running emulator, Android 10+
+corepack pnpm mobile:generate                 # after changing tokens, operations or API types
+```
+
+The apps' design tokens, API models and client are generated (`packages/mobile-codegen`) from
+`packages/ui/src/styles/tokens.css`, `apps/web/lib/public-api/operations.ts` and the API client's types. CI
+fails when the generated files are out of date.
 
 ## Instance config and presets
 

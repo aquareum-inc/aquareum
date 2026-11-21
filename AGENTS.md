@@ -93,6 +93,72 @@ MOCK_ONLY=1 corepack pnpm build
 
 Standing rules for changes are in `CLAUDE.md`; plans and research are in `docs/`.
 
+## Working on the native apps
+
+Requirements: macOS with Xcode 27 or later for iOS, with Apple's Metal toolchain for Home's aurora shader
+(`xcodebuild -downloadComponent MetalToolchain`, once per machine); for Android, a JDK 17 or later and the Android SDK
+(platform 37, build-tools 36) with `apps/android/local.properties` holding `sdk.dir=<path to the SDK>`, or
+`ANDROID_HOME` set. Every command is non-interactive.
+
+```bash
+# 1. An instance for the app to talk to (mock-only, port 3100: what Config/Instance.xcconfig points at)
+MOCK_ONLY=1 INSTANCE_CONFIG=docs/mobile/dev.instance.config.json corepack pnpm dev &   # phones switched on
+
+# 2. Regenerate tokens, the OpenAPI document and the Swift client after changing their sources
+corepack pnpm mobile:generate
+
+# 3. Build and test iOS
+xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme Aquareum \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+# UI tests of the main flows: need the instance from step 1
+xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme AquareumUITests \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+# Unit and UI tests in one pass, as CI runs them: also need the instance
+xcodebuild -project apps/ios/Aquareum.xcodeproj -scheme AquareumAllTests \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+
+# 4. Run it and take a screenshot
+xcrun simctl boot 'iPhone 17 Pro'
+xcrun simctl install booted <DerivedData>/Build/Products/Debug-iphonesimulator/Aquareum.app
+xcrun simctl launch booted app.aquareum.dev
+xcrun simctl ui booted appearance dark        # or light
+xcrun simctl io booted screenshot home.png
+```
+
+```bash
+# 5. Build and test Android (from apps/android; the wrapper fetches Gradle on first use)
+cd apps/android
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+# UI tests of the main flows, on a running emulator: need the instance from step 1. They install the app
+# fresh (so a granted local-network permission goes) and turn system animations off; turn them back on after.
+./gradlew :app:connectedDebugAndroidTest
+
+# 6. Run it on an emulator and take a screenshot (10.0.2.2 is the host, where the instance listens)
+$ANDROID_HOME/emulator/emulator -avd <name> -no-snapshot-save &
+adb wait-for-device && adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell pm grant app.aquareum.dev android.permission.ACCESS_LOCAL_NETWORK   # Android 17+, debug builds
+adb shell am start -n app.aquareum.dev/app.aquareum.MainActivity
+adb shell cmd uimode night yes                # or no
+adb exec-out screencap -p > home.png
+```
+
+- The Compose version is pinned to the newest one the installed SDK platform can compile against; the note is
+  in `apps/android/gradle/libs.versions.toml`.
+- New files under `apps/ios/Aquareum` and `apps/ios/AquareumTests` are picked up without editing the Xcode
+  project (the folders are synchronised).
+- Never edit `apps/ios/Aquareum/Generated/*` or `apps/android/**/generated/*`: change the source and run
+  `corepack pnpm mobile:generate`.
+- The apps sign in through the instance's own flow. On a mock-only instance every method signs in at once as
+  the test user, after the system's "wants to use … to sign in" prompt on iOS.
+- On a fresh emulator Chrome opens its first-run screen inside the sign-in tab. To skip it on a test emulator
+  without accepting anything: `adb shell 'echo "_ --disable-fre --no-first-run" > /data/local/tmp/chrome-command-line'`
+  then `adb shell am set-debug-app --persistent com.android.chrome`.
+- Decoding tests read the captured responses in `docs/mobile/fixtures/`; refresh them with `curl` against a
+  mock-only instance when a response shape changes.
+
 ## Using and administering an instance as an agent
 
 Everything the interface can do is in the API, and the same operations are MCP tools.

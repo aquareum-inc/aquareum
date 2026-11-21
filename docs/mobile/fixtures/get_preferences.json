@@ -1,0 +1,10 @@
+{
+    "ageConfirmed": false,
+    "adultContent": false,
+    "saveChats": true,
+    "confirmBeforeSpending": true,
+    "enterSends": true,
+    "completionNotifications": true,
+    "defaultAspect": "16:9",
+    "defaultDuration": 5
+}

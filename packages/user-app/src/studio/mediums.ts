@@ -1,4 +1,4 @@
-import type { MediaKind, Offering } from "@aquareum/api-client/types";
+import type { MediaKind, Offering, StudioMedium } from "@aquareum/api-client/types";
 import { AudioLines, Clapperboard, Film, Image as ImageIcon, ImagePlus, Images, Mic, type LucideIcon } from "lucide-react";
 
 export type Medium = MediaKind;
@@ -14,12 +14,16 @@ export interface ModeSpec {
   value: string;
   label: string;
   placeholder: string;
+  /** The placeholder where inputs can't be added yet, when `placeholder` mentions them. */
+  wordsPlaceholder?: string;
   slots: SlotSpec[];
   /** Which discovered apps this mode can run. */
   apps: RegExp;
   /** Used for the request when discovery has no matching app, so the draft can still be written. */
   fallbackApp: string;
   durations?: number[];
+  /** The mode only makes sense with an input: a source to edit, or references to follow. */
+  needsInput?: boolean;
 }
 
 export interface MediumSpec {
@@ -52,6 +56,7 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
         value: "frames",
         label: "Frames",
         placeholder: "Describe the shot, or add a first and last frame…",
+        wordsPlaceholder: "Describe the shot: subject, movement, light…",
         slots: [frame, { ...frame, label: "Last frame" }],
         apps: /^(text|image)-to-video$/,
         fallbackApp: "text-to-video",
@@ -65,6 +70,7 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
         apps: /^(text|image)-to-video$/,
         fallbackApp: "image-to-video",
         durations: [5, 10, 15],
+        needsInput: true,
       },
       {
         value: "edit",
@@ -77,11 +83,12 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
         apps: /^video-to-video$/,
         fallbackApp: "video-to-video",
         durations: [5, 10, 15],
+        needsInput: true,
       },
     ],
     empty: {
       title: "Your shots land here",
-      body: "Describe a shot on the left and press Generate. Each one renders in place and is saved to your library.",
+      body: "Describe a shot and press Generate. Each one renders in place and is saved to your library.",
     },
   },
   image: {
@@ -111,6 +118,7 @@ export const MEDIUMS: Record<Medium, MediumSpec> = {
         ],
         apps: /^image-edit$/,
         fallbackApp: "image-edit",
+        needsInput: true,
       },
     ],
     empty: {
@@ -160,4 +168,60 @@ export function isMedium(value: string): value is Medium {
 
 export function offeringsFor(mode: ModeSpec, offerings: ReadonlyArray<Offering>): Offering[] {
   return offerings.filter((offering) => offering.modes.includes("single-shot") && mode.apps.test(offering.app));
+}
+
+/** A mode's key across mediums, as `video:text`. */
+export const modeKey = (medium: Medium, mode: ModeSpec): string => `${medium}:${mode.value}`;
+
+/**
+ * The modes this instance has taken out of the studio: the network offers them, but the instance offers none of
+ * what they run in the studio, because the operator switched it off or placed it elsewhere. A mode the network
+ * doesn't offer at all stays, shown as unavailable until an operator comes online.
+ */
+export function withdrawnModes(network: ReadonlyArray<Offering>, offered: ReadonlyArray<Offering>): string[] {
+  return MEDIUM_ORDER.flatMap((medium) =>
+    MEDIUMS[medium].modes.filter((mode) => offeringsFor(mode, network).length > 0 && offeringsFor(mode, offered).length === 0).map((mode) => modeKey(medium, mode)),
+  );
+}
+
+/** A medium's modes, less those withdrawn. A medium left with none isn't offered. */
+export function studioModes(medium: Medium, withdrawn: ReadonlyArray<string>): ModeSpec[] {
+  return MEDIUMS[medium].modes.filter((mode) => !withdrawn.includes(modeKey(medium, mode)));
+}
+
+/**
+ * The studio as clients that can't run this file read it (the native apps): every medium and mode the instance
+ * offers, with each mode's capability resolved against what the network offers now. `offered` is what the
+ * instance offers in the studio; it defaults to everything on the network.
+ */
+export function describeStudio(network: ReadonlyArray<Offering>, offered: ReadonlyArray<Offering> = network): StudioMedium[] {
+  const withdrawn = withdrawnModes(network, offered);
+  return MEDIUM_ORDER.flatMap((kind) => {
+    const spec = MEDIUMS[kind];
+    const modes = studioModes(kind, withdrawn);
+    if (modes.length === 0) return [];
+    return [{
+      kind,
+      label: spec.label,
+      aspects: spec.aspects,
+      resolutions: spec.resolutions,
+      prompt_limit: spec.promptLimit,
+      max_variants: spec.maxVariants,
+      empty: spec.empty,
+      modes: modes.map((mode) => {
+        const resolved = offeringsFor(mode, offered);
+        return {
+          value: mode.value,
+          label: mode.label,
+          placeholder: mode.placeholder,
+          words_placeholder: mode.wordsPlaceholder ?? mode.placeholder,
+          app: resolved[0]?.app ?? mode.fallbackApp,
+          available: resolved.length > 0,
+          durations: mode.durations ?? null,
+          inputs: mode.slots.map((slot) => slot.label),
+          needs_input: mode.needsInput ?? false,
+        };
+      }),
+    }];
+  });
 }

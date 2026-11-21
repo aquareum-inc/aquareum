@@ -1,0 +1,1 @@
+[{"app":"chat","model":"qwen3.8-27b","context_tokens":4096,"busy":false},{"app":"blueclaw/chat/qwen3.8-27b","model":"Qwen3.8-27B","context_tokens":131072,"busy":false},{"app":"northlight/chat/gemma-3-27b","model":"gemma-3-27b","context_tokens":131072,"busy":false},{"app":"harbor/chat/mistral-small-3.2","model":"Mistral-Small-3.2-24B","context_tokens":131072,"busy":true}]

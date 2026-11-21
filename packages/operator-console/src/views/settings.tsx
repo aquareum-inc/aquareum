@@ -12,7 +12,7 @@ export interface InstanceSettings {
   domain: string;
   signUp: "open" | "invite" | "closed";
   /** The surfaces an operator can switch here. The console isn’t one: switching it off from inside would lock everyone out. */
-  surfaces: { app: boolean; api: boolean; mcp: boolean };
+  surfaces: { app: boolean; api: boolean; mcp: boolean; mobile: boolean };
   characters: boolean;
   adultContent: boolean;
   retainChats: boolean;
@@ -27,6 +27,8 @@ export interface InstanceSettings {
 
 export interface SettingsViewProps {
   initial: InstanceSettings;
+  /** Whether the config names an iOS or Android app built for this instance; the phone switch means nothing without one. */
+  phoneAppsNamed: boolean;
   /** Where the config is stored, shown so operators know what a save changes. */
   file: string | null;
   save: (settings: InstanceSettings) => Promise<{ ok: true } | { ok: false; error: string }>;
@@ -41,6 +43,7 @@ const SURFACES: Array<{ key: keyof InstanceSettings["surfaces"]; label: string; 
   { key: "app", label: "User app", name: "the user app", hint: "Chat, studio, characters and library.", stops: "Every user loses chat, studio, characters and library, including anything they have open." },
   { key: "api", label: "API", name: "the API", hint: "The instance's REST API.", stops: "Apps and scripts built on the API stop working. Their keys stay valid, but every request is refused." },
   { key: "mcp", label: "MCP server", name: "the MCP server", hint: "Tools for agents.", stops: "Agents connected over MCP lose their tools." },
+  { key: "mobile", label: "Phone apps", name: "the phone apps", hint: "This instance's iOS and Android apps. Turn off to pause them, say while a bad release is fixed. Phones stay signed in.", stops: "The apps stop working and say the service isn't offered on phones. Signed-in phones carry on when you turn it back on." },
 ];
 
 /** "the API", "the API and the MCP server", "the user app, the API and the MCP server". */
@@ -53,14 +56,14 @@ function turnedOff(saved: InstanceSettings, next: InstanceSettings) {
   return SURFACES.filter((surface) => saved.surfaces[surface.key] && !next.surfaces[surface.key]);
 }
 
-function Line({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Line({ label, hint, children }: { label: string; hint?: string; children?: React.ReactNode }) {
   return (
     <div className="flex min-h-[48px] items-center justify-between gap-4 px-4 py-2">
       <div>
         <p className="text-[13px] font-medium">{label}</p>
         {hint ? <p className="text-[12px] text-muted-foreground">{hint}</p> : null}
       </div>
-      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">{children}</div>
+      {children ? <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">{children}</div> : null}
     </div>
   );
 }
@@ -78,7 +81,7 @@ function Section({ title, description, children }: { title: string; description:
   );
 }
 
-export function SettingsView({ initial, file, save }: SettingsViewProps) {
+export function SettingsView({ initial, phoneAppsNamed, file, save }: SettingsViewProps) {
   const [value, setValue] = useState(initial);
   const [state, setState] = useState<{ kind: "idle" } | { kind: "saving" } | { kind: "saved" } | { kind: "error"; message: string }>({ kind: "idle" });
   const set = (patch: Partial<InstanceSettings>) => {
@@ -153,11 +156,14 @@ export function SettingsView({ initial, file, save }: SettingsViewProps) {
 
           <Section title="Surfaces" description="Which parts of the product this instance serves.">
             <div className="divide-y divide-hairline rounded-card border border-hairline bg-card">
-              {SURFACES.map((surface) => (
+              {SURFACES.map((surface) => (surface.key === "mobile" && !phoneAppsNamed ? (
+                // With no app named, phones can't sign in whatever the switch says, so there is nothing to switch.
+                <Line key={surface.key} label={surface.label} hint="No phone apps are set up for this instance. Name them under mobile in the config file (mobile.ios.bundleId, mobile.android.applicationId) to offer them." />
+              ) : (
                 <Line key={surface.key} label={surface.label} hint={surface.hint}>
                   <Switch checked={value.surfaces[surface.key]} onCheckedChange={(checked) => set({ surfaces: { ...value.surfaces, [surface.key]: checked } })} aria-label={surface.label} />
                 </Line>
-              ))}
+              )))}
               <Line label="Operator console" hint="This console. To run an instance without it, set surfaces.console to false in the config file.">
                 <Switch checked disabled aria-label="Operator console, always on here" />
               </Line>

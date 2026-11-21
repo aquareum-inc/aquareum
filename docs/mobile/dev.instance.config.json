@@ -1,0 +1,52 @@
+{
+  "$schema": "../../packages/config/schema/instance.schema.json",
+  "name": "Livepeer",
+  "logo": {
+    "symbol": "/brand/livepeer-symbol.svg",
+    "wordmark": "/brand/livepeer-wordmark.svg"
+  },
+  "surfaces": {
+    "app": true,
+    "console": true,
+    "api": true,
+    "mcp": true,
+    "mobile": true
+  },
+  "mobile": {
+    "ios": {
+      "bundleId": "app.aquareum.dev"
+    },
+    "android": {
+      "applicationId": "app.aquareum.dev"
+    }
+  },
+  "capabilities": {
+    "allow": [],
+    "block": []
+  },
+  "auth": {
+    "provider": "mock",
+    "signUp": "open"
+  },
+  "payments": {
+    "provider": "mock"
+  },
+  "pricing": {
+    "creditsPerUsd": 100,
+    "markup": {
+      "default": 1.3
+    }
+  },
+  "content": {
+    "characters": true,
+    "adultContent": false
+  },
+  "privacy": {
+    "retainChats": false
+  },
+  "home": {
+    "backgroundImage": "/home/aurora.webp",
+    "backgroundPoster": "/home/aurora-sky.webp",
+    "aurora": true
+  }
+}

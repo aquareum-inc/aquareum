@@ -2,6 +2,9 @@
 .env
 .env.*.local
 
+# the instance's own state in development (device sessions)
+.data/
+
 # dependencies and build output
 node_modules/
 .next/
@@ -18,3 +21,8 @@ coverage/
 playwright-report/
 test-results/
 next-env.d.ts
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
