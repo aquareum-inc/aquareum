@@ -795,3 +795,175 @@ Not done, and why:
   no SVG image decoder. Proposed: the instance serves a PNG rendition of each mark for clients that ask.
   Until then such an instance shows its name in type on mobile.
 - **Tabs, the account tray, sign-in and trays** are slice 1, after the sign-in proposal is approved.
+
+## 18. The operator console on phones (proposed 21 November 2026)
+
+Status: **proposed, nothing built.** This section reverses two earlier lines: the console "stays on the
+web" (section 1) and device sessions "always have the `user` role" (section 5). Decisions the owner still
+has to make are in 18.7. A builder can start from this section alone, after reading sections 4, 5 and 7.
+
+### 18.1 Why, and for whom
+
+- **Console-only instances.** An instance with `surfaces.app` off (the `headless` preset) serves an API and a
+  console and has no user app. Its operator has nothing to install today, and on a phone's browser 10 of the
+  console's 13 pages scroll sideways and the navigation is one long strip.
+- **Instances with both.** An operator is also a user. They get one app and switch between the user app and
+  the console.
+- **What a phone is for.** Checking that the service is healthy, seeing what failed, deciding a report and
+  stopping an abusive account, away from a desk. Setting prices, keys, billing and instance settings stays a
+  desk job on the web.
+
+The console goes into the same apps (`apps/ios`, `apps/android`), under the same rules: native UI, clients of
+`/api/v1` only, no mock layer, every action an operation defined in `operations.ts` first.
+
+### 18.2 Security
+
+The property to keep: **a phone alone is never enough to administer an instance.** Today that holds because
+phones can't do operator work at all. After this change it holds because operator work on a phone needs
+three things together: an operator device session, a key that never leaves the phone's secure hardware, and
+the operator's face or fingerprint at the moment of use.
+
+**A separate session.** The operator device session is a different record, token and store entry from the
+user device session of section 5. It does not replace it and neither can stand in for the other.
+
+| | User device session (today) | Operator device session (new) |
+|---|---|---|
+| Token prefix | `aqd_` | `aqo_` |
+| Who | Any signed-in user | Only an identity the provider marks `operator`, as on the web |
+| Can run | User operations | Only operator operations marked for phones (below), plus `get_instance` and `get_me` |
+| Holds a builder key | Yes, sealed | No. It can't run a job or spend credit |
+| Idle expiry | 90 days | 7 days |
+| Absolute expiry | None | 30 days, then sign in again |
+| Bound to a device key | No | Yes |
+| Biometric to use | No | Yes, every time the console opens and for every change |
+| Switched on by | `surfaces.mobile` | `surfaces.mobileConsole`, off in both presets |
+
+On an instance with both surfaces an operator's phone holds both sessions. The user app keeps working when
+the operator session expires or is revoked.
+
+**Signing in on a phone.**
+
+1. The person chooses "Open the console" (from the account tray, or the first screen of a console-only
+   instance). If the phone has no enrolled biometrics, the app says the console needs Face ID or a
+   fingerprint and stops.
+2. The app creates a P-256 key pair in the Secure Enclave (iOS, access control `biometryCurrentSet`) or
+   StrongBox/TEE Keystore (Android, `setUserAuthenticationRequired(true)`, biometric class 3,
+   `setInvalidatedByBiometricEnrollment(true)`). The private key can't be exported, and it is destroyed if
+   the phone's enrolled faces or fingerprints change.
+3. The app starts the section 5 flow with `purpose=operator`: PKCE, the system auth session, the instance's
+   own callback. The instance asks the provider for a **fresh** sign-in (`prompt=login`, `max_age=0`), so a
+   browser cookie left on the phone doesn't grant operator access by itself.
+4. At the callback the instance mints the one-time code only if the identity's role is `operator`. Anyone
+   else is returned to the app with "This account doesn't run this service."
+5. The app posts the code, the verifier, the device name and the **public key** to
+   `POST /api/v1/auth/operator-device`. The instance stores the session (keyed hash of the token, user id,
+   name, device name, platform, public key, created, last used, last unlocked) and returns the `aqo_` token.
+6. The token goes in the Keychain or Keystore-encrypted storage, device-only, never in a backup.
+
+Enrolling a phone needs nothing from the web console. The reasoning: the provider sign-in that enrols a
+phone is the same one that opens the web console for 8 hours, so a pairing step would add friction without
+raising the bar. The web console shows a notice when a new phone is added, and lists and revokes them.
+
+**Unlock, and proof for each change.** The token alone does nothing. Two proofs, both signatures made by
+the device key, which the phone only makes after a biometric match:
+
+- **Unlock** (to read). When the console opens, the app asks for a challenge, signs it (the system shows
+  Face ID or the fingerprint prompt), and posts the signature. The instance verifies it against the stored
+  public key and marks the session unlocked for **5 minutes**. Read operations need an unlocked session.
+  The app locks the console itself when it goes to the background for more than a minute, and the server
+  window ends regardless.
+- **Confirm** (to change something). Every operator operation that changes anything needs its own proof: a
+  challenge bound to the operation name and a hash of its input, signed after a new biometric prompt, sent
+  as `X-Operator-Proof: <nonce>.<signature>`. A nonce is used once and lasts 60 seconds. An unlocked
+  session is not enough for a change.
+
+No passcode fallback: if biometrics fail or are unavailable, the console is not available on that phone and
+the person uses the web.
+
+**What the server checks on every operator operation from a phone**, in order, refusing at the first
+failure:
+
+1. `surfaces.mobileConsole` is on (else 403 `mobile_console_off`).
+2. The token matches a stored operator session that is inside both expiries (else 401).
+3. The operation is marked for phones (else 403 `web_only`). This is an allow-list: an operator operation
+   with no mark, including any added later, is refused.
+4. For a read: the session is unlocked (else 401 `locked`, and the app shows the lock screen).
+5. For a change: a valid, unused proof bound to this operation and this input (else 401 `proof_required`).
+6. Rate limits per session. Five failed proofs in a row revoke the session.
+7. Every sign-in, unlock, change, refusal at steps 3 to 6 and revocation is written to an audit log (who,
+   which phone, which operation, which target, when), kept in the instance's data volume and shown on the
+   web console's System page.
+
+**How `authenticate()` and the role guard change.**
+
+- `Caller` gains `via: "operator_token" | "browser" | "api_key" | "device" | "operator_device"`, and for an
+  operator device the session id and `unlockedUntil`.
+- `authenticate()` gets one new branch for `aqo_`, before the `aqd_` branch: flag check, lookup in the
+  operator sessions, then a `Caller` with `operator: buildOperatorClient()` and `via: "operator_device"`.
+  The `aqd_` branch is unchanged and still returns `operator: null`.
+- The checks above run in one place, the API dispatcher that runs an operation, not in each operation:
+  when `via` is `operator_device` it applies steps 3 to 6 before `run`. The existing `operator(context)`
+  guard in `operations.ts` stays as the second line.
+- An `aqo_` token is refused on every non-operator operation except `get_instance` and `get_me`.
+- `checkAccess` (the web role guard) does not change. An `aqo_` token is only read from the
+  `Authorization` header by the API; it never opens `/operator` pages and never becomes a cookie.
+- The engine reader and admin tokens stay inside `buildOperatorClient()` on the server. The phone sends
+  `aqo_` and a proof, and receives JSON. Nothing in an operator response may contain a token or a key; the
+  schema test of 4.2 asserts this for the phone operations.
+
+**Revocation.**
+
+- Web console ▸ System ▸ **Operator phones** lists every operator device session (person, phone, added,
+  last used, last unlocked) with Revoke on each and Revoke all. This page is web-only.
+- The app's console has "Sign out of the console on this phone", which deletes the session and the device
+  key.
+- Suspending the person, or rotating `SESSION_SECRET`, ends their operator sessions as it ends the others.
+- Role removal at the provider: the role is read at sign-in, so a removed operator keeps a phone session
+  until it is revoked or reaches 30 days. Revoke it from the web console when removing an operator. A
+  provider back-channel (Q13 in `docs/engine-requests.md`) would close this gap, for web sessions too.
+
+**Which operations a phone can call.**
+
+| Operation | Phone | Stage |
+|---|---|---|
+| `operator_status` (new), `operator_health`, `operator_overview` | Read, unlocked | 1 |
+| `operator_list_jobs` | Read, unlocked | 1 |
+| `operator_list_reports` | Read, unlocked | 1 |
+| `operator_list_users` | Read, unlocked | 1 |
+| `operator_resolve_report` | Change, proof each time | 1 |
+| `operator_set_user_status` (suspend, resume) | Change, proof each time | 1 |
+| `operator_costs`, `operator_list_grants`, `operator_list_plans`, compute and capability reads | Read, unlocked | 2 |
+| `operator_top_up_user`, `operator_assign_plan` | Web only (decision 6 in 18.7) | 4 at the earliest |
+| `operator_set_capability` (offered, markup, surfaces), pricing | Web only | — |
+| `operator_list_keys` and every key operation | Web only | — |
+| `operator_create_grant`, billing | Web only | — |
+| Instance settings, surfaces, sign-in methods | Web only | — |
+| Operator phones list and revoke | Web only | — |
+
+**Threats.**
+
+| Threat | What stops it |
+|---|---|
+| Lost or stolen phone, locked | Token is device-only storage; the device key needs a biometric match. Nothing is reachable. |
+| Lost or snatched phone, unlocked, console open | Reads for at most 5 minutes (the app also locks on background). No change without a new biometric match. The operator revokes it from the web. |
+| Thief knows the phone's passcode | No passcode fallback. Adding their own face or fingerprint destroys the device key, and the session is dead. |
+| Token stolen (backup, malware, proxy, logs) | Useless without the device key: it can't unlock or sign a proof. Tokens are stored as keyed hashes on the server. |
+| Captured request replayed | A proof is bound to one operation and input, single use, 60 seconds. An unlock challenge is single use. TLS throughout. |
+| A user-role `aqd_` session calls operator routes | `operator: null` → 403, as today. A test calls every operator operation with a user device token. |
+| An `aqo_` session calls a web-only operation | Allow-list at the dispatcher → 403 `web_only`. A test calls every unmarked operator operation. |
+| An `aqo_` session used to run jobs or spend | It holds no builder key and is refused on user operations. |
+| Another app claims the callback scheme | It gets a code it can't redeem without the PKCE verifier, and a session it can't use without the device key. |
+| Someone who knows an operator's provider password | Same exposure as the web console today, no more. A new phone raises a notice in the web console; operators should have a second factor at the provider. |
+| Former operator | Revoke on removal; 30-day absolute expiry as the backstop. |
+| A build pointed at someone else's instance | Callback redirects go only to the identifiers in that instance's config (section 5). |
+| Rooted or jailbroken phone | Not defended beyond hardware-backed keys. Stated, not solved. |
+
+### 18.3 Scope, in stages
+
+| Stage | What it adds | Changes allowed |
+|---|---|---|
+| 1. Away from the desk | Console sign-in, unlock and lock, switching from the user app. **Status** (health and what needs attention). **Jobs** (recent, failures, one job's attempts). **Reports** (the queue, keep up or take down). **Users** (search, one user, suspend and resume). Web: Operator phones page, audit log. | Resolve a report; suspend and resume a user |
+| 2. The numbers | Revenue, wholesale cost and margin over time; costs by capability; grants and their funding; compute operators; what's offered; system version and checks. All read-only. | None |
+| 3. Being told | Push alerts when the engine stops being ready, failures spike or a report is waiting, with a per-operator choice of which. Needs push credentials and device-token operations. | None |
+| 4. Selected changes | Only after the owner decides each: top up a user (capped), assign a plan, switch a capability off, block a compute operator. | As decided |
+| Stays on the web | API and access keys, pricing and markup, billing, credit packs, creating grants, instance settings, surfaces, appearance, operator phones. | — |
