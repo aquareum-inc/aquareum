@@ -1,6 +1,9 @@
-# secrets
-.env
-.env.*.local
+# secrets: every .env file, anywhere, except the committed example
+.env*
+!.env.example
+
+# the operator's own config, written by `./livepeer setup` (presets and the mobile dev config live elsewhere)
+/instance.config.json
 
 # the instance's own state in development (device sessions)
 .data/
@@ -22,7 +25,21 @@ playwright-report/
 test-results/
 next-env.d.ts
 
+# logs
+*.log
+
 # Xcode
 xcuserdata/
 *.xcuserstate
 DerivedData/
+*.xcresult
+
+# app signing and store uploads: never committed
+*.keystore
+*.jks
+*.p12
+*.p8
+*.mobileprovision
+*.ipa
+*.apk
+*.aab
