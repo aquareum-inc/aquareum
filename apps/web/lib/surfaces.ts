@@ -6,6 +6,8 @@ export interface Surfaces {
   mcp: boolean;
   /** The native apps. They use the API and the sign-in flow, so either is served while this is on. */
   mobile?: boolean;
+  /** The operator console inside the native apps. It uses the API and the sign-in flow too, with its own sessions. */
+  mobileConsole?: boolean;
 }
 
 /** Sign-in and the auth flow: needed by the app and by the console, so served while either is. The apps use the flow itself. */
@@ -18,12 +20,13 @@ export function isAuthPath(pathname: string): boolean {
  * prefixes; sign-in serves whichever of the app and the console is on; everything else is the app.
  */
 export function surfacePathServed(pathname: string, surfaces: Surfaces): boolean {
+  const phones = surfaces.mobile === true || surfaces.mobileConsole === true;
   if (pathname === "/operator" || pathname.startsWith("/operator/")) return surfaces.console;
   // The native apps are clients of the API. With the API off they still reach it, as device sessions only.
-  if (pathname.startsWith("/api/v1")) return surfaces.api || surfaces.mobile === true;
+  if (pathname.startsWith("/api/v1")) return surfaces.api || phones;
   if (pathname.startsWith("/api/mcp")) return surfaces.mcp;
   if (pathname.startsWith("/api/")) return true;
-  if (pathname === "/auth/start" || pathname === "/auth/callback") return surfaces.app || surfaces.console || surfaces.mobile === true;
+  if (pathname === "/auth/start" || pathname === "/auth/callback") return surfaces.app || surfaces.console || phones;
   if (isAuthPath(pathname)) return surfaces.app || surfaces.console;
   return surfaces.app;
 }

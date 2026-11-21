@@ -67,6 +67,10 @@ export interface InstanceConfig {
      * The native iOS and Android apps. Off, the instance issues no device sessions and refuses requests that carry one.
      */
     mobile?: boolean;
+    /**
+     * The operator console inside the native apps. Off, the instance issues no operator device sessions and refuses requests that carry one. Independent of mobile: a console-only instance turns this on alone.
+     */
+    mobileConsole?: boolean;
   };
   /**
    * The native apps built for this instance. Sign-in hands a finished session only to the apps named here.

@@ -247,6 +247,13 @@ async function doctor(options) {
     }
   }
 
+  // The console on phones signs operators in through an app named in the config, and only works beside the web console that manages its phones.
+  if (config?.surfaces?.mobileConsole === true) {
+    const named = Boolean(config.mobile?.ios?.bundleId || config.mobile?.android?.applicationId);
+    const web = config.surfaces.console === true;
+    add("console on phones", named && web, named && web ? "on; operators' phones are listed and revoked on the web console's System page" : !named ? "surfaces.mobileConsole is on but no phone app is named" : "surfaces.mobileConsole is on but the web console is off, so phones couldn't be revoked", !named ? `Set mobile.ios.bundleId or mobile.android.applicationId in ${configFile}, or set surfaces.mobileConsole to false` : `Set surfaces.console to true in ${configFile}, or set surfaces.mobileConsole to false`);
+  }
+
   // Keys
   const envFile = path.join(dir, ".env");
   const env = { ...(existsSync(envFile) ? parseEnv(readFileSync(envFile, "utf8")) : {}), ...process.env };

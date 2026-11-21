@@ -29,6 +29,15 @@ describe("surfaces", () => {
     expect(homePath(all)).toBe("/");
   });
 
+  it("serves the console on phones its sign-in and API with only that surface on", () => {
+    const consoleOnPhones = { app: false, console: false, api: false, mcp: false, mobileConsole: true };
+    expect(surfacePathServed("/auth/start", consoleOnPhones)).toBe(true);
+    expect(surfacePathServed("/auth/callback", consoleOnPhones)).toBe(true);
+    expect(surfacePathServed("/api/v1/operator/status", consoleOnPhones)).toBe(true);
+    expect(surfacePathServed("/operator", consoleOnPhones)).toBe(false);
+    expect(surfacePathServed("/sign-in", consoleOnPhones)).toBe(false);
+  });
+
   it("serves the apps their sign-in and API with only the mobile surface on", () => {
     const mobileOnly = { app: false, console: false, api: false, mcp: false, mobile: true };
     expect(surfacePathServed("/auth/start", mobileOnly)).toBe(true);

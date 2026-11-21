@@ -16,7 +16,7 @@ const instance: InstanceDescription = {
   name: "Test instance",
   logo: { symbol: null, wordmark: null, tint: true },
   theme: { dark: {}, light: {} },
-  surfaces: { app: true, api: true, mcp: true, mobile: true },
+  surfaces: { app: true, console: true, api: true, mcp: true, mobile: true, mobile_console: true },
   mobile: { ios: { bundle_id: "org.livepeer.app.dev", minimum_version: null }, android: null },
   sign_in: { methods: ["email"], sign_up: "open" },
   content: { characters: true, adult_content: false },

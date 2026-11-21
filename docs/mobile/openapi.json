@@ -2951,6 +2951,9 @@
               "app": {
                 "type": "boolean"
               },
+              "console": {
+                "type": "boolean"
+              },
               "api": {
                 "type": "boolean"
               },
@@ -2959,13 +2962,18 @@
               },
               "mobile": {
                 "type": "boolean"
+              },
+              "mobile_console": {
+                "type": "boolean"
               }
             },
             "required": [
               "app",
+              "console",
               "api",
               "mcp",
-              "mobile"
+              "mobile",
+              "mobile_console"
             ],
             "additionalProperties": false
           },

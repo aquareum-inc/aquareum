@@ -486,9 +486,11 @@ data class InstanceDescriptionTheme(
 @Serializable
 data class InstanceDescriptionSurfaces(
     @SerialName("app") val app: Boolean,
+    @SerialName("console") val console: Boolean,
     @SerialName("api") val api: Boolean,
     @SerialName("mcp") val mcp: Boolean,
     @SerialName("mobile") val mobile: Boolean,
+    @SerialName("mobile_console") val mobileConsole: Boolean,
 )
 
 @Serializable

@@ -500,9 +500,20 @@ struct InstanceDescriptionTheme: Codable, Sendable, Hashable {
 
 struct InstanceDescriptionSurfaces: Codable, Sendable, Hashable {
     var app: Bool
+    var console: Bool
     var api: Bool
     var mcp: Bool
     var mobile: Bool
+    var mobileConsole: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case app
+        case console
+        case api
+        case mcp
+        case mobile
+        case mobileConsole = "mobile_console"
+    }
 }
 
 struct InstanceDescriptionMobileIos: Codable, Sendable, Hashable {

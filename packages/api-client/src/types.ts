@@ -435,7 +435,7 @@ export interface InstanceDescription {
   };
   /** Overrides for colour tokens, per theme, keyed by token name ("primary"). Tokens not listed keep their default. */
   theme: { dark: Record<string, string>; light: Record<string, string> };
-  surfaces: { app: boolean; api: boolean; mcp: boolean; mobile: boolean };
+  surfaces: { app: boolean; console: boolean; api: boolean; mcp: boolean; mobile: boolean; mobile_console: boolean };
   /** The native apps built for this instance. Sign-in returns only to these; an app not listed can't sign in. */
   mobile: {
     ios: { bundle_id: string; minimum_version: string | null } | null;

@@ -5,7 +5,7 @@
     "symbol": "/brand/livepeer-symbol.svg",
     "wordmark": "/brand/livepeer-wordmark.svg"
   },
-  "surfaces": { "app": false, "console": true, "api": true, "mcp": true, "mobile": false },
+  "surfaces": { "app": false, "console": true, "api": true, "mcp": true, "mobile": false, "mobileConsole": false },
   "capabilities": { "allow": [], "block": [] },
   "auth": { "provider": "mock", "signUp": "closed" },
   "payments": { "provider": "mock" },
