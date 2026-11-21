@@ -7,12 +7,12 @@ export interface EngineConfig {
 }
 
 export class EngineError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
     super(message);
     this.name = "EngineError";
+    this.status = status;
   }
 }
 
