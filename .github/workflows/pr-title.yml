@@ -1,0 +1,47 @@
+name: Pull request title
+
+# Pull requests are squash-merged, so the title becomes the commit on main. It must follow Conventional Commits,
+# with the types and scopes in CONTRIBUTING.md.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            test
+            docs
+            ci
+            build
+            chore
+            revert
+          scopes: |
+            web
+            console
+            api
+            config
+            ios
+            android
+            mobile
+            cli
+            deploy
+            engine
+            design
+          requireScope: false
+          subjectPattern: ^[a-z].*[^.]$
+          subjectPatternError: |
+            "{subject}" should start lower-case and not end with a full stop, for example
+            "feat(studio): hide modes the instance doesn't offer". See CONTRIBUTING.md.
