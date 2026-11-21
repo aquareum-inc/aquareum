@@ -1,3 +1,23 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# One version for each dependency more than one package uses: a package names it as "catalog:".
+catalog:
+  "@types/node": ^22.20.5
+  "@types/react": ^19.2.0
+  "@types/react-dom": ^19.2.0
+  ajv: ^8.17.1
+  lucide-react: ^1.74.0
+  motion: ^13.4.3
+  typescript: 5.9.2
+  vitest: ^3.2.4
+
+# Supply chain: a version is installed only once it has been published for a day; most malicious releases are
+# pulled within hours. pnpm already skips dependencies' install scripts unless they're allowed here.
+minimumReleaseAge: 1440
+
+# Install scripts we've looked at and don't run. esbuild's only checks for the binary, which pnpm installs anyway
+# as its platform package (@esbuild/<platform>).
+ignoredBuiltDependencies:
+  - esbuild

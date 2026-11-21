@@ -13,11 +13,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
-  "dependencies": { "ajv": "^8.17.1" },
+  "dependencies": { "ajv": "catalog:" },
   "devDependencies": {
-    "@types/node": "^22.10.0",
+    "@types/node": "catalog:",
     "json-schema-to-typescript": "^15.0.4",
-    "typescript": "5.9.2",
-    "vitest": "^3.2.4"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
